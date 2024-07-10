@@ -1,0 +1,15 @@
+
+-------------------------------[ability]-------------------------------
+
+
+----------------------------------RenderService---------------------------------
+-- ScreenInfo
+screen[0]: id=0, powerstatus=POWER_STATUS_OFF, backlight=9, screenType=EXTERNAL_TYPE, render size: 1344x2772, physical screen resolution: 1344x2772, isvirtual=false, skipFrameInterval_:1
+
+  supportedMode[0]: 720x1485, refreshrate=60
+  supportedMode[1]: 1080x2227, refreshrate=60
+  supportedMode[2]: 1344x2772, refreshrate=60
+  supportedMode[3]: 1344x2772, refreshrate=90
+  supportedMode[4]: 1344x2772, refreshrate=90
+  activeMode: 1344x2772, refreshrate=60
+  capability: name=, phywidth=74, phyheight=154,supportlayers=12, virtualDispCount=0, propCount=0, type=DISP_INTF_HDMI, supportWriteBack=false

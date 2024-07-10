@@ -1,0 +1,128 @@
+User ID #100
+  current mission lists:{
+    Mission ID #368  mission name #[#com.huawei.hmsapp.himovie:entry:MainAbility]  lockedState #0  mission affinity #[]
+      AbilityRecord ID #179
+        app name [com.huawei.hmsapp.himovie]
+        main name [MainAbility]
+        bundle name [com.huawei.hmsapp.himovie]
+        ability type [PAGE]
+        state #FOREGROUND  start time [261181964]
+        app state #FOREGROUND
+        ready #1  window attached #0  launcher #0
+        callee connections: 
+        isKeepAlive: false
+ }
+  ExtensionRecords:
+    uri [/com.huawei.hmos.inputmethod/default/InputService]
+      AbilityRecord ID #17   state #ACTIVE   start time [216720436]
+      main name [InputService]
+      bundle name [com.huawei.hmos.inputmethod]
+      ability type [SERVICE]
+      app state #BEGIN
+        isKeepAlive: false
+      Connections: 1
+       > com.huawei.hmos.inputmethod/InputService   connectionState #CONNECTED
+    uri [/com.ohos.medialibrary.medialibrarydata/entry/DataShareExtAbility]
+      AbilityRecord ID #12   state #ACTIVE   start time [216719751]
+      main name [DataShareExtAbility]
+      bundle name [com.ohos.medialibrary.medialibrarydata]
+      ability type [SERVICE]
+      app state #BEGIN
+        isKeepAlive: false
+      Connections: 1
+       > com.ohos.medialibrary.medialibrarydata/DataShareExtAbility   connectionState #CONNECTED
+    uri [/com.ohos.sceneboard/engineservice/EngineServiceAbility1]
+      AbilityRecord ID #18   state #FOREGROUND   start time [216722029]
+      main name [EngineServiceAbility]
+      bundle name [com.ohos.sceneboard]
+      ability type [UIEXTENSION]
+      app state #BACKGROUND
+        isKeepAlive: true
+      Connections: 0
+      root host bundle name [com.ohos.sceneboard]
+      root host module name [phone_sceneboard]
+      root host ability name [com.ohos.sceneboard.MainAbility]
+      pid: 14121
+    uri [/com.ohos.sceneboard/phone_sceneboard/com.ohos.sceneboard.MainAbility]
+      AbilityRecord ID #7   state #ACTIVE   start time [216719372]
+      main name [com.ohos.sceneboard.MainAbility]
+      bundle name [com.ohos.sceneboard]
+      ability type [SERVICE]
+      app state #BACKGROUND
+        isKeepAlive: true
+      Connections: 1
+       > com.ohos.sceneboard/com.ohos.sceneboard.MainAbility   connectionState #CONNECTED
+    uri [/com.ohos.sceneboard/themeservice_core/ThemeServiceAbility]
+      AbilityRecord ID #15   state #ACTIVE   start time [216720075]
+      main name [ThemeServiceAbility]
+      bundle name [com.ohos.sceneboard]
+      ability type [SERVICE]
+      app state #BACKGROUND
+        isKeepAlive: true
+      Connections: 0
+    PendingWantRecords:
+        PendWantRecord ID #15  type #4
+        bundle name []
+        result who []
+        request code #0  flags #268435456
+        resolved type []
+        Wants:
+          uri [///]
+          resolved types []
+        PendWantRecord ID #17  type #4
+        bundle name []
+        result who []
+        request code #0  flags #268435456
+        resolved type []
+        Wants:
+          uri [///]
+          resolved types []
+        PendWantRecord ID #3  type #3
+        bundle name [com.huawei.hmos.betaclub]
+        result who []
+        request code #0  flags #268435456
+        resolved type []
+        Wants:
+          uri [//com.huawei.hmos.betaclub/NotificationAbility]
+          resolved types []
+        PendWantRecord ID #4  type #3
+        bundle name [com.huawei.hmos.betaclub]
+        result who []
+        request code #0  flags #268435456
+        resolved type []
+        Wants:
+          uri [//com.huawei.hmos.betaclub/NotificationAbility]
+          resolved types []
+        PendWantRecord ID #14  type #4
+        bundle name [com.ohos.locationdialog]
+        result who []
+        request code #0  flags #67108864
+        resolved type []
+        Wants:
+          uri [///]
+          resolved types []
+  AppRunningRecords:
+    AppRunningRecord ID #0
+      process name [com.ohos.sceneboard]
+      pid #13688  uid #20020018
+      state #BACKGROUND
+      uiextension provider #0
+        pid #14121
+    AppRunningRecord ID #1
+      process name [com.ohos.medialibrary.medialibrarydata]
+      pid #13813  uid #20020103
+      state #READY
+    AppRunningRecord ID #2
+      process name [com.huawei.hmos.inputmethod:inputMethod]
+      pid #14012  uid #20020035
+      state #READY
+    AppRunningRecord ID #3
+      process name [com.ohos.sceneboard:EngineServiceAbility:1]
+      pid #14121  uid #20020018
+      state #FOREGROUND
+      root caller #0
+        pid #13688
+    AppRunningRecord ID #4
+      process name [com.huawei.hmsapp.himovie]
+      pid #6724  uid #20020020
+      state #FOREGROUND
