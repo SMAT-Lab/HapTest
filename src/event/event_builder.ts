@@ -44,7 +44,9 @@ export class EventBuilder {
         }
 
         if (TEXT_INPUTABLE_TYPE.has(component.type)) {
-            events.push(new InputTextEvent(component, InputTextEvent.getRandomText()));
+            for (const text of this.randomText) {
+                events.push(new InputTextEvent(component, text));
+            }
         }
 
         return events;
@@ -52,5 +54,13 @@ export class EventBuilder {
 
     static createRandomTouchEvent(device: Device): TouchEvent {
         return new TouchEvent({x: RandomUtils.genRandomNum(0, device.getWidth()), y: RandomUtils.genRandomNum(0, device.getHeight())});
+    }
+
+    static randomText: string[] = [];
+    static {
+        const textLen = [1, 32, 128, 512];
+        for (const len of textLen) {
+            this.randomText.push(RandomUtils.genRandomString(len));
+        }
     }
 }

@@ -18,7 +18,6 @@ import { Point } from '../model/point';
 import { Event } from './event';
 import { Direct, EventSimulator } from '../device/event_simulator';
 import { Expose } from 'class-transformer';
-import { RandomUtils } from '../utils/random_utils';
 
 export abstract class UIEvent extends Event {
     @Expose()
@@ -110,18 +109,6 @@ export class InputTextEvent extends UIEvent {
 
     send(simulator: EventSimulator): void {
         simulator.inputText(this.point, this.text);
-    }
-
-    static randomText: string[] = [];
-    static {
-        const textLen = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
-        for (const len of textLen) {
-            this.randomText.push(RandomUtils.genRandomString(len));
-        }
-    }
-
-    static getRandomText(): string {
-        return this.randomText[RandomUtils.genRandomNum(0, this.randomText.length - 1)]
     }
 }
 
