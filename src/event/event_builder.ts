@@ -2,7 +2,9 @@ import { Device } from "../device/device";
 import { Direct } from "../device/event_simulator";
 import { Component } from "../model/component";
 import { RandomUtils } from "../utils/random_utils";
-import { LongTouchEvent, ScrollEvent, TouchEvent, UIEvent } from "./ui_event";
+import { InputTextEvent, LongTouchEvent, ScrollEvent, TouchEvent, UIEvent } from "./ui_event";
+
+const TEXT_INPUTABLE_TYPE: Set<string> = new Set(['TextInput', 'TextArea', 'SearchField']);
 
 export class EventBuilder {
     static createPossibleUIEvents(component: Component): UIEvent[] {
@@ -13,13 +15,21 @@ export class EventBuilder {
 
         if (component.checkable || component.clickable) {
             events.push(new TouchEvent(component));
-        } else if (component.longClickable) {
+        } 
+        
+        if (component.longClickable) {
             events.push(new LongTouchEvent(component));
-        } else if (component.scrollable) {
+        } 
+        
+        if (component.scrollable) {
             events.push(new ScrollEvent(component, Direct.DOWN));
             events.push(new ScrollEvent(component, Direct.UP));
             events.push(new ScrollEvent(component, Direct.LEFT));
             events.push(new ScrollEvent(component, Direct.RIGHT));
+        }
+
+        if (TEXT_INPUTABLE_TYPE.has(component.type)) {
+            events.push(new InputTextEvent(component, InputTextEvent.getRandomText()));
         }
 
         return events;
