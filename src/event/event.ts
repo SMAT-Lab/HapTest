@@ -3,6 +3,7 @@ import { EventSimulator } from '../device/event_simulator';
 import { DeviceState } from '../model/device_state';
 import { SerializeUtils } from '../utils/serialize_utils';
 import { CryptoUtils } from '../utils/crypto_utils';
+import { Rank } from '../model/rank';
 
 export abstract class Event {
     @Expose()
@@ -11,7 +12,7 @@ export abstract class Event {
 
     constructor(type: string) {
         this.type = type;
-        this.rank = 0;
+        this.rank = Rank.NORMAL;
     }
 
     toString(): string {
@@ -24,6 +25,10 @@ export abstract class Event {
 
     getRank(): number {
         return this.rank;
+    }
+
+    setRank(rank: number): void {
+        this.rank = rank;
     }
 
     abstract send(simulator: EventSimulator): void;

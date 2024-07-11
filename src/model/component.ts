@@ -1,5 +1,6 @@
 import { Expose } from 'class-transformer';
 import { Point } from './point';
+import { Rank } from './rank';
 
 export enum ComponentType {
     ModalPage = 'ModalPage',
@@ -56,7 +57,7 @@ export class Component {
 
     constructor() {
         this.children = [];
-        this.rank = 0;
+        this.rank = Rank.NORMAL;
     }
 
     addChild(child: Component) {
@@ -64,8 +65,8 @@ export class Component {
     }
 
     getCenterPoint(): Point {
-        const centerX = (this.bounds[0].x + this.bounds[1].x) / 2;
-        const centerY = (this.bounds[0].y + this.bounds[1].y) / 2;
+        const centerX = Math.round((this.bounds[0].x + this.bounds[1].x) / 2);
+        const centerY = Math.round((this.bounds[0].y + this.bounds[1].y) / 2);
         return { x: centerX, y: centerY };
     }
 

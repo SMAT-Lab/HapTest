@@ -15,6 +15,7 @@ export abstract class UIEvent extends Event {
         if (componentOrPoint instanceof Component) {
             this.component = componentOrPoint;
             this.point = componentOrPoint.getCenterPoint();
+            this.rank = componentOrPoint.rank;
         } else {
             this.point = componentOrPoint;
         }
@@ -22,14 +23,6 @@ export abstract class UIEvent extends Event {
 
     getComponet(): Component | undefined {
         return this.component;
-    }
-
-    getRank(): number {
-        if (this.component) {
-            return this.component.rank;
-        }
-
-        return this.rank;
     }
 }
 
@@ -73,17 +66,17 @@ export class ScrollEvent extends UIEvent {
         let width = this.component ? this.component.getWidth() : simulator.getWidth();
 
         if (this.direct == Direct.UP) {
-            from.y -= (height * 2) / 5;
-            to.y += (height * 2) / 5;
+            from.y -= Math.round((height * 2) / 5);
+            to.y += Math.round((height * 2) / 5);
         } else if (this.direct == Direct.DOWN) {
-            from.y += (height * 2) / 5;
-            to.y -= (height * 2) / 5;
+            from.y += Math.round((height * 2) / 5);
+            to.y -= Math.round((height * 2) / 5);
         } else if (this.direct == Direct.LEFT) {
-            from.x -= (width * 2) / 5;
-            to.x += (width * 2) / 5;
+            from.x -= Math.round((width * 2) / 5);
+            to.x += Math.round((width * 2) / 5);
         } else if (this.direct == Direct.RIGHT) {
-            from.x += (width * 2) / 5;
-            to.x -= (width * 2) / 5;
+            from.x += Math.round((width * 2) / 5);
+            to.x -= Math.round((width * 2) / 5);
         }
 
         simulator.drag(from, to, this.velocity);
