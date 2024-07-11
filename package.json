@@ -1,7 +1,7 @@
 {
-  "name": "arktest",
-  "version": "1.0.0",
-  "description": "ArkUI auto test",
+  "name": "ohos-arktest",
+  "version": "0.1.0",
+  "description": "ArkTest is an OpenHarmony application UI automated testing framework.",
   "main": "index.ts",
   "scripts": {
     "build": "tsc",
@@ -9,7 +9,7 @@
     "utest": "vitest"
   },
   "author": "",
-  "license": "ISC",
+  "license": "Apache License, Version 2.0",
   "dependencies": {
     "adm-zip": "^0.5.14",
     "class-transformer": "^0.5.1",

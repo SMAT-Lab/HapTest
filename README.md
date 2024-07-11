@@ -3,69 +3,12 @@
 ## Description
 ArkTest is an OpenHarmony application UI automated testing framework. It supports a variety of testing strategies and can effectively automate UI testing, thereby improving the stability and quality of applications.
 
-## Software Architecture
-```Mermaid
-classDiagram
-    class FuzzOptions {
-        hap: string
-        eventCount: number
-        policyName: string
-        randomInput: boolean
-        output: string
-    }
-    <<interface>> FuzzOptions
-
-    class Fuzz {
-        -options: FuzzOptions
-        -device: Device
-        -hap: Hap
-        -inputManager: InputManager
-
-        +start()
-    }
-
-    class Hap {
-        +bundleName
-        +mainAbility
-    }
-
-    class EventSimulator {
-
-    }
-    <<interface>> EventSimulator
-
-    class Device {
-        hdc: Hdc
-    }
-
-    class InputManager {
-        -policy: InputPolicy
-        +start()
-        +stop()
-    }
-
-    class InputPolicy {
-        enabled: boolean
-        +stop()
-        +generateEvent(deviceState: DeviceState): Event*
-    }
-
-    class Event {
-        send(device: EventSimulator)*
-    }
-
-    Device  --|>  EventSimulator
-    Hap --o Fuzz: hap
-    FuzzOptions --o Fuzz: options
-    Device --o Fuzz: device
-    InputManager --o Fuzz: inputManager
-    InputPolicy --o InputManager: policy
-
-    Event --o InputManager: addEvent
-    EventSimulator --o Event: send
+## Installation
+```
+npm install ohos-arktest
 ```
 
-## Installation
+## Build
 Install dependencies
 ```
 npm i
