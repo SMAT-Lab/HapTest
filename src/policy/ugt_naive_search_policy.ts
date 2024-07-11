@@ -68,7 +68,6 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
             this.flag |= PolicyFlag.FLAG_START_APP;
             return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
         } else if (runningState == HapRunningState.FOREGROUND) {
-            this.retryCount = 0;
             this.flag = PolicyFlag.FLAG_STARTED;
         } else {
             return BACK_KEY_EVENT;
@@ -141,7 +140,7 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
 
         // from state translate to state Event
         for (const state of this.utg.getReachableStates(this.currentState)) {
-            if (this.utg.isStateExplored(state)) {
+            if (this.utg.isStateExplored(state) || state.page.getBundleName() != this.hap.bundleName) {
                 continue;
             }
 
