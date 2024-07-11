@@ -132,7 +132,7 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
 
         // sort by rank
         events.sort((a, b) => {
-            return a.getRank() - b.getRank();
+            return b.getRank() - a.getRank();
         });
 
         if (events.length > 0) {
