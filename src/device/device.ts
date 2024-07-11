@@ -2,7 +2,7 @@ import fs from 'fs';
 import { Event } from '../event/event';
 import { KeyCode } from '../model/key_code';
 import { DeviceState } from '../model/device_state';
-import { Hap } from '../model/hap';
+import { Hap, HapRunningState } from '../model/hap';
 import { Page } from '../model/page';
 import { Point } from '../model/point';
 import { Hdc } from './hdc';
@@ -265,12 +265,12 @@ export class Device implements EventSimulator {
     }
 
     /**
-     * Is hap in foreground.
+     * Get HAP RunningState
      * @param hap
      * @returns
      */
-    isForeground(hap: Hap): boolean {
-        return this.hdc.getForegroundProcess().has(hap.bundleName);
+    getHapRunningState(hap: Hap): HapRunningState | undefined {
+        return this.hdc.getRunningProcess().get(hap.bundleName);
     }
 
     getBundleInfo(bundleName: string): any | undefined {

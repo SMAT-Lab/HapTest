@@ -49,3 +49,18 @@ export class Hap {
         this._hapFile = hapFile;
     }
 }
+
+export enum HapRunningState {
+    READY,
+    FOREGROUND,
+    BACKGROUND,
+}
+
+export function convertStr2RunningState(state: string): HapRunningState {
+    const convertMap: { [key: string]: HapRunningState } = {
+        READY: HapRunningState.READY,
+        FOREGROUND: HapRunningState.FOREGROUND,
+        BACKGROUND: HapRunningState.BACKGROUND,
+    };
+    return convertMap[state];
+}

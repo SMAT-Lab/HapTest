@@ -6,6 +6,7 @@ import { Point } from '../model/point';
 import { PageBuilder } from '../model/builder/page_builder';
 import { Direct } from './event_simulator';
 import Logger from '../utils/logger';
+import { convertStr2RunningState, HapRunningState } from '../model/hap';
 const logger = Logger.getLogger();
 
 export class Hdc {
@@ -186,8 +187,8 @@ export class Hdc {
         this.excute(...['install', '-r', hap]);
     }
 
-    getForegroundProcess(): Set<string> {
-        let process: Set<string> = new Set();
+    getRunningProcess(): Map<string, HapRunningState> {
+        let process: Map<string, HapRunningState> = new Map();
         let output = this.excuteShellCommand(...['aa', 'dump', '-a']);
         let bundleName = '';
         for (let line of output.split('\r\n')) {
@@ -195,9 +196,9 @@ export class Hdc {
             if (matches) {
                 bundleName = matches[1].split(':')[0];
             }
-            matches = line.match(/state #FOREGROUND/);
+            matches = line.match(/state #([A-Z]+)/);
             if (matches && bundleName.length > 0) {
-                process.add(bundleName);
+                process.set(bundleName, convertStr2RunningState(matches[1]));
             }
         }
         return process;
