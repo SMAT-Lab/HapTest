@@ -13,22 +13,13 @@
  * limitations under the License.
  */
 
-import Logger from '../utils/logger';
-import { UTGInputPolicy } from './utg_input_policy';
-import { Device } from '../device/device';
-import { Hap } from '../model/hap';
-import { Event } from '../event/event';
-import { AbilityEvent, ExitEvent, StopHapEvent } from '../event/system_event';
+import { defineConfig } from 'vitest/config'
 
-const logger = Logger.getLogger();
-export class UtgGreedySearchPolicy extends UTGInputPolicy{
-
-    constructor(device: Device, hap: Hap) {
-        super(device, hap, true);
-
+export default defineConfig({
+  test: {
+    include: ["test/unit/**/*.test.ts"],
+    coverage: {
+      include: ["src/**"]
     }
-   
-    generateEventBasedOnUtg(): Event {
-        return new ExitEvent();
-    }
-}
+  }
+})
