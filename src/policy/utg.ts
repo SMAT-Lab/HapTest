@@ -67,7 +67,10 @@ export class UTG {
             this.structualStateGraph.addEdge(oldState.getPageStructureSig(), newState.getPageStructureSig(), new Map());
         }
 
-        attr = this.structualStateGraph.getEdgeAttributes(oldState.getPageStructureSig(), newState.getPageStructureSig());
+        attr = this.structualStateGraph.getEdgeAttributes(
+            oldState.getPageStructureSig(),
+            newState.getPageStructureSig()
+        );
         attr.set(eventState, { event: event, id: this.effectiveEvent.size });
 
         this.lastState = newState;
@@ -79,7 +82,10 @@ export class UTG {
         // event bind oldState
         let eventStr = event.eventStateSig(oldState);
         if (this.contentStateGraph.hasEdge(oldState.getPageContentSig(), newState.getPageContentSig())) {
-            let attr = this.contentStateGraph.getEdgeAttributes(oldState.getPageContentSig(), newState.getPageContentSig());
+            let attr = this.contentStateGraph.getEdgeAttributes(
+                oldState.getPageContentSig(),
+                newState.getPageContentSig()
+            );
             if (attr.has(eventStr)) {
                 attr.delete(eventStr);
             }
@@ -133,11 +139,9 @@ export class UTG {
 
     getReachableStates(currentState: DeviceState): DeviceState[] {
         let reachableStates: DeviceState[] = [];
-        this.contentStateGraph.filterInEdges(currentState.getPageContentSig(), (edge, attr, source, target) => {
-            if (source == currentState.getPageContentSig()) {
-                let state = this.contentStateGraph.getNodeAttributes(target);
-                reachableStates.push(state);
-            }
+        this.contentStateGraph.filterOutEdges(currentState.getPageContentSig(), (edge, attr, source, target) => {
+            let state = this.contentStateGraph.getNodeAttributes(target);
+            reachableStates.push(state);
         });
         return reachableStates;
     }

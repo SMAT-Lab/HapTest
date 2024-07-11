@@ -4,17 +4,17 @@ import { DeviceState } from '../model/device_state';
 import { Hap } from '../model/hap';
 
 export enum PolicyFlag {
-    FLAG_INIT,
-    FLAG_START_APP,
-    FLAG_STOP_APP,
-    FLAG_STARTED
+    FLAG_INIT = 0,
+    FLAG_START_APP = 1,
+    FLAG_STOP_APP = 1 << 2,
+    FLAG_STARTED = 1 << 3
 }
 
 export abstract class InputPolicy {
     protected device: Device;
     protected hap: Hap;
     protected _enabled: boolean;
-    protected flag: PolicyFlag;
+    protected flag: number;
 
     constructor(device: Device, hap: Hap) {
         this.device = device;
