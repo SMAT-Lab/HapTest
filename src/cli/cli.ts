@@ -19,7 +19,7 @@ import Logger from '../utils/logger';
 import { FuzzOptions } from '../runner/fuzz_options';
 const logger = Logger.getLogger();
 
-(function (): void {
+(async function (): Promise<void> {
     program
         .name('arktest')
         .version('1.0.0')
@@ -40,5 +40,5 @@ const logger = Logger.getLogger();
     };
 
     let fuzz = new Fuzz(fuzzOption);
-    fuzz.start();
+    await fuzz.start();
 })();

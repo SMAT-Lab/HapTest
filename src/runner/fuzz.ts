@@ -35,9 +35,9 @@ export class Fuzz {
         this.inputManager = new InputManager(this.device, this.hap, this.options);
     }
 
-    start() {
+    async start() {
         // install hap
         this.device.installHap(this.hap);
-        this.inputManager.start();
+        await this.inputManager.start();
     }
 }

@@ -22,6 +22,9 @@ import { PolicyBuilder } from '../policy/policy_builder';
 import { EventAction } from './event_action';
 import { FuzzOptions } from './fuzz_options';
 
+const EVENT_INTERVAL = 500;
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
 export class InputManager {
     protected device: Device;
     protected hap: Hap;
@@ -37,11 +40,11 @@ export class InputManager {
         this.policy = PolicyBuilder.buildPolicyByName(device, hap, options);
     }
 
-    start() {
+    async start() {
         let state = this.device.getCurrentState();
         while (this.enabled && this.policy.enabled) {
             let event = this.policy.generateEvent(state);
-            state = this.addEvent(state, event);
+            state = await this.addEvent(state, event);
         }
     }
 
@@ -49,10 +52,11 @@ export class InputManager {
         this.enabled = false;
     }
 
-    protected addEvent(state: DeviceState, event: Event): DeviceState {
+    protected async addEvent(state: DeviceState, event: Event): Promise<DeviceState> {
         let eventExcute = new EventAction(this.device, this.hap, state, event);
         eventExcute.start();
         // sleep interval
+        await sleep(EVENT_INTERVAL);
         eventExcute.stop();
 
         return eventExcute.toState;
