@@ -46,13 +46,16 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
     }
 
     generateEventBasedOnUtg(): Event {
-        let runningState = this.device.getHapRunningState(this.hap);
+        let runningState: HapRunningState | undefined;
+        if (this.currentState.page.getBundleName() == this.hap.bundleName) {
+            runningState = HapRunningState.FOREGROUND;
+        } else {
+            runningState = this.device.getHapRunningState(this.hap);
+        }
         if (this.flag == PolicyFlag.FLAG_INIT) {
-            if (runningState == HapRunningState.FOREGROUND) {
+            if (runningState != undefined ) {
                 this.flag |= PolicyFlag.FLAG_STOP_APP;
                 return new StopHapEvent(this.hap.bundleName);
-            } else if (runningState != undefined) {
-                return BACK_KEY_EVENT;
             }
         }
 
