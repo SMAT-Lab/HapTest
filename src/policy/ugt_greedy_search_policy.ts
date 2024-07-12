@@ -17,6 +17,7 @@ import { Hap, HapRunningState } from '../model/hap';
 import { UTGInputPolicy } from './utg_input_policy';
 import { Device } from '../device/device';
 import { Event } from '../event/event';
+import { KeyEvent } from '../event/key_event';
 import { DeviceState } from '../model/device_state';
 import { ExitEvent, StopHapEvent, AbilityEvent } from '../event/system_event';
 import { BACK_KEY_EVENT } from '../event/key_event';
@@ -90,7 +91,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
             runningState = this.device.getHapRunningState(this.hap);
         }
         if (this.flag == PolicyFlag.FLAG_INIT) {
-            if (runningState != undefined ) {
+            if (runningState != undefined) {
                 this.flag |= PolicyFlag.FLAG_STOP_APP;
                 return new StopHapEvent(this.hap.bundleName);
             }
@@ -113,9 +114,9 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
         this.updateState();
 
         // Get all possible input events
-        let possibleEvents = this.getPossibleEvents();
+        let possibleEvent = this.getPossibleEvent();
 
-        if (possibleEvents == undefined) {
+        if (possibleEvent == undefined) {
             if (this.retryCount > MAX_NUM_RESTARTS) {
                 this.stop();
                 return new ExitEvent();
@@ -125,10 +126,10 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
         }
         this.retryCount = 0;
 
-        return possibleEvents;
+        return possibleEvent;
     }
 
-    private getPossibleEvents(): Event | undefined {
+    private getPossibleEvent(): Event | undefined {
 
         let events: Event[] = [];
         
@@ -143,20 +144,26 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
             if (events.length == 0) {
                 return undefined;
             }
-            if (this.randomInput) {
-                RandomUtils.shuffle(events);
-            }
         }
 
-        if( this.searchMethod == PolicyGreedy.BFS_GREEDY ){
+        if( this.searchMethod == PolicyGreedy.BFS_GREEDY){
             events.unshift(BACK_KEY_EVENT);
         } else if( this.searchMethod == PolicyGreedy.DFS_GREEDY ){
             events.push(BACK_KEY_EVENT);
         } 
 
+        if (this.randomInput) {
+            RandomUtils.shuffle(events);
+        }
+
         // If there is an unexplored event, try the event first
         for( const event of events){
             if( !this.utg.isEventExplored(event, this.currentState) ){
+                if( event instanceof KeyEvent ){
+                    if( this.currentState.page.getBundleName() == this.hap.bundleName || this.currentState.page.isHome()){
+                        continue;
+                    }
+                }
                 logger.info(`Trying an unexplored event.`);
                 return event
             }

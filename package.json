@@ -5,7 +5,7 @@
   "main": "index.ts",
   "scripts": {
     "build": "tsc",
-    "test": "node -r ts-node/register src/cli/cli.ts --policy greedy_dfs -i com.huawei.hmos.files -o out",
+    "test": "node -r ts-node/register src/cli/cli.ts --policy greedy_bfs -i com.huawei.hmos.files -o out",
     "utest": "vitest"
   },
   "author": "",

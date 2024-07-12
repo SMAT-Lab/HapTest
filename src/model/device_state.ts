@@ -18,6 +18,7 @@ import { EventBuilder } from '../event/event_builder';
 import { UIEvent } from '../event/ui_event';
 import { CryptoUtils } from '../utils/crypto_utils';
 import { SerializeUtils } from '../utils/serialize_utils';
+import { Component } from './component';
 import { Page } from './page';
 
 
@@ -85,7 +86,8 @@ export class DeviceState {
 
     getPossibleUIEvents(): UIEvent[] {
         let events: UIEvent[] = [];
-        for (const component of this.page.getComponents()) {
+        let components: Component[] = this.page.getComponents();
+        for (const component of components) {
             events.push(...EventBuilder.createPossibleUIEvents(component));
         }
         return events;
