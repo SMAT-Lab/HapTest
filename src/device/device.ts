@@ -33,7 +33,7 @@ export class Device implements EventSimulator {
     private height: number;
     private udid: string;
 
-    constructor(connectkey: string, output: string) {
+    constructor(connectkey: string | undefined = undefined, output: string = 'out') {
         this.hdc = new Hdc(connectkey);
         this.output = path.resolve(output);
         let size = this.hdc.getScreenSize();

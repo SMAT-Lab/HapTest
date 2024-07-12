@@ -65,12 +65,15 @@ export class ScrollEvent extends UIEvent {
     @Expose()
     protected velocity: number;
     @Expose()
+    protected step: number;
+    @Expose()
     protected direct: Direct;
 
-    constructor(componentOrPoint: Component | Point, direct: Direct, velocity: number = 600) {
+    constructor(componentOrPoint: Component | Point, direct: Direct, velocity: number = 40000, step: number = 100) {
         super('ScrollEvent', componentOrPoint);
         this.velocity = velocity;
         this.direct = direct;
+        this.step = step;
     }
 
     send(simulator: EventSimulator): void {
@@ -81,11 +84,11 @@ export class ScrollEvent extends UIEvent {
         let width = this.component ? this.component.getWidth() : simulator.getWidth();
 
         if (this.direct == Direct.UP) {
-            from.y -= Math.round((height * 2) / 5);
-            to.y += Math.round((height * 2) / 5);
-        } else if (this.direct == Direct.DOWN) {
             from.y += Math.round((height * 2) / 5);
             to.y -= Math.round((height * 2) / 5);
+        } else if (this.direct == Direct.DOWN) {
+            from.y -= Math.round((height * 2) / 5);
+            to.y += Math.round((height * 2) / 5);
         } else if (this.direct == Direct.LEFT) {
             from.x -= Math.round((width * 2) / 5);
             to.x += Math.round((width * 2) / 5);
@@ -94,7 +97,7 @@ export class ScrollEvent extends UIEvent {
             to.x -= Math.round((width * 2) / 5);
         }
 
-        simulator.drag(from, to, this.velocity);
+        simulator.fling(from, to, this.velocity, this.step);
     }
 }
 
