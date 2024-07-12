@@ -1,17 +1,32 @@
-import Logger from '../utils/logger';
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { Hap, HapRunningState } from '../model/hap';
 import { UTGInputPolicy } from './utg_input_policy';
 import { Device } from '../device/device';
-import { Hap } from '../model/hap';
 import { Event } from '../event/event';
 import { DeviceState } from '../model/device_state';
-import { AbilityEvent, ExitEvent, StopHapEvent } from '../event/system_event';
-import { PolicyFlag } from './input_policy';
+import { ExitEvent, StopHapEvent, AbilityEvent } from '../event/system_event';
 import { BACK_KEY_EVENT } from '../event/key_event';
 import { RandomUtils } from '../utils/random_utils';
 import { Component , ComponentType} from '../model/component';
 import { EventBuilder } from '../event/event_builder';
 import { Page } from '../model/page';
 import { Rank } from '../model/rank';
+import Logger from '../utils/logger';
+import { PolicyFlag } from './input_policy';
 
 const logger = Logger.getLogger();
 
@@ -67,35 +82,31 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
         if( this.missedStates.has(this.currentState.udid) ){
             this.missedStates.delete(this.currentState.udid)
         }
-
-        let hapIsForeground = this.device.isForeground(this.hap);
-        if ((this.flag & PolicyFlag.FLAG_START_APP) == 0) {
-            if (hapIsForeground) {
+    
+        let runningState: HapRunningState | undefined;
+        if (this.currentState.page.getBundleName() == this.hap.bundleName) {
+            runningState = HapRunningState.FOREGROUND;
+        } else {
+            runningState = this.device.getHapRunningState(this.hap);
+        }
+        if (this.flag == PolicyFlag.FLAG_INIT) {
+            if (runningState != undefined ) {
                 this.flag |= PolicyFlag.FLAG_STOP_APP;
                 return new StopHapEvent(this.hap.bundleName);
-            } else {
-                this.flag |= PolicyFlag.FLAG_START_APP;
-                this.retryCount++;
-                return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
             }
         }
 
-        if ((this.flag & PolicyFlag.FLAG_STARTED) == 0) {
-            if (!hapIsForeground) {
-                // check start app count
-                if (this.retryCount > MAX_NUM_RESTARTS) {
-                    logger.error(`The number of HAP launch attempts exceeds ${MAX_NUM_RESTARTS}`);
-                    throw new Error('The HAP cannot be started.');
-                }
-                this.retryCount++;
-                return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
-            } else {
-                this.retryCount = 0;
-                this.flag |= PolicyFlag.FLAG_STARTED;
+        if (runningState == undefined) {
+            if (this.retryCount > MAX_NUM_RESTARTS) {
+                logger.error(`The number of HAP launch attempts exceeds ${MAX_NUM_RESTARTS}`);
+                throw new Error('The HAP cannot be started.');
             }
-        }
-
-        if (!hapIsForeground) {
+            this.retryCount++;
+            this.flag |= PolicyFlag.FLAG_START_APP;
+            return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
+        } else if (runningState == HapRunningState.FOREGROUND) {
+            this.flag = PolicyFlag.FLAG_STARTED;
+        } else {
             return BACK_KEY_EVENT;
         }
 

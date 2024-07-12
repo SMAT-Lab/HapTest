@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { spawnSync, SpawnSyncReturns } from 'child_process';
 import path from 'path';
 import * as os from 'os';
@@ -6,6 +21,7 @@ import { Point } from '../model/point';
 import { PageBuilder } from '../model/builder/page_builder';
 import { Direct } from './event_simulator';
 import Logger from '../utils/logger';
+import { convertStr2RunningState, HapRunningState } from '../model/hap';
 const logger = Logger.getLogger();
 
 export class Hdc {
@@ -186,8 +202,8 @@ export class Hdc {
         this.excute(...['install', '-r', hap]);
     }
 
-    getForegroundProcess(): Set<string> {
-        let process: Set<string> = new Set();
+    getRunningProcess(): Map<string, HapRunningState> {
+        let process: Map<string, HapRunningState> = new Map();
         let output = this.excuteShellCommand(...['aa', 'dump', '-a']);
         let bundleName = '';
         for (let line of output.split('\r\n')) {
@@ -195,9 +211,9 @@ export class Hdc {
             if (matches) {
                 bundleName = matches[1].split(':')[0];
             }
-            matches = line.match(/state #FOREGROUND/);
+            matches = line.match(/state #([A-Z]+)/);
             if (matches && bundleName.length > 0) {
-                process.add(bundleName);
+                process.set(bundleName, convertStr2RunningState(matches[1]));
             }
         }
         return process;
@@ -219,7 +235,7 @@ export class Hdc {
         args.push(...[command, ...params]);
         logger.info(`hdc excute: ${JSON.stringify(args)}`);
         let result = spawnSync('hdc', args, { encoding: 'utf-8', shell: true });
-        logger.debug(`hdc result: ${JSON.stringify(result)}`);
+        // logger.debug(`hdc result: ${JSON.stringify(result)}`);
         return result;
     }
 }
