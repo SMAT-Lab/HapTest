@@ -50,12 +50,12 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
     private searchMethod: String;
     // priority button list
     // private preferredButtons : string [];
-    // unexplored set of states
-    private missedStates : Map<string, DeviceState>;
     // whether to use random exploration mode
     // private randomExplore : Boolean;
 
-    // private navTarget: DeviceState | null = null;;
+    private missedStates : Map<string, DeviceState>;
+
+    private navTarget: DeviceState | null = null;;
     // private navNumSteps :number;
 
     constructor(device: Device, hap: Hap, search_method: String) {
@@ -64,8 +64,8 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
         this.searchMethod = search_method;
         // this.navNumSteps = -1;
         // this.preferredButtons = ["yes", "ok", "activate", "detail", "more", "access","allow", "check", "agree", "try", "go", "next"];
-        this.missedStates = new Map();
         // this.randomExplore = false;
+        this.missedStates = new Map();
         this.pageStateMap = new Map();
         this.stateMap = new Map();
         this.stateComponentMap = new Map();
@@ -78,11 +78,11 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
      */
     generateEventBasedOnUtg(): Event {
         logger.info(`Current state: ${this.currentState.udid}`);
-
+    
         if( this.missedStates.has(this.currentState.udid) ){
             this.missedStates.delete(this.currentState.udid)
         }
-    
+
         let runningState: HapRunningState | undefined;
         if (this.currentState.page.getBundleName() == this.hap.bundleName) {
             runningState = HapRunningState.FOREGROUND;
@@ -152,7 +152,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
             events.unshift(BACK_KEY_EVENT);
         } else if( this.searchMethod == PolicyGreedy.DFS_GREEDY ){
             events.push(BACK_KEY_EVENT);
-        }
+        } 
 
         // If there is an unexplored event, try the event first
         for( const event of events){
@@ -162,15 +162,11 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
             }
         }
 
-        // from state translate to state Event
-        for (const state of this.utg.getReachableStates(this.currentState)) {
-            if (this.utg.isStateExplored(state)) {
-                continue;
-            }
-
-            let steps = this.utg.getNavigationSteps(this.currentState, state);
-            if (steps && steps.length > 0) {
-                return steps[0][1];
+        let targetState = this.getNavTarget();
+        if( targetState != undefined ){
+            let navSteps = this.utg.getNavigationSteps(this.currentState,targetState);
+            if( navSteps && navSteps.length > 0){
+                return navSteps[0][1];
             }
         }
 
@@ -178,6 +174,41 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
             return new StopHapEvent(this.hap.bundleName);
         }
 
+        return undefined;
+    }
+
+    private getNavTarget(): DeviceState | undefined {
+
+        if( this.navTarget ){
+            if( this.lastState.page == this.navTarget.page ){
+                let stateSig = this.navTarget.getPageContentSig();
+                this.missedStates.set(stateSig,this.navTarget);
+            }
+        }
+        // from state translate to state Event
+        let reachableStates: DeviceState[] = this.utg.getReachableStates(this.currentState);
+        for (const state of reachableStates) {
+            // Only consider foreground states
+            if( this.device.getHapRunningState(this.hap) != HapRunningState.FOREGROUND ){
+                continue;
+            }
+            // Do not consider missed states
+            if( this.missedStates.has(state.getPageContentSig())){
+                continue;
+            }
+            // Do not consider explored states
+            if (this.utg.isStateExplored(state)) {
+                continue;
+            }
+
+            this.navTarget = state;
+            let steps = this.utg.getNavigationSteps(this.currentState, this.navTarget);
+            if (steps && steps.length > 0) {
+                return state;
+            }    
+            
+        }
+        this.navTarget = null;
         return undefined;
     }
 
