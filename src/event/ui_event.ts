@@ -120,3 +120,5 @@ export class SwipeEvent extends UIEvent {
         simulator.swipe(this.point, this.toPoint, this.velocity);
     }
 }
+
+
