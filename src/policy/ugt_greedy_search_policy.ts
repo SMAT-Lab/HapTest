@@ -22,47 +22,38 @@ import { DeviceState } from '../model/device_state';
 import { ExitEvent, StopHapEvent, AbilityEvent } from '../event/system_event';
 import { BACK_KEY_EVENT } from '../event/key_event';
 import { RandomUtils } from '../utils/random_utils';
-import { Component , ComponentType} from '../model/component';
+import { Component, ComponentType } from '../model/component';
 import { EventBuilder } from '../event/event_builder';
 import { Page } from '../model/page';
 import { Rank } from '../model/rank';
 import Logger from '../utils/logger';
-import { PolicyFlag } from './input_policy';
+import { PolicyFlag, PolicyName } from './input_policy';
 
 const logger = Logger.getLogger();
-
-enum PolicyGreedy {
-    DFS_GREEDY = "greedy_dfs",
-    BFS_GREEDY = "greedy_bfs" 
-}
 
 export const MAX_NUM_RESTARTS = 5;
 
 /**
  * DFS/BFS (according to search_method) strategy to explore UFG (new)
  */
-export class UtgGreedySearchPolicy extends UTGInputPolicy{
-
+export class UtgGreedySearchPolicy extends UTGInputPolicy {
     private retryCount: number;
     private pageStateMap: Map<string, Set<string>>;
     private stateMap: Map<string, DeviceState>;
     private stateComponentMap: Map<string, Component[]>;
-    // search strategy
-    private searchMethod: String;
     // priority button list
     // private preferredButtons : string [];
     // whether to use random exploration mode
     // private randomExplore : Boolean;
 
-    private missedStates : Map<string, DeviceState>;
+    private missedStates: Map<string, DeviceState>;
 
-    private navTarget: DeviceState | null = null;;
+    private navTarget: DeviceState | null = null;
     // private navNumSteps :number;
 
-    constructor(device: Device, hap: Hap, search_method: String) {
-        super(device, hap, true);
+    constructor(device: Device, hap: Hap, name: PolicyName) {
+        super(device, hap, name, true);
         this.retryCount = 0;
-        this.searchMethod = search_method;
         // this.navNumSteps = -1;
         // this.preferredButtons = ["yes", "ok", "activate", "detail", "more", "access","allow", "check", "agree", "try", "go", "next"];
         // this.randomExplore = false;
@@ -71,33 +62,27 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
         this.stateMap = new Map();
         this.stateComponentMap = new Map();
     }
-   
+
     /**
      * Generate an event based on current UTG.
-     * 
+     *
      * @returns {Event} The generated Event object.
      */
     generateEventBasedOnUtg(): Event {
         logger.info(`Current state: ${this.currentState.udid}`);
-    
-        if( this.missedStates.has(this.currentState.udid) ){
-            this.missedStates.delete(this.currentState.udid)
+
+        if (this.missedStates.has(this.currentState.udid)) {
+            this.missedStates.delete(this.currentState.udid);
         }
 
-        let runningState: HapRunningState | undefined;
-        if (this.currentState.page.getBundleName() == this.hap.bundleName) {
-            runningState = HapRunningState.FOREGROUND;
-        } else {
-            runningState = this.device.getHapRunningState(this.hap);
-        }
         if (this.flag == PolicyFlag.FLAG_INIT) {
-            if (runningState != undefined) {
+            if (this.hapRunningState != undefined) {
                 this.flag |= PolicyFlag.FLAG_STOP_APP;
                 return new StopHapEvent(this.hap.bundleName);
             }
         }
 
-        if (runningState == undefined) {
+        if (this.hapRunningState == undefined) {
             if (this.retryCount > MAX_NUM_RESTARTS) {
                 logger.error(`The number of HAP launch attempts exceeds ${MAX_NUM_RESTARTS}`);
                 throw new Error('The HAP cannot be started.');
@@ -105,7 +90,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
             this.retryCount++;
             this.flag |= PolicyFlag.FLAG_START_APP;
             return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
-        } else if (runningState == HapRunningState.FOREGROUND) {
+        } else if (this.hapRunningState == HapRunningState.FOREGROUND) {
             this.flag = PolicyFlag.FLAG_STARTED;
         } else {
             return BACK_KEY_EVENT;
@@ -130,9 +115,8 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
     }
 
     private getPossibleEvent(): Event | undefined {
-
         let events: Event[] = [];
-        
+
         events.push(...this.currentState.getPossibleUIEvents());
 
         // sort by rank
@@ -146,33 +130,36 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
             }
         }
 
-        if( this.searchMethod == PolicyGreedy.BFS_GREEDY){
+        if (this.name == PolicyName.BFS_GREEDY) {
             events.unshift(BACK_KEY_EVENT);
-        } else if( this.searchMethod == PolicyGreedy.DFS_GREEDY ){
+        } else if (this.name == PolicyName.DFS_GREEDY) {
             events.push(BACK_KEY_EVENT);
-        } 
+        }
 
         if (this.randomInput) {
             RandomUtils.shuffle(events);
         }
 
         // If there is an unexplored event, try the event first
-        for( const event of events){
-            if( !this.utg.isEventExplored(event, this.currentState) ){
-                if( event instanceof KeyEvent ){
-                    if( this.currentState.page.getBundleName() == this.hap.bundleName || this.currentState.page.isHome()){
+        for (const event of events) {
+            if (!this.utg.isEventExplored(event, this.currentState)) {
+                if (event instanceof KeyEvent) {
+                    if (
+                        this.currentState.page.getBundleName() == this.hap.bundleName ||
+                        this.currentState.page.isHome()
+                    ) {
                         continue;
                     }
                 }
                 logger.info(`Trying an unexplored event.`);
-                return event
+                return event;
             }
         }
 
         let targetState = this.getNavTarget();
-        if( targetState != undefined ){
-            let navSteps = this.utg.getNavigationSteps(this.currentState,targetState);
-            if( navSteps && navSteps.length > 0){
+        if (targetState != undefined) {
+            let navSteps = this.utg.getNavigationSteps(this.currentState, targetState);
+            if (navSteps && navSteps.length > 0) {
                 return navSteps[0][1];
             }
         }
@@ -185,22 +172,21 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
     }
 
     private getNavTarget(): DeviceState | undefined {
-
-        if( this.navTarget ){
-            if( this.lastState.page == this.navTarget.page ){
+        if (this.navTarget) {
+            if (this.lastState.page == this.navTarget.page) {
                 let stateSig = this.navTarget.getPageContentSig();
-                this.missedStates.set(stateSig,this.navTarget);
+                this.missedStates.set(stateSig, this.navTarget);
             }
         }
         // from state translate to state Event
         let reachableStates: DeviceState[] = this.utg.getReachableStates(this.currentState);
         for (const state of reachableStates) {
             // Only consider foreground states
-            if( this.device.getHapRunningState(this.hap) != HapRunningState.FOREGROUND ){
+            if (this.device.getHapRunningState(this.hap) != HapRunningState.FOREGROUND) {
                 continue;
             }
             // Do not consider missed states
-            if( this.missedStates.has(state.getPageContentSig())){
+            if (this.missedStates.has(state.getPageContentSig())) {
                 continue;
             }
             // Do not consider explored states
@@ -212,8 +198,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
             let steps = this.utg.getNavigationSteps(this.currentState, this.navTarget);
             if (steps && steps.length > 0) {
                 return state;
-            }    
-            
+            }
         }
         this.navTarget = null;
         return undefined;
@@ -281,5 +266,4 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy{
             });
         }
     }
-
 }

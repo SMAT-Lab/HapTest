@@ -18,14 +18,14 @@ import { AbilityEvent } from '../event/system_event';
 import { Event } from '../event/event';
 import { ManualEvent } from '../event/manual_event';
 import { Hap } from '../model/hap';
-import { InputPolicy } from './input_policy';
+import { InputPolicy, PolicyName } from './input_policy';
 import { DeviceState } from '../model/device_state';
 
 export class ManualPolicy extends InputPolicy {
     private firstEvent: boolean;
 
-    constructor(device: Device, hap: Hap) {
-        super(device, hap);
+    constructor(device: Device, hap: Hap, name: PolicyName) {
+        super(device, hap, name);
         this.firstEvent = true;
     }
 

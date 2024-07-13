@@ -25,16 +25,26 @@ export enum PolicyFlag {
     FLAG_STARTED = 1 << 3
 }
 
+export enum PolicyName {
+    MANUAL = 'manual',
+    DFS_GREEDY = 'greedy_dfs',
+    BFS_GREEDY = 'greedy_bfs',
+    DFS_NAIVE = 'naive_dfs',
+    BFS_NAIVE = 'naive_bfs',
+}
+
 export abstract class InputPolicy {
     protected device: Device;
     protected hap: Hap;
     protected _enabled: boolean;
     protected flag: number;
+    protected name: PolicyName;
 
-    constructor(device: Device, hap: Hap) {
+    constructor(device: Device, hap: Hap, name: PolicyName) {
         this.device = device;
         this.hap = hap;
         this._enabled = true;
+        this.name = name;
         this.flag = PolicyFlag.FLAG_INIT;
     }
 

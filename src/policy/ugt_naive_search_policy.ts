@@ -24,7 +24,7 @@ import { Page } from '../model/page';
 import { RandomUtils } from '../utils/random_utils';
 import { UTGInputPolicy } from './utg_input_policy';
 import Logger from '../utils/logger';
-import { PolicyFlag } from './input_policy';
+import { PolicyFlag, PolicyName } from './input_policy';
 import { EventBuilder } from '../event/event_builder';
 import { Rank } from '../model/rank';
 import { BACK_KEY_EVENT } from '../event/key_event';
@@ -37,8 +37,8 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
     private stateMap: Map<string, DeviceState>;
     private stateComponentMap: Map<string, Component[]>;
 
-    constructor(device: Device, hap: Hap) {
-        super(device, hap, true);
+    constructor(device: Device, hap: Hap, name: PolicyName) {
+        super(device, hap, name, true);
         this.retryCount = 0;
         this.pageStateMap = new Map();
         this.stateMap = new Map();
@@ -46,20 +46,14 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
     }
 
     generateEventBasedOnUtg(): Event {
-        let runningState: HapRunningState | undefined;
-        if (this.currentState.page.getBundleName() == this.hap.bundleName) {
-            runningState = HapRunningState.FOREGROUND;
-        } else {
-            runningState = this.device.getHapRunningState(this.hap);
-        }
         if (this.flag == PolicyFlag.FLAG_INIT) {
-            if (runningState != undefined ) {
+            if (this.hapRunningState != undefined ) {
                 this.flag |= PolicyFlag.FLAG_STOP_APP;
                 return new StopHapEvent(this.hap.bundleName);
             }
         }
 
-        if (runningState == undefined) {
+        if (this.hapRunningState == undefined) {
             if (this.retryCount > MAX_NUM_RESTARTS) {
                 logger.error(`The number of HAP launch attempts exceeds ${MAX_NUM_RESTARTS}`);
                 throw new Error('The HAP cannot be started.');
@@ -67,7 +61,7 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
             this.retryCount++;
             this.flag |= PolicyFlag.FLAG_START_APP;
             return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
-        } else if (runningState == HapRunningState.FOREGROUND) {
+        } else if (this.hapRunningState == HapRunningState.FOREGROUND) {
             this.flag = PolicyFlag.FLAG_STARTED;
         } else {
             return BACK_KEY_EVENT;
@@ -89,7 +83,7 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
         return event;
     }
 
-    private updateState() {
+    private updateState(): void {
         if (this.currentState.page.getBundleName() != this.hap.bundleName) {
             return;
         }
