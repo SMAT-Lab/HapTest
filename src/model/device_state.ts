@@ -18,9 +18,7 @@ import { EventBuilder } from '../event/event_builder';
 import { UIEvent } from '../event/ui_event';
 import { CryptoUtils } from '../utils/crypto_utils';
 import { SerializeUtils } from '../utils/serialize_utils';
-import { Component } from './component';
 import { Page } from './page';
-
 
 export class DeviceState {
     /** UI component page */
@@ -54,12 +52,12 @@ export class DeviceState {
             page: this.page.toJson(),
             screen: this.screen,
             faultLogs: this.faultLogs,
-        })
+        });
     }
 
     setFaultLogs(to: DeviceState | undefined): void {
         if (!to) {
-            return ;
+            return;
         }
         for (let log of to.originLogs) {
             if (!this.originLogs.has(log)) {
@@ -86,8 +84,7 @@ export class DeviceState {
 
     getPossibleUIEvents(): UIEvent[] {
         let events: UIEvent[] = [];
-        let components: Component[] = this.page.getComponents();
-        for (const component of components) {
+        for (const component of this.page.getComponents()) {
             events.push(...EventBuilder.createPossibleUIEvents(component));
         }
         return events;

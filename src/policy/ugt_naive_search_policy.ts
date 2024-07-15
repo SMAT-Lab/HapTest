@@ -15,7 +15,6 @@
 
 import { Device } from '../device/device';
 import { AbilityEvent, ExitEvent, StopHapEvent } from '../event/system_event';
-import { UIEvent } from '../event/ui_event';
 import { Event } from '../event/event';
 import { Component, ComponentType } from '../model/component';
 import { DeviceState } from '../model/device_state';
@@ -27,7 +26,8 @@ import Logger from '../utils/logger';
 import { PolicyFlag, PolicyName } from './input_policy';
 import { EventBuilder } from '../event/event_builder';
 import { Rank } from '../model/rank';
-import { BACK_KEY_EVENT } from '../event/key_event';
+import { BACK_KEY_EVENT, KeyEvent } from '../event/key_event';
+import { KeyCode } from '../model/key_code';
 const logger = Logger.getLogger();
 
 export const MAX_NUM_RESTARTS = 5;
@@ -36,6 +36,7 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
     private pageStateMap: Map<string, Set<string>>;
     private stateMap: Map<string, DeviceState>;
     private stateComponentMap: Map<string, Component[]>;
+    private isNewPage: boolean;
 
     constructor(device: Device, hap: Hap, name: PolicyName) {
         super(device, hap, name, true);
@@ -43,11 +44,12 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
         this.pageStateMap = new Map();
         this.stateMap = new Map();
         this.stateComponentMap = new Map();
+        this.isNewPage = false;
     }
 
     generateEventBasedOnUtg(): Event {
         if (this.flag == PolicyFlag.FLAG_INIT) {
-            if (this.hapRunningState != undefined ) {
+            if (this.hapRunningState != undefined) {
                 this.flag |= PolicyFlag.FLAG_STOP_APP;
                 return new StopHapEvent(this.hap.bundleName);
             }
@@ -64,6 +66,12 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
         } else if (this.hapRunningState == HapRunningState.FOREGROUND) {
             this.flag = PolicyFlag.FLAG_STARTED;
         } else {
+            if (this.retryCount > MAX_NUM_RESTARTS) {
+                this.flag |= PolicyFlag.FLAG_STOP_APP;
+                this.retryCount = 0;
+                return new StopHapEvent(this.hap.bundleName);
+            }
+            this.retryCount++;
             return BACK_KEY_EVENT;
         }
 
@@ -90,6 +98,11 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
 
         if (!this.pageStateMap.has(this.getPageKey())) {
             this.pageStateMap.set(this.getPageKey(), new Set());
+            if (this.pageStateMap.size > 1) {
+                this.isNewPage = true;
+            }
+        } else {
+            this.isNewPage = false;
         }
 
         let stateSig = this.currentState.getPageContentSig();
@@ -119,7 +132,7 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
         }
 
         //unexplored events
-        let events = this.getPossibleUIEvents(components).filter((event) => {
+        let events = this.getPossibleEvents(components).filter((event) => {
             return !this.utg.isEventExplored(event, this.currentState);
         });
 
@@ -177,10 +190,19 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
         return `${this.currentState.page.getAbilityName()}:${this.currentState.page.getPagePath()}`;
     }
 
-    private getPossibleUIEvents(components: Component[]): UIEvent[] {
-        let events: UIEvent[] = [];
+    private getPossibleEvents(components: Component[]): Event[] {
+        let events: Event[] = [];
         for (const component of components) {
             events.push(...EventBuilder.createPossibleUIEvents(component));
+        }
+        if (this.isNewPage) {
+            let back = new KeyEvent(KeyCode.KEYCODE_BACK);
+            if (this.name == PolicyName.BFS_NAIVE) {
+                back.setRank(Rank.URGENT);
+            } else {
+                back.setRank(Rank.LOW);
+            }
+            events.push(back);
         }
         return events;
     }

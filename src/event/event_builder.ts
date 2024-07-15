@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-import { Device } from "../device/device";
-import { Direct } from "../device/event_simulator";
-import { Component } from "../model/component";
-import { RandomUtils } from "../utils/random_utils";
-import { InputTextEvent, LongTouchEvent, ScrollEvent, TouchEvent, UIEvent } from "./ui_event";
+import { Device } from '../device/device';
+import { Direct } from '../device/event_simulator';
+import { Component } from '../model/component';
+import { RandomUtils } from '../utils/random_utils';
+import { InputTextEvent, LongTouchEvent, ScrollEvent, TouchEvent, UIEvent } from './ui_event';
 
 const TEXT_INPUTABLE_TYPE: Set<string> = new Set(['TextInput', 'TextArea', 'SearchField']);
 
@@ -30,12 +30,12 @@ export class EventBuilder {
 
         if (component.checkable || component.clickable) {
             events.push(new TouchEvent(component));
-        } 
-        
+        }
+
         if (component.longClickable) {
             events.push(new LongTouchEvent(component));
-        } 
-        
+        }
+
         if (component.scrollable) {
             events.push(new ScrollEvent(component, Direct.DOWN));
             events.push(new ScrollEvent(component, Direct.UP));
@@ -44,11 +44,8 @@ export class EventBuilder {
         }
 
         if (TEXT_INPUTABLE_TYPE.has(component.type)) {
-            if( !this.components.includes(component.id) ){
-                for (const text of this.randomText) {
-                    events.push(new InputTextEvent(component, text));
-                }
-                this.components.push(component.id);
+            for (const text of this.randomText) {
+                events.push(new InputTextEvent(component, text));
             }
         }
 
@@ -56,10 +53,12 @@ export class EventBuilder {
     }
 
     static createRandomTouchEvent(device: Device): TouchEvent {
-        return new TouchEvent({x: RandomUtils.genRandomNum(0, device.getWidth()), y: RandomUtils.genRandomNum(0, device.getHeight())});
+        return new TouchEvent({
+            x: RandomUtils.genRandomNum(0, device.getWidth()),
+            y: RandomUtils.genRandomNum(0, device.getHeight()),
+        });
     }
 
-    static components: string[] = [];
     static randomText: string[] = [];
     static {
         const textLen = [1, 32, 128, 512];
