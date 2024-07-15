@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 
-import { Hap } from "../model/hap";
-import { Device } from "./device";
+import { HOME_KEY_EVENT } from '../event/key_event';
+import { Hap } from '../model/hap';
+import { Device } from './device';
 
 /**
  * cov file save at data/app/el2/100/base/{bundleName}/haps/{moduleName}/cache/black_test_result_xxx.json
@@ -36,14 +37,19 @@ export class Coverage {
     }
 
     getCoverageFile() {
+        // trigger UIAbility::onNewWant to save cov.
+        this.device.sendEvent(HOME_KEY_EVENT);
+        this.device.startAblity(this.hap.bundleName, this.hap.mainAbility);
         let files = this.device.getHdc().listSandboxFile(this.bftpPort, `haps/${this.hap.entryModuleName}/cache`);
         for (let [file, isDir] of files) {
             if (!isDir && file.startsWith('black_test_result_') && file.endsWith('.json')) {
-                this.device.getHdc().mvSandboxFile2Local(
-                    this.bftpPort,
-                    `/data/local/tmp/cov/${file}`,
-                    `haps/${this.hap.entryModuleName}/cache/${file}`
-                );
+                this.device
+                    .getHdc()
+                    .mvSandboxFile2Local(
+                        this.bftpPort,
+                        `/data/local/tmp/cov/${file}`,
+                        `haps/${this.hap.entryModuleName}/cache/${file}`
+                    );
             }
         }
 
