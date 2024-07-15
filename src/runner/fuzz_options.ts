@@ -16,6 +16,7 @@
 export interface FuzzOptions {
     connectkey: string;
     hap: string;
+    coverage: boolean;
     policyName: string;
     output: string;
 }

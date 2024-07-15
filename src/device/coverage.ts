@@ -23,6 +23,7 @@ import { Device } from './device';
  */
 export class Coverage {
     bftpPort: number;
+    bftpPid: number;
     hap: Hap;
     private device: Device;
 
@@ -32,8 +33,14 @@ export class Coverage {
     }
 
     startBftp(): void {
-        this.bftpPort = this.device.getHdc().startBftp(this.hap);
+        let bftpd = this.device.getHdc().startBftp(this.hap);
+        this.bftpPort = bftpd.port;
+        this.bftpPid = bftpd.pid;
         this.device.getHdc().mkLocalCovDir();
+    }
+
+    stopBftp(): void {
+        this.device.getHdc().stopBftp(this.hap, this.bftpPid);
     }
 
     getCoverageFile() {

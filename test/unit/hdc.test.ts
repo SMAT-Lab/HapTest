@@ -21,23 +21,31 @@ import fs from 'fs';
 const MOCK_SHELL_OUTPUT_GetScreenSize = fs.readFileSync(path.join(__dirname, '../resource/hidumper_screen.txt'), {
     encoding: 'utf-8',
 });
-const MOCK_SHELL_GetForegroundProcess = fs.readFileSync(path.join(__dirname, '../resource/aa_dump.txt'), {
+const MOCK_SHELL_OUTPUT_GetForegroundProcess = fs.readFileSync(path.join(__dirname, '../resource/aa_dump.txt'), {
     encoding: 'utf-8',
 });
-
+const MOCK_SHELL_OUTPUT_Netstat = fs.readFileSync(path.join(__dirname, '../resource/netstat.txt'), {
+    encoding: 'utf-8',
+});
 describe('hdc Test', () => {
     let hdc = new Hdc();
 
     it('test getForegroundProcess', async () => {
-        hdc.excuteShellCommand = vi.fn().mockReturnValue(MOCK_SHELL_GetForegroundProcess);
+        hdc.excuteShellCommand = vi.fn().mockReturnValueOnce(MOCK_SHELL_OUTPUT_GetForegroundProcess);
         let process = hdc.getRunningProcess();
         expect(process.has('com.huawei.hmsapp.himovie')).eq(true);
     });
 
     it('test getScreenSize', async () => {
-        hdc.excuteShellCommand = vi.fn().mockReturnValue(MOCK_SHELL_OUTPUT_GetScreenSize);
+        hdc.excuteShellCommand = vi.fn().mockReturnValueOnce(MOCK_SHELL_OUTPUT_GetScreenSize);
         let size = hdc.getScreenSize();
         expect(size.x).eq(1344);
         expect(size.y).eq(2772);
+    });
+
+    it('test netstatInfo', async () => {
+        hdc.excuteShellCommand = vi.fn().mockReturnValue(MOCK_SHELL_OUTPUT_Netstat);
+        let info = hdc.netstatInfo();
+        expect(info.has(60000)).eq(true);
     });
 });

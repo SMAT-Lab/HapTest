@@ -30,14 +30,13 @@ export class Fuzz {
 
     constructor(options: FuzzOptions) {
         this.options = options;
-        this.device = new Device(this.options.connectkey, this.options.output);
+        this.device = new Device(this.options);
         this.hap = HapBuilder.buildHap(this.device, this.options.hap);
         this.inputManager = new InputManager(this.device, this.hap, this.options);
     }
 
     async start() {
         this.device.connect(this.hap);
-        
         await this.inputManager.start();
     }
 }

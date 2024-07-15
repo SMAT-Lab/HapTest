@@ -223,29 +223,31 @@ export class Hdc {
         this.excuteShellCommand(...['mkdir', '-p', '/local/data/local/tmp/cov']);
     }
 
-    getAvailablePort(): number {
-        let inUsingPort: Set<number> = new Set();
+    netstatInfo(): Map<number, {pid: number, program: string}> {
+        let info: Map<number, {pid: number, program: string}> = new Map();
         let output = this.excuteShellCommand(...['netstat', '-antulp']);
-        for (let line of output.split('\r\n')) {
+        for (let line of output.split('\n')) {
             if (line.startsWith('tcp') || line.startsWith('udp')) {
-                let matches = line.match(/([0-9.])+:([0-9]+)/);
-                if (matches?.length == 3) {
-                    inUsingPort.add(Number(matches[2]));
+                let matches = line.match(/[\S]+/g);
+                if (matches?.length == 7) {
+                    info.set(Number(matches[3].split(':')[1]), {pid: Number(matches[6].split('/')[0]),
+                        program: matches[6].split('/')[1]
+                    });
                 }
             }
         }
 
-        for (let port = 10000; port < 65535; port++) {
-            if (!inUsingPort.has(port)) {
-                return port;
-            }
-        }
-
-        throw new Error('Not available port.');
+        return info;
     }
 
-    startBftp(hap: Hap): number {
-        let port = this.getAvailablePort();
+    startBftp(hap: Hap): {pid: number, port: number} {
+        let netstatInfo = this.netstatInfo();
+        let port: number;
+        for (port = 10000; port < 65535; port++) {
+            if (!netstatInfo.has(port)) {
+                break;
+            }
+        }
         this.excuteShellCommand(
             ...[
                 'aa',
@@ -259,7 +261,26 @@ export class Hdc {
                 '-S',
             ]
         );
-        return port;
+        netstatInfo = this.netstatInfo();
+        if (netstatInfo.has(port)) {
+            return {port: port, pid: netstatInfo.get(port)!.pid}
+        }
+        throw new Error('start Bftp fail.');
+    }
+
+    stopBftp(hap: Hap, pid: number): void {
+        this.excuteShellCommand(
+            ...[
+                'aa',
+                'process',
+                '-b',
+                hap.bundleName,
+                '-a',
+                hap.mainAbility,
+                '-p',
+                `"kill -9 ${pid}"`
+            ]
+        );
     }
 
     listSandboxFile(port: number, direct: string): [string, boolean][] {

@@ -25,6 +25,7 @@ import path from 'path';
 import { Direct, EventSimulator } from './event_simulator';
 import { HapBuilder } from '../model/builder/hap_builder';
 import { Coverage } from './coverage';
+import { FuzzOptions } from '../runner/fuzz_options';
 
 export class Device implements EventSimulator {
     private hdc: Hdc;
@@ -34,10 +35,12 @@ export class Device implements EventSimulator {
     private width: number;
     private height: number;
     private udid: string;
+    private options: FuzzOptions;
 
-    constructor(connectkey: string | undefined = undefined, output: string = 'out') {
-        this.hdc = new Hdc(connectkey);
-        this.output = path.resolve(output);
+    constructor(options: FuzzOptions) {
+        this.options = options;
+        this.hdc = new Hdc(options.connectkey);
+        this.output = path.resolve(options.output);
         let size = this.hdc.getScreenSize();
         this.width = size.x;
         this.height = size.y;
@@ -52,8 +55,10 @@ export class Device implements EventSimulator {
     connect(hap: Hap) {
         // install hap
         this.installHap(hap);
-        this.coverage = new Coverage(this, hap);
-        this.coverage.startBftp();
+        if (this.options.coverage) {
+            this.coverage = new Coverage(this, hap);
+            this.coverage.startBftp();
+        }
     }
 
     /**
@@ -278,7 +283,10 @@ export class Device implements EventSimulator {
         let screen = this.capScreen();
         let faultlogs = this.collectFaultLogger();
         let state = new DeviceState(this, page, screen, faultlogs);
-        this.coverage.getCoverageFile();
+        // calc coverage and set value to deviceState
+        if (this.coverage) {
+            this.coverage.getCoverageFile();
+        }
         return state;
     }
 
