@@ -21,7 +21,7 @@ import { Point } from '../model/point';
 import { PageBuilder } from '../model/builder/page_builder';
 import { Direct } from './event_simulator';
 import Logger from '../utils/logger';
-import { convertStr2RunningState, HapRunningState } from '../model/hap';
+import { convertStr2RunningState, Hap, HapRunningState } from '../model/hap';
 const logger = Logger.getLogger();
 
 export class Hdc {
@@ -193,7 +193,7 @@ export class Hdc {
         }
         return { x: 0, y: 0 };
     }
-    
+
     wakeupScreen(): void {
         this.excuteShellCommand(...['power-shell', 'wakeup']);
     }
@@ -219,6 +219,108 @@ export class Hdc {
         return process;
     }
 
+    mkLocalCovDir(): void {
+        this.excuteShellCommand(...['mkdir', '-p', '/local/data/local/tmp/cov']);
+    }
+
+    getAvailablePort(): number {
+        let inUsingPort: Set<number> = new Set();
+        let output = this.excuteShellCommand(...['netstat', '-antulp']);
+        for (let line of output.split('\r\n')) {
+            if (line.startsWith('tcp') || line.startsWith('udp')) {
+                let matches = line.match(/([0-9.])+:([0-9]+)/);
+                if (matches?.length == 3) {
+                    inUsingPort.add(Number(matches[2]));
+                }
+            }
+        }
+
+        for (let port = 10000; port < 65535; port++) {
+            if (!inUsingPort.has(port)) {
+                return port;
+            }
+        }
+
+        throw new Error('Not available port.');
+    }
+
+    startBftp(hap: Hap): number {
+        let port = this.getAvailablePort();
+        this.excuteShellCommand(
+            ...[
+                'aa',
+                'process',
+                '-b',
+                hap.bundleName,
+                '-a',
+                hap.mainAbility,
+                '-p',
+                `"/system/bin/bftpd -D -p ${port}"`,
+                '-S',
+            ]
+        );
+        return port;
+    }
+
+    listSandboxFile(port: number, direct: string): [string, boolean][] {
+        let files: [string, boolean][] = [];
+        let output = this.excuteShellCommand(
+            ...[
+                'ftpget',
+                '-p',
+                `${port}`,
+                '-P',
+                'guest',
+                '-u',
+                'anonymous',
+                'localhost',
+                '-l',
+                `/data/storage/el2/base/${direct}`,
+            ]
+        );
+        for (let line of output.split('\r\n')) {
+            let matches = line.match(/[\S]+/g);
+            if (matches?.length == 9) {
+                files.push([matches[8], matches[0].startsWith('d')]);
+            }
+        }
+
+        return files;
+    }
+
+    mvSandboxFile2Local(port: number, local: string, sandboxFile: string) {
+        this.excuteShellCommand(
+            ...[
+                'ftpget',
+                '-p',
+                `${port}`,
+                '-P',
+                'guest',
+                '-u',
+                'anonymous',
+                'localhost',
+                '-g',
+                local,
+                `/data/storage/el2/base/${sandboxFile}`
+            ]
+        );
+
+        this.excuteShellCommand(
+            ...[
+                'ftpget',
+                '-p',
+                `${port}`,
+                '-P',
+                'guest',
+                '-u',
+                'anonymous',
+                'localhost',
+                '-d',
+                `/data/storage/el2/base/${sandboxFile}`
+            ]
+        );
+    }
+
     uiInputCommand(...args: string[]): string {
         return this.excuteShellCommand('uitest', 'uiInput', ...args);
     }
@@ -235,7 +337,7 @@ export class Hdc {
         args.push(...[command, ...params]);
         logger.info(`hdc excute: ${JSON.stringify(args)}`);
         let result = spawnSync('hdc', args, { encoding: 'utf-8', shell: true });
-        // logger.debug(`hdc result: ${JSON.stringify(result)}`);
+        logger.debug(`hdc result: ${JSON.stringify(result)}`);
         return result;
     }
 }

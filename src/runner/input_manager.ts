@@ -23,7 +23,7 @@ import { EventAction } from './event_action';
 import { FuzzOptions } from './fuzz_options';
 
 const EVENT_INTERVAL = 500;
-const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export class InputManager {
     protected device: Device;

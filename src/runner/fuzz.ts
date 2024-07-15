@@ -36,8 +36,8 @@ export class Fuzz {
     }
 
     async start() {
-        // install hap
-        this.device.installHap(this.hap);
+        this.device.connect(this.hap);
+        
         await this.inputManager.start();
     }
 }

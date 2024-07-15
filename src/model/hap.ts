@@ -16,9 +16,11 @@
 export class Hap {
     private _bundleName: string;
     private _versionCode: number;
+    private _entryModuleName: string;
     private _mainAbility: string;
     private _ablities: string[];
     private _hapFile: string;
+    private _reqPermissions: string[];
 
     constructor() {
         this._ablities = [];
@@ -62,6 +64,22 @@ export class Hap {
 
     public set hapFile(hapFile: string) {
         this._hapFile = hapFile;
+    }
+
+    public get entryModuleName(): string {
+        return this._entryModuleName;
+    }
+
+    public set entryModuleName(entry: string) {
+        this._entryModuleName = entry;
+    }
+
+    public get reqPermissions(): string[] {
+        return this._reqPermissions;
+    }
+
+    public set reqPermissions(permissions: string[]) {
+        this._reqPermissions = permissions;
     }
 }
 
