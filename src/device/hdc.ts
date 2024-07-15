@@ -223,15 +223,16 @@ export class Hdc {
         this.excuteShellCommand(...['mkdir', '-p', '/local/data/local/tmp/cov']);
     }
 
-    netstatInfo(): Map<number, {pid: number, program: string}> {
-        let info: Map<number, {pid: number, program: string}> = new Map();
+    netstatInfo(): Map<number, { pid: number; program: string }> {
+        let info: Map<number, { pid: number; program: string }> = new Map();
         let output = this.excuteShellCommand(...['netstat', '-antulp']);
         for (let line of output.split('\n')) {
             if (line.startsWith('tcp') || line.startsWith('udp')) {
                 let matches = line.match(/[\S]+/g);
                 if (matches?.length == 7) {
-                    info.set(Number(matches[3].split(':')[1]), {pid: Number(matches[6].split('/')[0]),
-                        program: matches[6].split('/')[1]
+                    info.set(Number(matches[3].split(':')[1]), {
+                        pid: Number(matches[6].split('/')[0]),
+                        program: matches[6].split('/')[1],
                     });
                 }
             }
@@ -240,7 +241,7 @@ export class Hdc {
         return info;
     }
 
-    startBftp(hap: Hap): {pid: number, port: number} {
+    startBftp(hap: Hap): { pid: number; port: number } {
         let netstatInfo = this.netstatInfo();
         let port: number;
         for (port = 10000; port < 65535; port++) {
@@ -263,23 +264,14 @@ export class Hdc {
         );
         netstatInfo = this.netstatInfo();
         if (netstatInfo.has(port)) {
-            return {port: port, pid: netstatInfo.get(port)!.pid}
+            return { port: port, pid: netstatInfo.get(port)!.pid };
         }
         throw new Error('start Bftp fail.');
     }
 
     stopBftp(hap: Hap, pid: number): void {
         this.excuteShellCommand(
-            ...[
-                'aa',
-                'process',
-                '-b',
-                hap.bundleName,
-                '-a',
-                hap.mainAbility,
-                '-p',
-                `"kill -9 ${pid}"`
-            ]
+            ...['aa', 'process', '-b', hap.bundleName, '-a', hap.mainAbility, '-p', `"kill -9 ${pid}"`]
         );
     }
 
@@ -322,7 +314,7 @@ export class Hdc {
                 'localhost',
                 '-g',
                 local,
-                `/data/storage/el2/base/${sandboxFile}`
+                `/data/storage/el2/base/${sandboxFile}`,
             ]
         );
 
@@ -337,7 +329,7 @@ export class Hdc {
                 'anonymous',
                 'localhost',
                 '-d',
-                `/data/storage/el2/base/${sandboxFile}`
+                `/data/storage/el2/base/${sandboxFile}`,
             ]
         );
     }
