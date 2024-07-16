@@ -17,7 +17,8 @@ import { Hap, HapRunningState } from '../model/hap';
 import { UTGInputPolicy } from './utg_input_policy';
 import { Device } from '../device/device';
 import { Event } from '../event/event';
-import { KeyEvent } from '../event/key_event';
+// import { KeyEvent } from '../event/key_event';
+import { InputTextEvent } from '../event/ui_event';
 import { DeviceState } from '../model/device_state';
 import { ExitEvent, StopHapEvent, AbilityEvent } from '../event/system_event';
 import { BACK_KEY_EVENT } from '../event/key_event';
@@ -41,22 +42,20 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
     private pageStateMap: Map<string, Set<string>>;
     private stateMap: Map<string, DeviceState>;
     private stateComponentMap: Map<string, Component[]>;
-    // priority button list
-    // private preferredButtons : string [];
-    // whether to use random exploration mode
-    // private randomExplore : Boolean;
 
     private missedStates: Map<string, DeviceState>;
 
     private navTarget: DeviceState | null = null;
+
+    // private backFlag: Boolean;
+    private isNewPage: boolean;
+    private inputComponents: string[] = [];
     // private navNumSteps :number;
 
     constructor(device: Device, hap: Hap, name: PolicyName) {
         super(device, hap, name, true);
         this.retryCount = 0;
-        // this.navNumSteps = -1;
-        // this.preferredButtons = ["yes", "ok", "activate", "detail", "more", "access","allow", "check", "agree", "try", "go", "next"];
-        // this.randomExplore = false;
+        this.isNewPage = false;
         this.missedStates = new Map();
         this.pageStateMap = new Map();
         this.stateMap = new Map();
@@ -69,7 +68,15 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
      * @returns {Event} The generated Event object.
      */
     generateEventBasedOnUtg(): Event {
-        logger.info(`Current state: ${this.currentState.udid}`);
+        // logger.info(`Current state: ${this.currentState.udid}`);
+
+        // if( this.lastState == undefined ){
+        //     this.backFlag = false;
+        // } else if( ( this.currentState.getPageStructureSig() != this.lastState.getPageStructureSig() ) && 
+        //             ( this.currentState.page.getBundleName() == this.hap.bundleName ) && 
+        //             ( !this.lastState.page.isHome() ) && ( !this.currentState.page.isHome() ) ){
+        //     this.backFlag = true;
+        // } else this.backFlag = false;
 
         if (this.missedStates.has(this.currentState.udid)) {
             this.missedStates.delete(this.currentState.udid);
@@ -124,16 +131,22 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
             return a.getRank() - b.getRank();
         });
 
-        if (events.length > 0) {
-            if (events.length == 0) {
-                return undefined;
-            }
+        
+        if (events.length == 0) {
+            return undefined;
         }
 
-        if (this.name == PolicyName.BFS_GREEDY) {
-            events.unshift(BACK_KEY_EVENT);
-        } else if (this.name == PolicyName.DFS_GREEDY) {
-            events.push(BACK_KEY_EVENT);
+        if (this.randomInput) {
+            RandomUtils.shuffle(events);
+        }
+
+
+        if( this.isNewPage ){
+            if (this.name == PolicyName.BFS_GREEDY) {
+                events.unshift(BACK_KEY_EVENT);
+            } else if (this.name == PolicyName.DFS_GREEDY) {
+                events.push(BACK_KEY_EVENT);
+            }
         }
 
         if (this.randomInput) {
@@ -142,16 +155,18 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
 
         // If there is an unexplored event, try the event first
         for (const event of events) {
+
+            if( event instanceof InputTextEvent && event.getComponentId() != undefined) {
+                const componentId = event.getComponentId();
+                if( componentId !== undefined && this.inputComponents.includes(componentId) ){
+                    continue;
+                }     
+                if( componentId !== undefined && !this.inputComponents.includes(componentId) ){
+                    this.inputComponents.push(componentId);
+                } 
+            }
+
             if (!this.utg.isEventExplored(event, this.currentState)) {
-                if (event instanceof KeyEvent) {
-                    if (
-                        this.currentState.page.getBundleName() == this.hap.bundleName ||
-                        this.currentState.page.isHome()
-                    ) {
-                        continue;
-                    }
-                }
-                logger.info(`Trying an unexplored event.`);
                 return event;
             }
         }
@@ -231,6 +246,11 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
 
         if (!this.pageStateMap.has(this.getPageKey())) {
             this.pageStateMap.set(this.getPageKey(), new Set());
+            if (this.pageStateMap.size > 1) {
+                this.isNewPage = true;
+            }
+        } else {
+            this.isNewPage = false;
         }
 
         let stateSig = this.currentState.getPageContentSig();

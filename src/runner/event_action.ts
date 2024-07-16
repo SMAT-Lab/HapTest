@@ -20,9 +20,9 @@ import { Device } from '../device/device';
 import { Event } from '../event/event';
 import { DeviceState } from '../model/device_state';
 import { Hap } from '../model/hap';
-import Logger from '../utils/logger';
+// import Logger from '../utils/logger';
 import { SerializeUtils } from '../utils/serialize_utils';
-const logger = Logger.getLogger();
+// const logger = Logger.getLogger();
 
 export class EventAction {
     device: Device;
@@ -45,7 +45,7 @@ export class EventAction {
     }
 
     start() {
-        logger.info(`EventAction->start: ${this.event.toString()}`);
+        // logger.info(`EventAction->start: ${this.event.toString()}`);
         this.eventState = this.event.eventStateSig(this.fromState);
         this.device.sendEvent(this.event);
     }

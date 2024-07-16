@@ -39,6 +39,12 @@ export abstract class UIEvent extends Event {
     getComponet(): Component | undefined {
         return this.component;
     }
+
+    getComponentId(): string | undefined{
+        if( this.component )
+            return this.component.id;
+        else return undefined;
+    }
 }
 
 export class TouchEvent extends UIEvent {
