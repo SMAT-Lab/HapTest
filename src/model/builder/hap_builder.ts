@@ -42,17 +42,6 @@ export class HapBuilder {
             hap.hapFile = hapFile;
             hap.bundleName = info.summary.app.bundleName;
             hap.versionCode = info.summary.app.version.code;
-
-            for (let module of info.summary.modules) {
-                if (module.mainAbility) {
-                    hap.mainAbility = module.mainAbility;
-                }
-                module.abilities?.forEach((ability: { name: string }) => {
-                    hap.ablities.push(ability.name);
-                });
-            }
-            hap.mainAbility = 'EntryAbility';
-            hap.ablities = ['EntryAbility'];
             return hap;
         } catch (err) {
             logger.error(`HapBuilder->buildFromHapFile HAP ${hapFile} not found 'pack.info'.`);
@@ -69,9 +58,12 @@ export class HapBuilder {
 
         let hap = new Hap();
         hap.bundleName = bundleInfo.applicationInfo.bundleName;
+        hap.entryModuleName = bundleInfo.entryModuleName;
+        hap.versionCode = bundleInfo.versionCode;
+        hap.reqPermissions = bundleInfo.reqPermissions;
         for (let module of bundleInfo.hapModuleInfos) {
             for (let ability of module.abilityInfos) {
-                if (ability.name.endsWith(module.mainAbility) && module.name == bundleInfo.mainEntry) {
+                if (ability.name.endsWith(module.mainAbility) && module.name == hap.entryModuleName) {
                     hap.mainAbility = ability.name;
                 }
                 if (ability.visible) {

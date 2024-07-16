@@ -21,7 +21,7 @@ import { Point } from '../model/point';
 import { PageBuilder } from '../model/builder/page_builder';
 import { Direct } from './event_simulator';
 import Logger from '../utils/logger';
-import { convertStr2RunningState, HapRunningState } from '../model/hap';
+import { convertStr2RunningState, Hap, HapRunningState } from '../model/hap';
 const logger = Logger.getLogger();
 
 export class Hdc {
@@ -193,7 +193,7 @@ export class Hdc {
         }
         return { x: 0, y: 0 };
     }
-    
+
     wakeupScreen(): void {
         this.excuteShellCommand(...['power-shell', 'wakeup']);
     }
@@ -219,6 +219,121 @@ export class Hdc {
         return process;
     }
 
+    mkLocalCovDir(): void {
+        this.excuteShellCommand(...['mkdir', '-p', '/local/data/local/tmp/cov']);
+    }
+
+    netstatInfo(): Map<number, { pid: number; program: string }> {
+        let info: Map<number, { pid: number; program: string }> = new Map();
+        let output = this.excuteShellCommand(...['netstat', '-antulp']);
+        for (let line of output.split('\n')) {
+            if (line.startsWith('tcp') || line.startsWith('udp')) {
+                let matches = line.match(/[\S]+/g);
+                if (matches?.length == 7) {
+                    info.set(Number(matches[3].split(':')[1]), {
+                        pid: Number(matches[6].split('/')[0]),
+                        program: matches[6].split('/')[1],
+                    });
+                }
+            }
+        }
+
+        return info;
+    }
+
+    startBftp(hap: Hap): { pid: number; port: number } {
+        let netstatInfo = this.netstatInfo();
+        let port: number;
+        for (port = 10000; port < 65535; port++) {
+            if (!netstatInfo.has(port)) {
+                break;
+            }
+        }
+        this.excuteShellCommand(
+            ...[
+                'aa',
+                'process',
+                '-b',
+                hap.bundleName,
+                '-a',
+                hap.mainAbility,
+                '-p',
+                `"/system/bin/bftpd -D -p ${port}"`,
+                '-S',
+            ]
+        );
+        netstatInfo = this.netstatInfo();
+        if (netstatInfo.has(port)) {
+            return { port: port, pid: netstatInfo.get(port)!.pid };
+        }
+        throw new Error('start Bftp fail.');
+    }
+
+    stopBftp(hap: Hap, pid: number): void {
+        this.excuteShellCommand(
+            ...['aa', 'process', '-b', hap.bundleName, '-a', hap.mainAbility, '-p', `"kill -9 ${pid}"`]
+        );
+    }
+
+    listSandboxFile(port: number, direct: string): [string, boolean][] {
+        let files: [string, boolean][] = [];
+        let output = this.excuteShellCommand(
+            ...[
+                'ftpget',
+                '-p',
+                `${port}`,
+                '-P',
+                'guest',
+                '-u',
+                'anonymous',
+                'localhost',
+                '-l',
+                `/data/storage/el2/base/${direct}`,
+            ]
+        );
+        for (let line of output.split('\r\n')) {
+            let matches = line.match(/[\S]+/g);
+            if (matches?.length == 9) {
+                files.push([matches[8], matches[0].startsWith('d')]);
+            }
+        }
+
+        return files;
+    }
+
+    mvSandboxFile2Local(port: number, local: string, sandboxFile: string) {
+        this.excuteShellCommand(
+            ...[
+                'ftpget',
+                '-p',
+                `${port}`,
+                '-P',
+                'guest',
+                '-u',
+                'anonymous',
+                'localhost',
+                '-g',
+                local,
+                `/data/storage/el2/base/${sandboxFile}`,
+            ]
+        );
+
+        this.excuteShellCommand(
+            ...[
+                'ftpget',
+                '-p',
+                `${port}`,
+                '-P',
+                'guest',
+                '-u',
+                'anonymous',
+                'localhost',
+                '-d',
+                `/data/storage/el2/base/${sandboxFile}`,
+            ]
+        );
+    }
+
     uiInputCommand(...args: string[]): string {
         return this.excuteShellCommand('uitest', 'uiInput', ...args);
     }
@@ -235,7 +350,7 @@ export class Hdc {
         args.push(...[command, ...params]);
         logger.info(`hdc excute: ${JSON.stringify(args)}`);
         let result = spawnSync('hdc', args, { encoding: 'utf-8', shell: true });
-        // logger.debug(`hdc result: ${JSON.stringify(result)}`);
+        logger.debug(`hdc result: ${JSON.stringify(result)}`);
         return result;
     }
 }

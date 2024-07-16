@@ -1,0 +1,12 @@
+Active Internet connections (established and servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program Name
+tcp        0      0 7.250.45.216:44779      0.0.0.0:*               LISTEN      1064/softbus_server
+tcp        0      0 7.250.45.216:34705      0.0.0.0:*               LISTEN      1064/softbus_server
+tcp        0      0 7.250.45.216:62110      0.0.0.0:*               LISTEN      1064/softbus_server
+tcp        0      0 0.0.0.0:60000           0.0.0.0:*               LISTEN      1127/hdcd
+tcp        0      0 7.250.45.216:36961      0.0.0.0:*               LISTEN      1064/softbus_server
+tcp        1      0 7.250.45.216:47140      183.60.229.74:80        CLOSE_WAIT  27659/netmanager
+tcp       32      0 7.250.45.216:58960      49.4.40.58:443          CLOSE_WAIT  904/push_manager_service
+tcp        0      0 7.250.45.216:55300      121.36.119.34:5223      ESTABLISHED 904/push_manager_service
+tcp       47      0 7.250.45.216:39954      117.78.15.3:443         CLOSE_WAIT  1092/huawei_id_svc
+udp        0      0 0.0.0.0:5684            0.0.0.0:*                           1064/softbus_server

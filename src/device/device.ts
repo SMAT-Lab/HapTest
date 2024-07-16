@@ -24,18 +24,23 @@ import { Hdc } from './hdc';
 import path from 'path';
 import { Direct, EventSimulator } from './event_simulator';
 import { HapBuilder } from '../model/builder/hap_builder';
+import { Coverage } from './coverage';
+import { FuzzOptions } from '../runner/fuzz_options';
 
 export class Device implements EventSimulator {
     private hdc: Hdc;
+    private coverage: Coverage;
     private output: string;
     private temp: string;
     private width: number;
     private height: number;
     private udid: string;
+    private options: FuzzOptions;
 
-    constructor(connectkey: string | undefined = undefined, output: string = 'out') {
-        this.hdc = new Hdc(connectkey);
-        this.output = path.resolve(output);
+    constructor(options: FuzzOptions) {
+        this.options = options;
+        this.hdc = new Hdc(options.connectkey);
+        this.output = path.resolve(options.output);
         let size = this.hdc.getScreenSize();
         this.width = size.x;
         this.height = size.y;
@@ -47,12 +52,25 @@ export class Device implements EventSimulator {
         fs.mkdirSync(this.temp, { recursive: true });
     }
 
+    connect(hap: Hap) {
+        // install hap
+        this.installHap(hap);
+        if (this.options.coverage) {
+            this.coverage = new Coverage(this, hap);
+            this.coverage.startBftp();
+        }
+    }
+
     /**
      * Get output path
      * @returns
      */
     getOutput(): string {
         return this.output;
+    }
+
+    getHdc(): Hdc {
+        return this.hdc;
     }
 
     /**
@@ -264,7 +282,12 @@ export class Device implements EventSimulator {
         let page = this.dumpViewTree();
         let screen = this.capScreen();
         let faultlogs = this.collectFaultLogger();
-        return new DeviceState(this, page, screen, faultlogs);
+        let state = new DeviceState(this, page, screen, faultlogs);
+        // calc coverage and set value to deviceState
+        if (this.coverage) {
+            this.coverage.getCoverageFile();
+        }
+        return state;
     }
 
     /**
@@ -272,11 +295,18 @@ export class Device implements EventSimulator {
      * @param hap hap file
      */
     installHap(hap: Hap) {
-        let targetHap = this.getHapInTarget(hap.bundleName);
-        if (targetHap?.versionCode == hap.versionCode) {
-            return;
+        if (hap.hapFile) {
+            this.hdc.installHap(hap.hapFile);
+            // get more hap info
+            let targetHap = this.getHapInTarget(hap.bundleName);
+            if (targetHap) {
+                hap.ablities = targetHap.ablities;
+                hap.mainAbility = targetHap.mainAbility;
+                hap.entryModuleName = targetHap.entryModuleName;
+                hap.reqPermissions = targetHap.reqPermissions;
+                hap.versionCode = targetHap.versionCode;
+            }
         }
-        this.hdc.installHap(hap.hapFile);
     }
 
     /**

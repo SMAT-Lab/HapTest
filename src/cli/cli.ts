@@ -27,6 +27,7 @@ const logger = Logger.getLogger();
         .option('-o --output <dir>', 'output dir', 'out')
         .option('--policy <policyName>', 'policy name', 'manu')
         .option('-t --target [connectkey]', 'hdc connectkey', undefined)
+        .option('-c --coverage', 'enable coverage', false)
         .parse();
 
     let options = program.opts();
@@ -37,6 +38,7 @@ const logger = Logger.getLogger();
         hap: options.hap,
         policyName: options.policy,
         output: options.output,
+        coverage: options.coverage
     };
 
     let fuzz = new Fuzz(fuzzOption);

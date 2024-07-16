@@ -21,7 +21,6 @@ describe('HapBuilder Test', () => {
     it('test buildFromHapFile()', async () => {
         let hap = HapBuilder.buildFromHapFile(path.join(__dirname, '../resource/test.hap'));
         expect(hap.bundleName).eq('com.example.instrumentdemo');
-        expect(hap.mainAbility).eq('EntryAbility');
         expect(hap.versionCode).eq(1000000);
     });
 });
