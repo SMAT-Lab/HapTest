@@ -165,7 +165,7 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
     }
 
     private updatePreferableComponentRank(state: DeviceState): void {
-        for (const component of state.page.selectComponentsByType([ComponentType.ModalPage, ComponentType.Dialog])) {
+        for (const component of state.page.selectComponentsByType([ComponentType.Dialog])) {
             Page.collectComponent(component, (item) => {
                 if (item.hasUIEvent()) {
                     item.rank = Rank.HIGH;

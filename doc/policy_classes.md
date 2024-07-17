@@ -11,23 +11,21 @@ classDiagram
     }
 
     class InputManager {
-        +addEvent(event: Event): void;
-        +getEventCount(): number
-        +enabled(): boolean
+        -policy: InputPolicy
         +start()
         +stop()
     }
-    <<interface>> InputManager
 
     class ManualPolicy {
 
     }
 
-    InputManager --o InputPolicy: start()
+    InputPolicy --o InputManager: policy
     Event --o InputPolicy: generateEvent()
 
     ManualPolicy --|> InputPolicy
     UTGInputPolicy --|> InputPolicy
     UtgNaiveSearchPolicy --|> UTGInputPolicy
+    UtgGreedySearchPolicy --|> UTGInputPolicy
 
 ```
