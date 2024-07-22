@@ -16,6 +16,7 @@
 import { HOME_KEY_EVENT } from '../event/key_event';
 import { Hap } from '../model/hap';
 import { Device } from './device';
+import {CoverageReport, Report } from 'bjc';
 
 /**
  * cov file save at data/app/el2/100/base/{bundleName}/haps/{moduleName}/cache/black_test_result_xxx.json
@@ -61,5 +62,10 @@ export class Coverage {
         }
 
         this.device.getHdc().recvFile(`/data/local/tmp/cov`, this.device.getOutput());
+    }
+
+    parseCovFile(cov: string): CoverageReport {
+        let report = new Report(cov);
+        return report.generateReport();
     }
 }
