@@ -188,7 +188,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
 
     private getNavTarget(): DeviceState | undefined {
         if (this.navTarget) {
-            if (this.lastState.page == this.navTarget.page) {
+            if (this.lastState.getPageContentSig() == this.navTarget.getPageContentSig()) {
                 let stateSig = this.navTarget.getPageContentSig();
                 this.missedStates.set(stateSig, this.navTarget);
             }
@@ -197,9 +197,9 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
         let reachableStates: DeviceState[] = this.utg.getReachableStates(this.currentState);
         for (const state of reachableStates) {
             // Only consider foreground states
-            if (this.device.getHapRunningState(this.hap) != HapRunningState.FOREGROUND) {
-                continue;
-            }
+            // if (this.device.getHapRunningState(this.hap) != HapRunningState.FOREGROUND) {
+            //     continue;
+            // }
             // Do not consider missed states
             if (this.missedStates.has(state.getPageContentSig())) {
                 continue;
