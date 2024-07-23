@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import { CoverageReport } from 'bjc';
 import { Device } from '../device/device';
 import { EventBuilder } from '../event/event_builder';
 import { UIEvent } from '../event/ui_event';
@@ -29,6 +30,7 @@ export class DeviceState {
     faultLogs: Set<string>;
 
     originLogs: Set<string>;
+    coverage: CoverageReport;
 
     udid: string;
     width: number;

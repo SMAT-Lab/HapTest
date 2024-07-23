@@ -20,9 +20,9 @@ import { Device } from '../device/device';
 import { Event } from '../event/event';
 import { DeviceState } from '../model/device_state';
 import { Hap } from '../model/hap';
-// import Logger from '../utils/logger';
+import Logger from '../utils/logger';
 import { SerializeUtils } from '../utils/serialize_utils';
-// const logger = Logger.getLogger();
+const logger = Logger.getLogger();
 
 export class EventAction {
     device: Device;
@@ -45,7 +45,7 @@ export class EventAction {
     }
 
     start() {
-        // logger.info(`EventAction->start: ${this.event.toString()}`);
+        logger.info(`EventAction->start: ${this.event.toString()}`);
         this.eventState = this.event.eventStateSig(this.fromState);
         this.device.sendEvent(this.event);
     }
@@ -57,13 +57,17 @@ export class EventAction {
     }
 
     toString(): string {
-        return SerializeUtils.serialize({
-            event: this.event,
-            state: this.fromState.toJson(),
-            from_state: this.fromState?.getPageContentSig(),
-            to_state: this.toState?.getPageContentSig(),
-            event_state: this.eventState
-        }, undefined, 4);
+        return SerializeUtils.serialize(
+            {
+                event: this.event,
+                state: this.fromState.toJson(),
+                from_state: this.fromState?.getPageContentSig(),
+                to_state: this.toState?.getPageContentSig(),
+                event_state: this.eventState,
+            },
+            undefined,
+            4
+        );
     }
 
     private save() {

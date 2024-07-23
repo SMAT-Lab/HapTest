@@ -13,9 +13,11 @@
  * limitations under the License.
  */
 
+import path from 'path';
 import { HOME_KEY_EVENT } from '../event/key_event';
 import { Hap } from '../model/hap';
 import { Device } from './device';
+import { CoverageReport, Report } from 'bjc';
 
 /**
  * cov file save at data/app/el2/100/base/{bundleName}/haps/{moduleName}/cache/black_test_result_xxx.json
@@ -25,6 +27,7 @@ export class Coverage {
     bftpPort: number;
     bftpPid: number;
     hap: Hap;
+    last: CoverageReport;
     private device: Device;
 
     constructor(device: Device, hap: Hap) {
@@ -43,13 +46,15 @@ export class Coverage {
         this.device.getHdc().stopBftp(this.hap, this.bftpPid);
     }
 
-    getCoverageFile() {
+    getCoverageFile(): CoverageReport {
         // trigger UIAbility::onNewWant to save cov.
+        let current: string[] = [];
         this.device.sendEvent(HOME_KEY_EVENT);
         this.device.startAblity(this.hap.bundleName, this.hap.mainAbility);
         let files = this.device.getHdc().listSandboxFile(this.bftpPort, `haps/${this.hap.entryModuleName}/cache`);
         for (let [file, isDir] of files) {
-            if (!isDir && file.startsWith('black_test_result_') && file.endsWith('.json')) {
+            if (!isDir && file.startsWith('bjc_cov_') && file.endsWith('.json')) {
+                current.push(file);
                 this.device
                     .getHdc()
                     .mvSandboxFile2Local(
@@ -61,5 +66,17 @@ export class Coverage {
         }
 
         this.device.getHdc().recvFile(`/data/local/tmp/cov`, this.device.getOutput());
+        current.sort();
+
+        if (current.length == 0) {
+            return this.last;
+        }
+
+        return this.parseCovFile(path.join(this.device.getOutput(), 'cov', current[current.length - 1]));
+    }
+
+    parseCovFile(cov: string): CoverageReport {
+        let report = new Report(cov);
+        return report.generateReport();
     }
 }

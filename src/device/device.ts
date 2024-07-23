@@ -285,7 +285,7 @@ export class Device implements EventSimulator {
         let state = new DeviceState(this, page, screen, faultlogs);
         // calc coverage and set value to deviceState
         if (this.coverage) {
-            this.coverage.getCoverageFile();
+            state.coverage = this.coverage.getCoverageFile();
         }
         return state;
     }
