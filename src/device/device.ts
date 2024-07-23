@@ -81,6 +81,10 @@ export class Device implements EventSimulator {
         return this.udid;
     }
 
+    getDeviceType(): string {
+        return this.hdc.getDeviceType();
+    }
+
     /**
      * Send event
      * @param event

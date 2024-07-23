@@ -163,6 +163,11 @@ export class Hdc {
         return lines[1];
     }
 
+    getDeviceType(): string {
+        let output = this.excuteShellCommand('param get const.product.devicetype');
+        return output.trim();
+    }
+
     startAblity(bundleName: string, abilityName: string): boolean {
         this.excuteShellCommand(...['aa', 'start', '-b', bundleName, '-a', abilityName]);
         return true;

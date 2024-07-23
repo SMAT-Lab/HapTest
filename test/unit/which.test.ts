@@ -13,13 +13,15 @@
  * limitations under the License.
  */
 
-export interface FuzzOptions {
-    connectkey: string;
-    hap: string;
-    coverage: boolean;
-    policyName: string;
-    output: string;
-    bundleName?: string;
-    sourceRoot?: string;
-    hapFile?: string;
-}
+import { describe, it, expect } from 'vitest';
+import { which } from '../../src/utils/which';
+
+describe('which Test', () => {
+    it('test which()', async () => {
+        if (process.platform == 'linux') {
+            expect(which('node').endsWith('node')).eq(true);
+        } else if (process.platform == 'win32') {
+            expect(which('node').endsWith('node.EXE')).eq(true);
+        }
+    });
+});

@@ -18,21 +18,14 @@ import { Hap } from '../hap';
 import AdmZip from 'adm-zip';
 import Logger from '../../utils/logger';
 import { Device } from '../../device/device';
+import { FileNotFoundError } from '../../error/error';
 const logger = Logger.getLogger();
 
 export class HapBuilder {
-    static buildHap(device: Device, hap: string): Hap {
-        if (fs.existsSync(hap)) {
-            return HapBuilder.buildFromHapFile(hap);
-        }
-
-        return HapBuilder.buildFromBundleName(device, hap);
-    }
-
     static buildFromHapFile(hapFile: string): Hap {
         if (!fs.existsSync(hapFile)) {
             logger.error(`HapBuilder->buildFromHapFile HAP not exist. ${hapFile}`);
-            throw new Error(`HAP not exist. ${hapFile}`);
+            throw new FileNotFoundError(`HAP ${hapFile} not exist.`);
         }
         let zip = new AdmZip(hapFile);
         try {
@@ -52,7 +45,7 @@ export class HapBuilder {
     static buildFromBundleName(device: Device, bundleName: string): Hap {
         let bundleInfo = device.getBundleInfo(bundleName);
         if (!bundleInfo) {
-            logger.error(`HAP ${bundleName} not exist, please install the HAP first.`)
+            logger.error(`HAP ${bundleName} not exist, please install the HAP first.`);
             throw new Error(`HAP ${bundleName} not exist.`);
         }
 

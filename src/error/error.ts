@@ -13,13 +13,9 @@
  * limitations under the License.
  */
 
-export interface FuzzOptions {
-    connectkey: string;
-    hap: string;
-    coverage: boolean;
-    policyName: string;
-    output: string;
-    bundleName?: string;
-    sourceRoot?: string;
-    hapFile?: string;
+export class FileNotFoundError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'FileNotFoundError';
+    }
 }

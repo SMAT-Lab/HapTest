@@ -23,7 +23,7 @@ const logger = Logger.getLogger();
     program
         .name('arktest')
         .version('1.0.0')
-        .option('-i --hap <file>', 'hap file')
+        .option('-i --hap <file/bundleName/sourceRoot>', 'HAP bundle name or HAP file path or HAP project source root')
         .option('-o --output <dir>', 'output dir', 'out')
         .option('--policy <policyName>', 'policy name', 'manu')
         .option('-t --target [connectkey]', 'hdc connectkey', undefined)

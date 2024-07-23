@@ -14,8 +14,8 @@
  */
 
 import { Device } from '../device/device';
-import { HapBuilder } from '../model/builder/hap_builder';
 import { Hap } from '../model/hap';
+import { EnvChecker } from './env_checker';
 import { FuzzOptions } from './fuzz_options';
 import { InputManager } from './input_manager';
 
@@ -27,11 +27,15 @@ export class Fuzz {
     device: Device;
     hap: Hap;
     inputManager: InputManager;
+    envChecker: EnvChecker;
 
     constructor(options: FuzzOptions) {
         this.options = options;
+        this.envChecker = new EnvChecker(this.options);
+        this.envChecker.check();
+
         this.device = new Device(this.options);
-        this.hap = HapBuilder.buildHap(this.device, this.options.hap);
+        this.hap = this.envChecker.buildHap(this.device);
         this.inputManager = new InputManager(this.device, this.hap, this.options);
     }
 
