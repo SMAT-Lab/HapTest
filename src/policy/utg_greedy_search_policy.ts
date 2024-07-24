@@ -47,20 +47,13 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
     
     private selectComponentMap: Map<string, Component[]>;
 
-    private missedStates: Map<string, DeviceState>;
-
-    private navTarget: DeviceState | null = null;
-
-    // private backFlag: Boolean;
     private isNewPage: boolean;
     private inputComponents: string[] = [];
-    // private navNumSteps :number;
 
     constructor(device: Device, hap: Hap, name: PolicyName) {
         super(device, hap, name, true);
         this.retryCount = 0;
         this.isNewPage = false;
-        this.missedStates = new Map();
         this.pageStateMap = new Map();
         this.stateMap = new Map();
         this.stateComponentMap = new Map();
@@ -75,10 +68,6 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
      * @returns {Event} The generated Event object.
      */
     generateEventBasedOnUtg(): Event {
-
-        if (this.missedStates.has(this.currentState.udid)) {
-            this.missedStates.delete(this.currentState.udid);
-        }
 
         if (this.flag == PolicyFlag.FLAG_INIT) {
             if (this.currentState.runningState != HapRunningState.STOP) {
@@ -173,13 +162,6 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
             }
         }
 
-        let targetState = this.getNavTarget();
-        if (targetState != undefined) {
-            let navSteps = this.utg.getNavigationSteps(this.currentState, targetState);
-            if (navSteps && navSteps.length > 0) {
-                return navSteps[0][1];
-            }
-        }
 
         if (!this.allPageExplored()) {
             return new StopHapEvent(this.hap.bundleName);
@@ -196,15 +178,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
             let countB = (a.checkable ? 2 : 0) + (a.clickable ? 2 : 0) + (a.longClickable ? 2 : 0) + (a.scrollable ? 2 : 0);
             if (TEXT_INPUTABLE_TYPE.has(a.type)) countA = countA + 1;
             if (TEXT_INPUTABLE_TYPE.has(b.type)) countB = countB + 1;
-            // sets the number of times a component can be selected
-            let innerMap = new Map<string, number>();
-            
-            innerMap.set(a.id, countA);
-            innerMap.set(b.id, countB);
-            if (countA === 0 || countB === 0) {
-                return 0;
-            }
-           
+
             return countB - countA;
         });
 
@@ -214,36 +188,6 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
             return count > 0;
         }));
         return rankedComponents;
-    }
-
-    private getNavTarget(): DeviceState | undefined {
-        if (this.navTarget) {
-            if (this.lastState.getPageContentSig() == this.navTarget.getPageContentSig()) {
-                let stateSig = this.navTarget.getPageContentSig();
-                this.missedStates.set(stateSig, this.navTarget);
-            }
-        }
-        // from state translate to state Event
-        let reachableStates: DeviceState[] = this.utg.getReachableStates(this.currentState);
-        for (const state of reachableStates) {
-
-            // Do not consider missed states
-            if (this.missedStates.has(state.getPageContentSig())) {
-                continue;
-            }
-            // Do not consider explored states
-            if (this.utg.isStateExplored(state)) {
-                continue;
-            }
-
-            this.navTarget = state;
-            let steps = this.utg.getNavigationSteps(this.currentState, this.navTarget);
-            if (steps && steps.length > 0) {
-                return state;
-            }
-        }
-        this.navTarget = null;
-        return undefined;
     }
 
     private allPageExplored(): boolean {
