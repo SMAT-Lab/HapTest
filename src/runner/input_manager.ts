@@ -41,7 +41,7 @@ export class InputManager {
     }
 
     async start() {
-        let state = this.device.getCurrentState();
+        let state = this.device.getCurrentState(this.hap);
         while (this.enabled && this.policy.enabled) {
             let event = this.policy.generateEvent(state);
             state = await this.addEvent(state, event);

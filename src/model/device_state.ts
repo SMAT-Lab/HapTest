@@ -20,8 +20,10 @@ import { UIEvent } from '../event/ui_event';
 import { CryptoUtils } from '../utils/crypto_utils';
 import { SerializeUtils } from '../utils/serialize_utils';
 import { Page } from './page';
+import { HapRunningState } from './hap';
 
 export class DeviceState {
+    runningState: HapRunningState;
     /** UI component page */
     page: Page;
     /** cap screen path */
@@ -73,7 +75,10 @@ export class DeviceState {
     }
 
     getPageContent(): string {
-        return this.page.getContent();
+        if (this.runningState == HapRunningState.FOREGROUND) {
+            return this.page.getContent();
+        }
+        return HapRunningState[this.runningState];
     }
 
     getPageStructureSig(): string {
@@ -81,7 +86,10 @@ export class DeviceState {
     }
 
     getPageStructure(): string {
-        return this.page.getStructual();
+        if (this.runningState == HapRunningState.FOREGROUND) {
+            return this.page.getStructual();
+        }
+        return HapRunningState[this.runningState];
     }
 
     getPossibleUIEvents(): UIEvent[] {

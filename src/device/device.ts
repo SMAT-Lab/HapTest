@@ -282,7 +282,7 @@ export class Device implements EventSimulator {
      * Get current device state
      * @returns
      */
-    getCurrentState(): DeviceState {
+    getCurrentState(hap: Hap): DeviceState {
         let page = this.dumpViewTree();
         let screen = this.capScreen();
         let faultlogs = this.collectFaultLogger();
@@ -291,6 +291,14 @@ export class Device implements EventSimulator {
         if (this.coverage) {
             state.coverage = this.coverage.getCoverageFile();
         }
+
+        // set hap running state
+        if (page.getBundleName() == hap.bundleName) {
+            state.runningState = HapRunningState.FOREGROUND;
+        } else {
+            state.runningState = this.getHapRunningState(hap);
+        }
+
         return state;
     }
 
@@ -318,8 +326,12 @@ export class Device implements EventSimulator {
      * @param hap
      * @returns
      */
-    getHapRunningState(hap: Hap): HapRunningState | undefined {
-        return this.hdc.getRunningProcess().get(hap.bundleName);
+    getHapRunningState(hap: Hap): HapRunningState {
+        let process = this.hdc.getRunningProcess();
+        if (process.has(hap.bundleName)) {
+            return process.get(hap.bundleName)!;
+        }
+        return HapRunningState.STOP;
     }
 
     getBundleInfo(bundleName: string): any | undefined {
