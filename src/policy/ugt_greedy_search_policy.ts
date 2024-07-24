@@ -42,6 +42,8 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
     private pageStateMap: Map<string, Set<string>>;
     private stateMap: Map<string, DeviceState>;
     private stateComponentMap: Map<string, Component[]>;
+    
+    
 
     private missedStates: Map<string, DeviceState>;
 
@@ -60,6 +62,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
         this.pageStateMap = new Map();
         this.stateMap = new Map();
         this.stateComponentMap = new Map();
+        this.inputComponents = [];
     }
 
     /**
@@ -68,15 +71,6 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
      * @returns {Event} The generated Event object.
      */
     generateEventBasedOnUtg(): Event {
-        // logger.info(`Current state: ${this.currentState.udid}`);
-
-        // if( this.lastState == undefined ){
-        //     this.backFlag = false;
-        // } else if( ( this.currentState.getPageStructureSig() != this.lastState.getPageStructureSig() ) && 
-        //             ( this.currentState.page.getBundleName() == this.hap.bundleName ) && 
-        //             ( !this.lastState.page.isHome() ) && ( !this.currentState.page.isHome() ) ){
-        //     this.backFlag = true;
-        // } else this.backFlag = false;
 
         if (this.missedStates.has(this.currentState.udid)) {
             this.missedStates.delete(this.currentState.udid);
@@ -149,20 +143,16 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
             }
         }
 
-        if (this.randomInput) {
-            RandomUtils.shuffle(events);
-        }
-
         // If there is an unexplored event, try the event first
         for (const event of events) {
-
             if( event instanceof InputTextEvent && event.getComponentId() != undefined) {
                 const componentId = event.getComponentId();
-                if( componentId !== undefined && this.inputComponents.includes(componentId) ){
-                    continue;
-                }     
-                if( componentId !== undefined && !this.inputComponents.includes(componentId) ){
-                    this.inputComponents.push(componentId);
+                if( componentId !== undefined ){ 
+                    if( this.inputComponents.includes(componentId) ){
+                        continue;
+                    } else {
+                        this.inputComponents.push(componentId);
+                    }    
                 } 
             }
 
@@ -196,10 +186,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
         // from state translate to state Event
         let reachableStates: DeviceState[] = this.utg.getReachableStates(this.currentState);
         for (const state of reachableStates) {
-            // Only consider foreground states
-            // if (this.device.getHapRunningState(this.hap) != HapRunningState.FOREGROUND) {
-            //     continue;
-            // }
+
             // Do not consider missed states
             if (this.missedStates.has(state.getPageContentSig())) {
                 continue;
