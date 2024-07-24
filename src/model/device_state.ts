@@ -21,6 +21,7 @@ import { CryptoUtils } from '../utils/crypto_utils';
 import { SerializeUtils } from '../utils/serialize_utils';
 import { Page } from './page';
 import { HapRunningState } from './hap';
+import { Component } from '../model/component';
 
 export class DeviceState {
     runningState: HapRunningState;
@@ -95,6 +96,14 @@ export class DeviceState {
     getPossibleUIEvents(): UIEvent[] {
         let events: UIEvent[] = [];
         for (const component of this.page.getComponents()) {
+            events.push(...EventBuilder.createPossibleUIEvents(component));
+        }
+        return events;
+    }
+
+    getGreedyUIEvents(components : Component[]): UIEvent[] {
+        let events: UIEvent[] = [];
+        for (const component of components) {
             events.push(...EventBuilder.createPossibleUIEvents(component));
         }
         return events;

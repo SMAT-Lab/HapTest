@@ -34,6 +34,8 @@ const logger = Logger.getLogger();
 
 export const MAX_NUM_RESTARTS = 5;
 
+const TEXT_INPUTABLE_TYPE: Set<string> = new Set(['TextInput', 'TextArea', 'SearchField']);
+
 /**
  * DFS/BFS (according to search_method) strategy to explore UFG (new)
  */
@@ -43,7 +45,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
     private stateMap: Map<string, DeviceState>;
     private stateComponentMap: Map<string, Component[]>;
     
-    
+    private selectComponentMap: Map<string, Component[]>;
 
     private missedStates: Map<string, DeviceState>;
 
@@ -63,6 +65,8 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
         this.stateMap = new Map();
         this.stateComponentMap = new Map();
         this.inputComponents = [];
+
+        this.selectComponentMap = new Map<string, Component[]>();
     }
 
     /**
@@ -118,14 +122,19 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
     private getPossibleEvent(): Event | undefined {
         let events: Event[] = [];
 
-        events.push(...this.currentState.getPossibleUIEvents());
+        let components: Component[] = this.currentState.page.getComponents();
+        let pageString: string = this.currentState.getPageContentSig();
 
-        // sort by rank
-        events.sort((a, b) => {
-            return a.getRank() - b.getRank();
-        });
+        // get the sorted components
+        if( this.selectComponentMap.has(pageString) ){
+            components = this.selectComponentMap.get(pageString) || [];
+        } else {
+            components = this.getRankedComponent(components);
+            this.selectComponentMap.set(pageString,components);
+        }
 
-        
+        events.push(...this.currentState.getGreedyUIEvents(components));
+
         if (events.length == 0) {
             return undefined;
         }
@@ -134,10 +143,14 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
             RandomUtils.shuffle(events);
         }
 
-
         if( this.isNewPage ){
             if (this.name == PolicyName.BFS_GREEDY) {
                 events.unshift(BACK_KEY_EVENT);
+                if (components.length > 0) {
+                    let firstElement = components.splice(0, 1)[0];
+                    components.push(firstElement);
+                    this.selectComponentMap.set(pageString,components);
+                }
             } else if (this.name == PolicyName.DFS_GREEDY) {
                 events.push(BACK_KEY_EVENT);
             }
@@ -147,13 +160,12 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
         for (const event of events) {
             if( event instanceof InputTextEvent && event.getComponentId() != undefined) {
                 const componentId = event.getComponentId();
-                if( componentId !== undefined ){ 
-                    if( this.inputComponents.includes(componentId) ){
-                        continue;
-                    } else {
-                        this.inputComponents.push(componentId);
-                    }    
+                if( componentId != undefined && this.inputComponents.includes(componentId)){ 
+                    continue;
                 } 
+                if( componentId != undefined ){
+                    this.inputComponents.push(componentId);
+                }
             }
 
             if (!this.utg.isEventExplored(event, this.currentState)) {
@@ -174,6 +186,34 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
         }
 
         return undefined;
+    }
+
+    private getRankedComponent( components : Component[] ): Component[] {
+        const rankedComponents: Component[] = [];
+        const filteredComponents = components.filter(component => component.enabled);
+        filteredComponents.sort((a, b) => {
+            let countA = (a.checkable ? 2 : 0) + (a.clickable ? 2 : 0) + (a.longClickable ? 2 : 0) + (a.scrollable ? 2 : 0);
+            let countB = (a.checkable ? 2 : 0) + (a.clickable ? 2 : 0) + (a.longClickable ? 2 : 0) + (a.scrollable ? 2 : 0);
+            if (TEXT_INPUTABLE_TYPE.has(a.type)) countA = countA + 1;
+            if (TEXT_INPUTABLE_TYPE.has(b.type)) countB = countB + 1;
+            // sets the number of times a component can be selected
+            let innerMap = new Map<string, number>();
+            
+            innerMap.set(a.id, countA);
+            innerMap.set(b.id, countB);
+            if (countA === 0 || countB === 0) {
+                return 0;
+            }
+           
+            return countB - countA;
+        });
+
+        rankedComponents.push(...filteredComponents.filter(c => {
+            let count = (c.checkable ? 2 : 0) + (c.clickable ? 2 : 0) + (c.longClickable ? 2 : 0) + (c.scrollable ? 2 : 0);
+            if (TEXT_INPUTABLE_TYPE.has(c.type)) count += 2;
+            return count > 0;
+        }));
+        return rankedComponents;
     }
 
     private getNavTarget(): DeviceState | undefined {
