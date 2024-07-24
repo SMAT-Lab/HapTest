@@ -51,7 +51,7 @@ export class EventAction {
     }
 
     stop() {
-        this.toState = this.device.getCurrentState();
+        this.toState = this.device.getCurrentState(this.hap);
         this.fromState.setFaultLogs(this.toState);
         this.save();
     }

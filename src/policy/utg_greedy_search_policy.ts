@@ -77,13 +77,13 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
         }
 
         if (this.flag == PolicyFlag.FLAG_INIT) {
-            if (this.hapRunningState != undefined) {
+            if (this.currentState.runningState != HapRunningState.STOP) {
                 this.flag |= PolicyFlag.FLAG_STOP_APP;
                 return new StopHapEvent(this.hap.bundleName);
             }
         }
 
-        if (this.hapRunningState == undefined) {
+        if (this.currentState.runningState == HapRunningState.STOP) {
             if (this.retryCount > MAX_NUM_RESTARTS) {
                 logger.error(`The number of HAP launch attempts exceeds ${MAX_NUM_RESTARTS}`);
                 throw new Error('The HAP cannot be started.');
@@ -91,7 +91,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
             this.retryCount++;
             this.flag |= PolicyFlag.FLAG_START_APP;
             return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
-        } else if (this.hapRunningState == HapRunningState.FOREGROUND) {
+        } else if (this.currentState.runningState == HapRunningState.FOREGROUND) {
             this.flag = PolicyFlag.FLAG_STARTED;
         } else {
             return BACK_KEY_EVENT;

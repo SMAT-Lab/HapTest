@@ -84,14 +84,14 @@ export class Hap {
 }
 
 export enum HapRunningState {
-    READY,
     FOREGROUND,
     BACKGROUND,
+    STOP
 }
 
 export function convertStr2RunningState(state: string): HapRunningState {
     const convertMap: { [key: string]: HapRunningState } = {
-        READY: HapRunningState.READY,
+        READY: HapRunningState.BACKGROUND,
         FOREGROUND: HapRunningState.FOREGROUND,
         BACKGROUND: HapRunningState.BACKGROUND,
     };
