@@ -15,17 +15,12 @@
 
 import path from 'path';
 import fs from 'fs';
-import { execSync } from 'child_process';
-import { install, HapProject } from 'bjc';
+import { install } from 'bjc';
 import { which } from '../utils/which';
 import Logger from '../utils/logger';
 import { FileNotFoundError } from '../error/error';
-import { FuzzOptions } from './fuzz_options';
+import { FuzzOptions } from '../runner/fuzz_options';
 
-import { Device } from '../device/device';
-import { findFiles } from '../utils/file_utils';
-import { HapBuilder } from '../model/builder/hap_builder';
-import { Hap } from '../model/hap';
 const logger = Logger.getLogger();
 
 export class EnvChecker {
@@ -60,36 +55,6 @@ export class EnvChecker {
                 process.exit();
             }
         }
-    }
-
-    buildHap(device: Device): Hap {
-        // using hvigorw to build HAP
-        if (this.options.sourceRoot) {
-            execSync(`hvigorw -p buildMode=debug -p coverage-mode=bjc clean assembleHap`, {
-                stdio: 'inherit',
-                cwd: this.options.sourceRoot,
-            });
-
-            let deviceType = device.getDeviceType();
-            let project = new HapProject(this.options.sourceRoot);
-            let module = project.getModule(deviceType);
-            let hapFiles = findFiles(path.join(module.path, 'build'), ['.hap']);
-            hapFiles.sort();
-            if (hapFiles.length > 0) {
-                this.options.hapFile = hapFiles[0];
-            }
-        }
-
-        if (this.options.hapFile) {
-            return HapBuilder.buildFromHapFile(this.options.hapFile);
-        }
-
-        if (this.options.bundleName) {
-            return HapBuilder.buildFromBundleName(device, this.options.bundleName);
-        }
-
-        logger.error(`Not found HAP ${this.options.hap}`);
-        process.exit();
     }
 
     private checkHdc(): boolean {

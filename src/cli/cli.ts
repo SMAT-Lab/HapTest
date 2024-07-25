@@ -17,6 +17,7 @@ import { program } from 'commander';
 import { Fuzz } from '../runner/fuzz';
 import Logger from '../utils/logger';
 import { FuzzOptions } from '../runner/fuzz_options';
+import { EnvChecker } from './env_checker';
 const logger = Logger.getLogger();
 
 (async function (): Promise<void> {
@@ -40,6 +41,8 @@ const logger = Logger.getLogger();
         output: options.output,
         coverage: options.coverage
     };
+    let envChecker = new EnvChecker(fuzzOption);
+    envChecker.check();
 
     let fuzz = new Fuzz(fuzzOption);
     await fuzz.start();

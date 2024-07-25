@@ -26,6 +26,11 @@ import { Direct, EventSimulator } from './event_simulator';
 import { HapBuilder } from '../model/builder/hap_builder';
 import { Coverage } from './coverage';
 import { FuzzOptions } from '../runner/fuzz_options';
+import { execSync } from 'child_process';
+import { HapProject } from 'bjc';
+import { findFiles } from '../utils/file_utils';
+import Logger from '../utils/logger';
+const logger = Logger.getLogger();
 
 export class Device implements EventSimulator {
     private hdc: Hdc;
@@ -336,5 +341,35 @@ export class Device implements EventSimulator {
 
     getBundleInfo(bundleName: string): any | undefined {
         return this.hdc.getBundleInfo(bundleName);
+    }
+
+    buildHap(device: Device): Hap {
+        // using hvigorw to build HAP
+        if (this.options.sourceRoot) {
+            execSync(`hvigorw -p buildMode=debug -p coverage-mode=bjc clean assembleHap`, {
+                stdio: 'inherit',
+                cwd: this.options.sourceRoot,
+            });
+
+            let deviceType = device.getDeviceType();
+            let project = new HapProject(this.options.sourceRoot);
+            let module = project.getModule(deviceType);
+            let hapFiles = findFiles(path.join(module.path, 'build'), ['.hap']);
+            hapFiles.sort();
+            if (hapFiles.length > 0) {
+                this.options.hapFile = hapFiles[0];
+            }
+        }
+
+        if (this.options.hapFile) {
+            return HapBuilder.buildFromHapFile(this.options.hapFile);
+        }
+
+        if (this.options.bundleName) {
+            return HapBuilder.buildFromBundleName(device, this.options.bundleName);
+        }
+
+        logger.error(`Not found HAP ${this.options.hap}`);
+        process.exit();
     }
 }
