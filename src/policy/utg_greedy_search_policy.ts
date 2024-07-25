@@ -34,8 +34,6 @@ const logger = Logger.getLogger();
 
 export const MAX_NUM_RESTARTS = 5;
 
-const TEXT_INPUTABLE_TYPE: Set<string> = new Set(['TextInput', 'TextArea', 'SearchField']);
-
 /**
  * DFS/BFS (according to search_method) strategy to explore UFG (new)
  */
@@ -109,8 +107,6 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
     }
 
     private getPossibleEvent(): Event | undefined {
-        let events: Event[] = [];
-
         let components: Component[] = this.currentState.page.getComponents();
         let pageString: string = this.currentState.getPageContentSig();
 
@@ -122,7 +118,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
             this.selectComponentMap.set(pageString,components);
         }
 
-        events.push(...this.currentState.getGreedyUIEvents(components));
+        let events: Event[] = EventBuilder.createPossibleUIEvents(components);
 
         if (events.length == 0) {
             return undefined;
@@ -176,15 +172,15 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
         filteredComponents.sort((a, b) => {
             let countA = (a.checkable ? 2 : 0) + (a.clickable ? 2 : 0) + (a.longClickable ? 2 : 0) + (a.scrollable ? 2 : 0);
             let countB = (a.checkable ? 2 : 0) + (a.clickable ? 2 : 0) + (a.longClickable ? 2 : 0) + (a.scrollable ? 2 : 0);
-            if (TEXT_INPUTABLE_TYPE.has(a.type)) countA = countA + 1;
-            if (TEXT_INPUTABLE_TYPE.has(b.type)) countB = countB + 1;
+            if (a.inputable) countA = countA + 1;
+            if (b.inputable) countB = countB + 1;
 
             return countB - countA;
         });
 
         rankedComponents.push(...filteredComponents.filter(c => {
             let count = (c.checkable ? 2 : 0) + (c.clickable ? 2 : 0) + (c.longClickable ? 2 : 0) + (c.scrollable ? 2 : 0);
-            if (TEXT_INPUTABLE_TYPE.has(c.type)) count += 2;
+            if (c.inputable) count += 2;
             return count > 0;
         }));
         return rankedComponents;

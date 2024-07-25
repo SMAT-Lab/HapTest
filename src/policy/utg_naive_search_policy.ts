@@ -191,10 +191,7 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
     }
 
     private getPossibleEvents(components: Component[]): Event[] {
-        let events: Event[] = [];
-        for (const component of components) {
-            events.push(...EventBuilder.createPossibleUIEvents(component));
-        }
+        let events: Event[] = EventBuilder.createPossibleUIEvents(components);
         if (this.isNewPage) {
             let back = new KeyEvent(KeyCode.KEYCODE_BACK);
             if (this.name == PolicyName.BFS_NAIVE) {

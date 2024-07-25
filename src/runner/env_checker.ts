@@ -99,7 +99,7 @@ export class EnvChecker {
         } catch (error) {
             if (error instanceof FileNotFoundError) {
                 logger.error(`${error.message}`);
-                logger.error('Please add hvigorw to PATH environment variable.');
+                logger.error('Please add hdc to PATH environment variable.');
             }
             return false;
         }

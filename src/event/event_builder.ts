@@ -19,10 +19,16 @@ import { Component } from '../model/component';
 import { RandomUtils } from '../utils/random_utils';
 import { InputTextEvent, LongTouchEvent, ScrollEvent, TouchEvent, UIEvent } from './ui_event';
 
-const TEXT_INPUTABLE_TYPE: Set<string> = new Set(['TextInput', 'TextArea', 'SearchField']);
-
 export class EventBuilder {
-    static createPossibleUIEvents(component: Component): UIEvent[] {
+    static createPossibleUIEvents(components: Component[]): UIEvent[] {
+        let events: UIEvent[] = [];
+        for (const component of components) {
+            events.push(...EventBuilder.createComponentPossibleUIEvents(component));
+        }
+        return events;
+    }
+    
+    static createComponentPossibleUIEvents(component: Component): UIEvent[] {
         let events: UIEvent[] = [];
         if (!component.enabled) {
             return events;
@@ -43,7 +49,7 @@ export class EventBuilder {
             events.push(new ScrollEvent(component, Direct.RIGHT));
         }
 
-        if (TEXT_INPUTABLE_TYPE.has(component.type)) {
+        if (component.inputable) {
             for (const text of this.randomText) {
                 events.push(new InputTextEvent(component, text));
             }

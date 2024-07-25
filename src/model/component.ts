@@ -20,7 +20,16 @@ import { Rank } from './rank';
 export enum ComponentType {
     ModalPage = 'ModalPage',
     Dialog = 'Dialog',
+    TextInput = 'TextInput',
+    TextArea = 'TextArea',
+    SearchField = 'SearchField',
 }
+
+const TEXT_INPUTABLE_TYPE: Set<string> = new Set([
+    ComponentType[ComponentType.TextInput],
+    ComponentType[ComponentType.TextArea],
+    ComponentType[ComponentType.SearchField],
+]);
 
 export class Component {
     @Expose()
@@ -98,6 +107,10 @@ export class Component {
     }
 
     hasUIEvent(): boolean {
-        return this.enabled && (this.checkable || this.clickable || this.longClickable || this.scrollable);
+        return this.enabled && (this.checkable || this.clickable || this.longClickable || this.scrollable || this.inputable);
+    }
+
+    get inputable(): boolean {
+        return TEXT_INPUTABLE_TYPE.has(this.type);
     }
 }
