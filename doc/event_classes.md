@@ -45,7 +45,4 @@ classDiagram
   ScrollEvent --|> UIEvent
   SwipeEvent --|> UIEvent
   InputTextEvent --|> UIEvent
-
-
-
 ```

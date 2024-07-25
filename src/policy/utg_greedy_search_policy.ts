@@ -17,7 +17,6 @@ import { Hap, HapRunningState } from '../model/hap';
 import { UTGInputPolicy } from './utg_input_policy';
 import { Device } from '../device/device';
 import { Event } from '../event/event';
-// import { KeyEvent } from '../event/key_event';
 import { InputTextEvent } from '../event/ui_event';
 import { DeviceState } from '../model/device_state';
 import { ExitEvent, StopHapEvent, AbilityEvent } from '../event/system_event';
