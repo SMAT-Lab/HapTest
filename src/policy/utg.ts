@@ -15,12 +15,13 @@
 
 import { Device } from '../device/device';
 import { Event } from '../event/event';
-import { Hap } from '../model/hap';
+import { Hap, HapRunningState } from '../model/hap';
 import { DeviceState } from '../model/device_state';
 import DirectedGraph from 'graphology';
 import { bidirectional } from 'graphology-shortest-path';
 import Logger from '../utils/logger';
 import { RandomUtils } from '../utils/random_utils';
+import { StopHapEvent } from '../event/system_event';
 const logger = Logger.getLogger();
 
 type EdgeAttributeType = Map<string, { id: number; event: Event }>;
@@ -42,6 +43,8 @@ export class UTG {
     reachedPages: Set<string>;
     firstState: DeviceState;
     lastState: DeviceState;
+    stopEvent: StopHapEvent;
+    stopState: DeviceState;
 
     constructor(device: Device, hap: Hap, randomInput: boolean) {
         this.device = device;
@@ -55,6 +58,15 @@ export class UTG {
         this.exploredState = new Set();
         this.reachedState = new Set();
         this.reachedPages = new Set();
+        this.stopEvent = new StopHapEvent(this.hap.bundleName);
+    }
+
+    addTransitionToStop(newState: DeviceState): void {
+        if (!this.stopState || newState.runningState != HapRunningState.FOREGROUND) {
+            return;
+        }
+
+        this.addTransition(this.stopEvent, newState, this.stopState);
     }
 
     addTransition(event: Event, oldState: DeviceState, newState: DeviceState): void {
@@ -89,8 +101,6 @@ export class UTG {
         attr.set(eventState, { event: event, id: this.effectiveEvent.size });
 
         this.lastState = newState;
-
-        this.outputHtml();
     }
 
     removeTransition(event: Event, oldState: DeviceState, newState: DeviceState): void {
@@ -191,6 +201,10 @@ export class UTG {
             this.firstState = state;
         }
 
+        if (this.stopState == undefined && state.runningState == HapRunningState.STOP) {
+            this.stopState = state;
+        }
+
         if (!this.contentStateGraph.hasNode(state.getPageContentSig())) {
             // state.save2dir()
             this.contentStateGraph.addNode(state.getPageContentSig(), state);
@@ -203,6 +217,4 @@ export class UTG {
         }
         // reached ability
     }
-
-    private outputHtml() {}
 }

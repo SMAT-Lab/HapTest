@@ -46,11 +46,13 @@ export class Coverage {
         this.device.getHdc().stopBftp(this.hap, this.bftpPid);
     }
 
-    getCoverageFile(): CoverageReport {
+    getCoverageFile(onForeground: boolean): CoverageReport {
         // trigger UIAbility::onNewWant to save cov.
         let current: string[] = [];
-        this.device.sendEvent(HOME_KEY_EVENT);
-        this.device.startAblity(this.hap.bundleName, this.hap.mainAbility);
+        if (onForeground) {
+            this.device.sendEvent(HOME_KEY_EVENT);
+            this.device.startAblity(this.hap.bundleName, this.hap.mainAbility);
+        }
         let files = this.device.getHdc().listSandboxFile(this.bftpPort, `haps/${this.hap.entryModuleName}/cache`);
         for (let [file, isDir] of files) {
             if (!isDir && file.startsWith('bjc_cov_') && file.endsWith('.json')) {

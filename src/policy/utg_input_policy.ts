@@ -47,6 +47,8 @@ export abstract class UTGInputPolicy extends InputPolicy {
     private updateUtg(): void {
         if (this.lastEvent && this.lastState && this.currentState) {
             this.utg.addTransition(this.lastEvent, this.lastState, this.currentState);
+            // transition to StopState
+            this.utg.addTransitionToStop(this.currentState);
         }
     }
 

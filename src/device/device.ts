@@ -292,16 +292,17 @@ export class Device implements EventSimulator {
         let screen = this.capScreen();
         let faultlogs = this.collectFaultLogger();
         let state = new DeviceState(this, page, screen, faultlogs);
-        // calc coverage and set value to deviceState
-        if (this.coverage) {
-            state.coverage = this.coverage.getCoverageFile();
-        }
 
         // set hap running state
         if (page.getBundleName() == hap.bundleName) {
             state.runningState = HapRunningState.FOREGROUND;
         } else {
             state.runningState = this.getHapRunningState(hap);
+        }
+
+        // calc coverage and set value to deviceState
+        if (this.coverage) {
+            state.coverage = this.coverage.getCoverageFile(state.runningState == HapRunningState.FOREGROUND);
         }
 
         return state;

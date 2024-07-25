@@ -22,12 +22,12 @@ import { Hap, HapRunningState } from '../model/hap';
 import { Page } from '../model/page';
 import { RandomUtils } from '../utils/random_utils';
 import { UTGInputPolicy } from './utg_input_policy';
-import Logger from '../utils/logger';
 import { PolicyFlag, PolicyName } from './input_policy';
 import { EventBuilder } from '../event/event_builder';
 import { Rank } from '../model/rank';
 import { BACK_KEY_EVENT, KeyEvent } from '../event/key_event';
 import { KeyCode } from '../model/key_code';
+import Logger from '../utils/logger';
 const logger = Logger.getLogger();
 
 export const MAX_NUM_RESTARTS = 5;
@@ -157,10 +157,6 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
             }
         }
 
-        if (!this.allPageExplored()) {
-            return new StopHapEvent(this.hap.bundleName);
-        }
-
         return undefined;
     }
 
@@ -202,25 +198,5 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
             events.push(back);
         }
         return events;
-    }
-
-    private allPageExplored(): boolean {
-        for (const pageKey of this.pageStateMap.keys()) {
-            if (!this.isPageExplored(pageKey)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private isPageExplored(pageKey: string): boolean {
-        for (const stateSig of this.pageStateMap.get(pageKey)!) {
-            let state = this.stateMap.get(stateSig)!;
-            if (!this.utg.isStateExplored(state)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 }
