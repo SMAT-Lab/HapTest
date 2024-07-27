@@ -1,15 +1,15 @@
 {
-  "name": "ohos-arktest",
-  "version": "0.1.0",
-  "description": "ArkTest is an OpenHarmony application UI automated testing framework.",
+  "name": "haptest",
+  "version": "0.1.1",
+  "description": "HapTest is an OpenHarmony application UI automated testing framework.",
   "bin": {
-    "arktest": "bin/arktest"
+    "haptest": "bin/haptest"
   },
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
     "test": "vitest",
-    "arktest": "node -r ts-node/register src/cli/cli.ts --policy greedy_dfs -i com.huawei.hmos.files -o out",
+    "haptest": "node -r ts-node/register src/cli/cli.ts --policy greedy_dfs -i com.huawei.hmos.files -o out",
     "postinstall": "patch-package"
   },
   "author": "",

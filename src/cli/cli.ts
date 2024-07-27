@@ -15,15 +15,18 @@
 
 import { program } from 'commander';
 import { Fuzz } from '../runner/fuzz';
+import path from 'path';
+import fs from 'fs';
 import Logger from '../utils/logger';
 import { FuzzOptions } from '../runner/fuzz_options';
 import { EnvChecker } from './env_checker';
 const logger = Logger.getLogger();
 
 (async function (): Promise<void> {
+    let packageCfg = JSON.parse(fs.readFileSync(path.join(__dirname, '../../package.json'), {encoding: 'utf-8'}));
     program
-        .name('arktest')
-        .version('1.0.0')
+        .name(packageCfg.name)
+        .version(packageCfg.version)
         .option('-i --hap <file/bundleName/sourceRoot>', 'HAP bundle name or HAP file path or HAP project source root')
         .option('-o --output <dir>', 'output dir', 'out')
         .option('--policy <policyName>', 'policy name', 'manu')
@@ -32,7 +35,7 @@ const logger = Logger.getLogger();
         .parse();
 
     let options = program.opts();
-    logger.info(`arktest start by args ${JSON.stringify(options)}.`);
+    logger.info(`haptest start by args ${JSON.stringify(options)}.`);
 
     let fuzzOption: FuzzOptions = {
         connectkey: options.target,

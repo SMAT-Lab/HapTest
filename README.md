@@ -5,7 +5,7 @@ HapTest is an OpenHarmony application UI automated testing framework. It support
 
 ## Installation
 ```
-npm install ohos-haptest
+npm install haptest
 ```
 
 ## Build
@@ -35,13 +35,21 @@ Options:
   -h, --help                             display help for command
 ```
 
-### 2.  Using DevEco simulator to run HAP  
+### 2. Using DevEco simulator to run HAP  
 
 1.  download DevEco: https://developer.huawei.com/consumer/cn/deveco-studio/  
 2.  Refer to the link to run the emulator: https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ide-run-emulator-0000001582636200-V5
 3.  test HAP photos
 ```
-arktest -i com.huawei.hmos.photos -o out
+haptest -i com.huawei.hmos.photos -o out
+```
+
+### 3. Build & Test your Hap Build Hap & Instrument coverage
+1. download Command Line Tools: https://developer.huawei.com/consumer/cn/download/
+2. add ${command-line-tools}/bin to PATH
+3. using haptest cmd to build instrument and test your Hap. 
+```
+haptest -i {Hap project root } --policy greedy_dfs -o out
 ```
 
 ## Contribution

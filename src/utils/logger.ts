@@ -26,7 +26,7 @@ export enum LOG_LEVEL {
 
 export default class ArkTestLogger {
     static hasConfigured: boolean = false;
-    public static configure(logFilePath: string = 'arktest.log', level: LOG_LEVEL = LOG_LEVEL.DEBUG): void {
+    public static configure(logFilePath: string = 'haptest.log', level: LOG_LEVEL = LOG_LEVEL.DEBUG): void {
         configure({
             appenders: {
                 file: {
