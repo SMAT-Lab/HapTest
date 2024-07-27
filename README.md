@@ -26,12 +26,13 @@ npm pack
 arktest [options]
 
 Options:
-  -V, --version             output the version number
-  -i --hap <file>           hap file
-  -o --output <dir>         output dir (default: "out")
-  --policy <policyName>     policy name (default: "manu")
-  -t --target [connectkey]  hdc connectkey
-  -h, --help                display help for command
+  -V, --version                          output the version number
+  -i --hap <file/bundleName/sourceRoot>  HAP bundle name or HAP file path or HAP project source root
+  -o --output <dir>                      output dir (default: "out")
+  --policy <policyName>                  policy name (default: "manu")
+  -t --target [connectkey]               hdc connectkey
+  -c --coverage                          enable coverage (default: false)
+  -h, --help                             display help for command
 ```
 
 ### 2.  Using DevEco simulator to run HAP  

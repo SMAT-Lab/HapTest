@@ -225,7 +225,7 @@ export class Hdc {
     }
 
     mkLocalCovDir(): void {
-        this.excuteShellCommand(...['mkdir', '-p', '/local/data/local/tmp/cov']);
+        this.excuteShellCommand(...['mkdir', '-p', '/data/local/tmp/cov']);
     }
 
     netstatInfo(): Map<number, { pid: number; program: string }> {

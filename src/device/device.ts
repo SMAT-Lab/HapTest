@@ -18,7 +18,7 @@ import { Event } from '../event/event';
 import { KeyCode } from '../model/key_code';
 import { DeviceState } from '../model/device_state';
 import { Hap, HapRunningState } from '../model/hap';
-import { Page } from '../model/page';
+import { BACKGROUND_PAGE, Page, STOP_PAGE } from '../model/page';
 import { Point } from '../model/point';
 import { Hdc } from './hdc';
 import path from 'path';
@@ -298,6 +298,12 @@ export class Device implements EventSimulator {
             state.runningState = HapRunningState.FOREGROUND;
         } else {
             state.runningState = this.getHapRunningState(hap);
+        }
+
+        if (state.runningState == HapRunningState.STOP) {
+            page = STOP_PAGE;
+        } else if (state.runningState == HapRunningState.BACKGROUND) {
+            page = BACKGROUND_PAGE;
         }
 
         // calc coverage and set value to deviceState

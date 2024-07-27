@@ -206,7 +206,6 @@ export class UTG {
         }
 
         if (!this.contentStateGraph.hasNode(state.getPageContentSig())) {
-            // state.save2dir()
             this.contentStateGraph.addNode(state.getPageContentSig(), state);
         }
 

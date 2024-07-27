@@ -14,6 +14,7 @@
  */
 
 import path from 'path';
+import fs from 'fs';
 import { HOME_KEY_EVENT } from '../event/key_event';
 import { Hap } from '../model/hap';
 import { Device } from './device';
@@ -48,15 +49,15 @@ export class Coverage {
 
     getCoverageFile(onForeground: boolean): CoverageReport {
         // trigger UIAbility::onNewWant to save cov.
-        let current: string[] = [];
+        let current: Set<string> = new Set();
         if (onForeground) {
             this.device.sendEvent(HOME_KEY_EVENT);
             this.device.startAblity(this.hap.bundleName, this.hap.mainAbility);
         }
         let files = this.device.getHdc().listSandboxFile(this.bftpPort, `haps/${this.hap.entryModuleName}/cache`);
         for (let [file, isDir] of files) {
-            if (!isDir && file.startsWith('bjc_cov_') && file.endsWith('.json')) {
-                current.push(file);
+            if (!isDir && file.startsWith('bjc_cov_') && file.endsWith('.json') && !current.has(file)) {
+                current.add(file);
                 this.device
                     .getHdc()
                     .mvSandboxFile2Local(
@@ -68,13 +69,20 @@ export class Coverage {
         }
 
         this.device.getHdc().recvFile(`/data/local/tmp/cov`, this.device.getOutput());
-        current.sort();
+        
+        let covFiles = Array.from(current);
+        covFiles.sort();
 
-        if (current.length == 0) {
+        if (covFiles.length == 0) {
             return this.last;
         }
 
-        return this.parseCovFile(path.join(this.device.getOutput(), 'cov', current[current.length - 1]));
+        let cov = path.join(this.device.getOutput(), 'cov', covFiles[covFiles.length - 1]);
+        if (fs.existsSync(cov)) {
+            this.last = this.parseCovFile(cov);
+        }
+
+        return this.last;
     }
 
     parseCovFile(cov: string): CoverageReport {

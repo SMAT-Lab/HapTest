@@ -15,6 +15,7 @@
 
 import { SerializeUtils } from '../utils/serialize_utils';
 import { Component, ComponentType } from './component';
+import { HapRunningState } from './hap';
 import { ViewTree } from './viewtree';
 
 export class Page {
@@ -134,3 +135,6 @@ export class Page {
         }
     }
 }
+
+export const STOP_PAGE = new Page(new ViewTree(new Component()), '', '', HapRunningState[HapRunningState.STOP]);
+export const BACKGROUND_PAGE = new Page(new ViewTree(new Component()), '', '', HapRunningState[HapRunningState.BACKGROUND]);

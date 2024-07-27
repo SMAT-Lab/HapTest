@@ -15,7 +15,7 @@
   "license": "Apache License, Version 2.0",
   "dependencies": {
     "adm-zip": "^0.5.14",
-    "bjc": "^1.0.6",
+    "bjc": "^1.0.8",
     "class-transformer": "^0.5.1",
     "commander": "^12.1.0",
     "graphology": "^0.25.4",

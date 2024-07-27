@@ -75,10 +75,7 @@ export class DeviceState {
     }
 
     getPageContent(): string {
-        if (this.runningState == HapRunningState.FOREGROUND) {
-            return this.page.getContent();
-        }
-        return HapRunningState[this.runningState];
+        return this.page.getContent();
     }
 
     getPageStructureSig(): string {
@@ -86,10 +83,7 @@ export class DeviceState {
     }
 
     getPageStructure(): string {
-        if (this.runningState == HapRunningState.FOREGROUND) {
-            return this.page.getStructual();
-        }
-        return HapRunningState[this.runningState];
+        return this.page.getStructual();
     }
 
     getPossibleUIEvents(): UIEvent[] {
