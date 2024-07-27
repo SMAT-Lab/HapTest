@@ -128,9 +128,9 @@ export class Hdc {
         if (output.length == 0) {
             return;
         }
-        let lines = output.split('\r\n');
+        let lines = output.split(/\r?\n/);
         try {
-            let info = JSON.parse(lines.slice(1).join('\r\n'));
+            let info = JSON.parse(lines.slice(1).join('\n'));
             return info;
         } catch (err) {
             return undefined;
