@@ -19,6 +19,8 @@ import { HOME_KEY_EVENT } from '../event/key_event';
 import { Hap } from '../model/hap';
 import { Device } from './device';
 import { CoverageReport, Report } from 'bjc';
+import Logger from '../utils/logger';
+const logger = Logger.getLogger();
 
 /**
  * cov file save at data/app/el2/100/base/{bundleName}/haps/{moduleName}/cache/black_test_result_xxx.json
@@ -69,7 +71,7 @@ export class Coverage {
         }
 
         this.device.getHdc().recvFile(`/data/local/tmp/cov`, this.device.getOutput());
-        
+
         let covFiles = Array.from(current);
         covFiles.sort();
 
@@ -77,9 +79,18 @@ export class Coverage {
             return this.last;
         }
 
-        let cov = path.join(this.device.getOutput(), 'cov', covFiles[covFiles.length - 1]);
-        if (fs.existsSync(cov)) {
-            this.last = this.parseCovFile(cov);
+        covFiles = covFiles.reverse();
+
+        for (let file of covFiles) {
+            try {
+                let cov = path.join(this.device.getOutput(), 'cov', file);
+                if (fs.existsSync(cov)) {
+                    this.last = this.parseCovFile(cov);
+                    return this.last;
+                }
+            } catch (err) {
+                logger.error(err);
+            }
         }
 
         return this.last;

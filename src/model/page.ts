@@ -13,9 +13,13 @@
  * limitations under the License.
  */
 
+import { EventBuilder } from '../event/event_builder';
+import { CryptoUtils } from '../utils/crypto_utils';
 import { SerializeUtils } from '../utils/serialize_utils';
 import { Component, ComponentType } from './component';
+import { UIEvent } from '../event/ui_event';
 import { HapRunningState } from './hap';
+import { Snapshot } from './snapshot';
 import { ViewTree } from './viewtree';
 
 export class Page {
@@ -23,12 +27,21 @@ export class Page {
     private abilityName: string;
     private bundleName: string;
     private pagePath: string;
+    private snapshot: Snapshot;
 
     constructor(viewTree: ViewTree, abilityName: string, bundleName: string, pagePath: string) {
         this.viewTree = viewTree;
         this.abilityName = abilityName;
         this.bundleName = bundleName;
         this.pagePath = pagePath;
+    }
+
+    getSnapshot(): Snapshot {
+        return this.snapshot;
+    }
+
+    setSnapshot(snapshot: Snapshot) {
+        this.snapshot = snapshot;
     }
 
     getBundleName(): string {
@@ -57,7 +70,7 @@ export class Page {
             abilityName: this.abilityName,
             bundleName: this.bundleName,
             pagePath: this.pagePath,
-        })
+        });
     }
 
     getContent(): string {
@@ -73,21 +86,16 @@ export class Page {
         });
     }
 
-    isHome(): boolean {
-        return this.bundleName == 'com.ohos.sceneboard' && this.abilityName == 'com.ohos.sceneboard.MainAbility';
+    getContentSig(): string {
+        return CryptoUtils.sha256(this.getContent());
     }
 
-    isLocked(): boolean {
-        if (!this.isHome()) {
-            return false;
-        }
+    getStructualSig(): string {
+        return CryptoUtils.sha256(this.getStructual());
+    }
 
-        for (let com of this.viewTree.getComponents()) {
-            if (com.id == 'ScreenLock-SCBScreenLock_Screen_Lock_Home') {
-                return true;
-            }
-        }
-        return false;
+    getPossibleUIEvents(): UIEvent[] {
+        return EventBuilder.createPossibleUIEvents(this.getComponents());
     }
 
     selectComponents(selector: (item: Component) => boolean): Component[] {
@@ -107,6 +115,18 @@ export class Page {
 
     getDialog(): Component[] {
         return this.selectComponentsByType([ComponentType.Dialog]);
+    }
+
+    isStop(): boolean {
+        return this.getContentSig() == STOP_PAGE.getContentSig();
+    }
+
+    isBackground(): boolean {
+        return this.getContentSig() == BACKGROUND_PAGE.getContentSig();
+    }
+
+    isForeground(): boolean {
+        return !(this.isStop() || this.isBackground());
     }
 
     static collectComponent(component: Component, selector: (item: Component) => boolean): Component[] {
@@ -137,4 +157,9 @@ export class Page {
 }
 
 export const STOP_PAGE = new Page(new ViewTree(new Component()), '', '', HapRunningState[HapRunningState.STOP]);
-export const BACKGROUND_PAGE = new Page(new ViewTree(new Component()), '', '', HapRunningState[HapRunningState.BACKGROUND]);
+export const BACKGROUND_PAGE = new Page(
+    new ViewTree(new Component()),
+    '',
+    '',
+    HapRunningState[HapRunningState.BACKGROUND]
+);

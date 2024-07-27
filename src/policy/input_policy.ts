@@ -15,14 +15,14 @@
 
 import { Device } from '../device/device';
 import { Event } from '../event/event';
-import { DeviceState } from '../model/device_state';
 import { Hap } from '../model/hap';
+import { Page } from '../model/page';
 
 export enum PolicyFlag {
     FLAG_INIT = 0,
     FLAG_START_APP = 1,
     FLAG_STOP_APP = 1 << 2,
-    FLAG_STARTED = 1 << 3
+    FLAG_STARTED = 1 << 3,
 }
 
 export enum PolicyName {
@@ -56,5 +56,5 @@ export abstract class InputPolicy {
         this._enabled = false;
     }
 
-    abstract generateEvent(deviceState: DeviceState): Event;
+    abstract generateEvent(page: Page): Event;
 }

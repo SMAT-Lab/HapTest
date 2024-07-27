@@ -18,25 +18,25 @@ import fs from 'fs';
 import moment from 'moment';
 import { Device } from '../device/device';
 import { Event } from '../event/event';
-import { DeviceState } from '../model/device_state';
 import { Hap } from '../model/hap';
 import Logger from '../utils/logger';
 import { SerializeUtils } from '../utils/serialize_utils';
+import { Page } from '../model/page';
 const logger = Logger.getLogger();
 
 export class EventAction {
     device: Device;
     hap: Hap;
     event: Event;
-    eventState: string;
-    fromState: DeviceState;
-    toState: DeviceState;
+    eventPageSig: string;
+    fromPage: Page;
+    toPage: Page;
     output: string;
 
-    constructor(device: Device, hap: Hap, state: DeviceState, event: Event) {
+    constructor(device: Device, hap: Hap, page: Page, event: Event) {
         this.device = device;
         this.hap = hap;
-        this.fromState = state;
+        this.fromPage = page;
         this.event = event;
         this.output = path.join(device.getOutput(), 'events');
         if (!fs.existsSync(this.output)) {
@@ -46,13 +46,12 @@ export class EventAction {
 
     start() {
         logger.info(`EventAction->start: ${this.event.toString()}`);
-        this.eventState = this.event.eventStateSig(this.fromState);
+        this.eventPageSig = this.event.eventPageSig(this.fromPage);
         this.device.sendEvent(this.event);
     }
 
     stop() {
-        this.toState = this.device.getCurrentState(this.hap);
-        this.fromState.setFaultLogs(this.toState);
+        this.toPage = this.device.getCurrentPage(this.hap);
         this.save();
     }
 
@@ -60,10 +59,10 @@ export class EventAction {
         return SerializeUtils.serialize(
             {
                 event: this.event,
-                state: this.fromState.toJson(),
-                from_state: this.fromState?.getPageContentSig(),
-                to_state: this.toState?.getPageContentSig(),
-                event_state: this.eventState,
+                page: this.fromPage.toJson(),
+                event_page_sig: this.eventPageSig,
+                from_page: this.fromPage?.getContentSig(),
+                to_page: this.toPage?.getContentSig(),
             },
             undefined,
             4

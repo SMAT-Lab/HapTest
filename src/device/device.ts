@@ -16,7 +16,6 @@
 import fs from 'fs';
 import { Event } from '../event/event';
 import { KeyCode } from '../model/key_code';
-import { DeviceState } from '../model/device_state';
 import { Hap, HapRunningState } from '../model/hap';
 import { BACKGROUND_PAGE, Page, STOP_PAGE } from '../model/page';
 import { Point } from '../model/point';
@@ -30,6 +29,7 @@ import { execSync } from 'child_process';
 import { HapProject } from 'bjc';
 import { findFiles } from '../utils/file_utils';
 import Logger from '../utils/logger';
+import { Snapshot } from '../model/snapshot';
 const logger = Logger.getLogger();
 
 export class Device implements EventSimulator {
@@ -284,34 +284,46 @@ export class Device implements EventSimulator {
     }
 
     /**
-     * Get current device state
+     * get crrent Page
+     * @param hap
      * @returns
      */
-    getCurrentState(hap: Hap): DeviceState {
+    getCurrentPage(hap: Hap): Page {
         let page = this.dumpViewTree();
-        let screen = this.capScreen();
-        let faultlogs = this.collectFaultLogger();
-        let state = new DeviceState(this, page, screen, faultlogs);
 
         // set hap running state
         if (page.getBundleName() == hap.bundleName) {
-            state.runningState = HapRunningState.FOREGROUND;
-        } else {
-            state.runningState = this.getHapRunningState(hap);
+            let snapshot = this.getSnapshot(true);
+            page.setSnapshot(snapshot);
+            return page;
         }
 
-        if (state.runningState == HapRunningState.STOP) {
+        let runningState = this.getHapRunningState(hap);
+        let snapshot = this.getSnapshot(false);
+        if (runningState == HapRunningState.STOP) {
             page = STOP_PAGE;
-        } else if (state.runningState == HapRunningState.BACKGROUND) {
+            page.setSnapshot(snapshot);
+        } else if (runningState == HapRunningState.BACKGROUND) {
             page = BACKGROUND_PAGE;
+            page.setSnapshot(snapshot);
         }
 
-        // calc coverage and set value to deviceState
-        if (this.coverage) {
-            state.coverage = this.coverage.getCoverageFile(state.runningState == HapRunningState.FOREGROUND);
-        }
+        return page;
+    }
 
-        return state;
+    /**
+     * Get current device state
+     * @returns
+     */
+    getSnapshot(onForeground: boolean): Snapshot {
+        let screen = this.capScreen();
+        let faultlogs = this.collectFaultLogger();
+        return new Snapshot(
+            this,
+            screen,
+            faultlogs,
+            this.coverage ? this.coverage.getCoverageFile(onForeground) : undefined
+        );
     }
 
     /**

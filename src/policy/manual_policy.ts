@@ -19,7 +19,7 @@ import { Event } from '../event/event';
 import { ManualEvent } from '../event/manual_event';
 import { Hap } from '../model/hap';
 import { InputPolicy, PolicyName } from './input_policy';
-import { DeviceState } from '../model/device_state';
+import { Page } from '../model/page';
 
 export class ManualPolicy extends InputPolicy {
     private firstEvent: boolean;
@@ -29,7 +29,7 @@ export class ManualPolicy extends InputPolicy {
         this.firstEvent = true;
     }
 
-    generateEvent(deviceState: DeviceState): Event {
+    generateEvent(page: Page): Event {
         if (this.firstEvent) {
             this.firstEvent = false;
             return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);

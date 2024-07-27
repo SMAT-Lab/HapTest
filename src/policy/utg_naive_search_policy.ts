@@ -17,8 +17,7 @@ import { Device } from '../device/device';
 import { AbilityEvent, ExitEvent, StopHapEvent } from '../event/system_event';
 import { Event } from '../event/event';
 import { Component, ComponentType } from '../model/component';
-import { DeviceState } from '../model/device_state';
-import { Hap, HapRunningState } from '../model/hap';
+import { Hap } from '../model/hap';
 import { Page } from '../model/page';
 import { RandomUtils } from '../utils/random_utils';
 import { UTGInputPolicy } from './utg_input_policy';
@@ -33,29 +32,27 @@ const logger = Logger.getLogger();
 export const MAX_NUM_RESTARTS = 5;
 export class UtgNaiveSearchPolicy extends UTGInputPolicy {
     private retryCount: number;
-    private pageStateMap: Map<string, Set<string>>;
-    private stateMap: Map<string, DeviceState>;
-    private stateComponentMap: Map<string, Component[]>;
+    private pageMap: Map<string, Page>;
+    private pageComponentMap: Map<string, Component[]>;
     private isNewPage: boolean;
 
     constructor(device: Device, hap: Hap, name: PolicyName) {
         super(device, hap, name, true);
         this.retryCount = 0;
-        this.pageStateMap = new Map();
-        this.stateMap = new Map();
-        this.stateComponentMap = new Map();
+        this.pageMap = new Map();
+        this.pageComponentMap = new Map();
         this.isNewPage = false;
     }
 
     generateEventBasedOnUtg(): Event {
         if (this.flag == PolicyFlag.FLAG_INIT) {
-            if (this.currentState.runningState != HapRunningState.STOP) {
+            if (!this.currentPage.isStop()) {
                 this.flag |= PolicyFlag.FLAG_STOP_APP;
                 return new StopHapEvent(this.hap.bundleName);
             }
         }
 
-        if (this.currentState.runningState == HapRunningState.STOP) {
+        if (this.currentPage.isStop()) {
             if (this.retryCount > MAX_NUM_RESTARTS) {
                 logger.error(`The number of HAP launch attempts exceeds ${MAX_NUM_RESTARTS}`);
                 throw new Error('The HAP cannot be started.');
@@ -63,7 +60,7 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
             this.retryCount++;
             this.flag |= PolicyFlag.FLAG_START_APP;
             return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
-        } else if (this.currentState.runningState == HapRunningState.FOREGROUND) {
+        } else if (this.currentPage.isForeground()) {
             this.flag = PolicyFlag.FLAG_STARTED;
         } else {
             if (this.retryCount > MAX_NUM_RESTARTS) {
@@ -92,48 +89,37 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
     }
 
     private updateState(): void {
-        if (this.currentState.page.getBundleName() != this.hap.bundleName) {
+        if (this.currentPage.getBundleName() != this.hap.bundleName) {
             return;
         }
 
-        if (!this.pageStateMap.has(this.getPageKey())) {
-            this.pageStateMap.set(this.getPageKey(), new Set());
-            if (this.pageStateMap.size > 1) {
-                this.isNewPage = true;
-            }
-        } else {
-            this.isNewPage = false;
+        let pageSig = this.currentPage.getContentSig();
+        if (!this.pageMap.has(pageSig)) {
+            this.pageMap.set(pageSig, this.currentPage);
         }
 
-        let stateSig = this.currentState.getPageContentSig();
-        let stateSet = this.pageStateMap.get(this.getPageKey())!;
-        if (!stateSet.has(stateSig)) {
-            stateSet.add(stateSig);
-            this.stateMap.set(stateSig, this.currentState);
-        }
-
-        if (!this.stateComponentMap.has(stateSig)) {
+        if (!this.pageComponentMap.has(pageSig)) {
             let components: Component[] = [];
-            this.updatePreferableComponentRank(this.currentState);
-            for (const component of this.currentState.page.getComponents()) {
+            this.updatePreferableComponentRank(this.currentPage);
+            for (const component of this.currentPage.getComponents()) {
                 if (component.hasUIEvent()) {
                     components.push(component);
                 }
             }
-            this.stateComponentMap.set(stateSig, components);
+            this.pageComponentMap.set(pageSig, components);
         }
     }
 
     private selectEvent(): Event | undefined {
-        let stateSig = this.currentState.getPageContentSig();
-        let components = this.stateComponentMap.get(stateSig);
+        let pageSig = this.currentPage.getContentSig();
+        let components = this.pageComponentMap.get(pageSig);
         if (!components) {
             return undefined;
         }
 
         //unexplored events
         let events = this.getPossibleEvents(components).filter((event) => {
-            return !this.utg.isEventExplored(event, this.currentState);
+            return !this.utg.isEventExplored(event, this.currentPage);
         });
 
         // sort by rank
@@ -145,13 +131,13 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
             return this.arraySelect(events);
         }
 
-        // from state translate to state Event
-        for (const state of this.utg.getReachableStates(this.currentState)) {
-            if (this.utg.isStateExplored(state) || state.page.getBundleName() != this.hap.bundleName) {
+        // from current page translate to unexpored page Event
+        for (const page of this.utg.getReachablePages(this.currentPage)) {
+            if (this.utg.isPageExplored(page) || page.getBundleName() != this.hap.bundleName) {
                 continue;
             }
 
-            let steps = this.utg.getNavigationSteps(this.currentState, state);
+            let steps = this.utg.getNavigationSteps(this.currentPage, page);
             if (steps && steps.length > 0) {
                 return steps[0][1];
             }
@@ -160,8 +146,8 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
         return undefined;
     }
 
-    private updatePreferableComponentRank(state: DeviceState): void {
-        for (const component of state.page.selectComponentsByType([ComponentType.Dialog])) {
+    private updatePreferableComponentRank(page: Page): void {
+        for (const component of page.selectComponentsByType([ComponentType.Dialog])) {
             Page.collectComponent(component, (item) => {
                 if (item.hasUIEvent()) {
                     item.rank = Rank.HIGH;
@@ -180,10 +166,6 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
             RandomUtils.shuffle(components);
         }
         return components[0];
-    }
-
-    private getPageKey(): string {
-        return `${this.currentState.page.getAbilityName()}:${this.currentState.page.getPagePath()}`;
     }
 
     private getPossibleEvents(components: Component[]): Event[] {

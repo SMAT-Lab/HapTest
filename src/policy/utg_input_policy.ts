@@ -15,16 +15,16 @@
 
 import { Device } from '../device/device';
 import { Event } from '../event/event';
-import { DeviceState } from '../model/device_state';
 import { Hap } from '../model/hap';
+import { Page } from '../model/page';
 import { InputPolicy, PolicyName } from './input_policy';
 import { UTG } from './utg';
 
 export abstract class UTGInputPolicy extends InputPolicy {
     protected randomInput: boolean;
     protected lastEvent: Event;
-    protected lastState: DeviceState;
-    protected currentState: DeviceState;
+    protected lastPage: Page;
+    protected currentPage: Page;
     protected utg: UTG;
 
     constructor(device: Device, hap: Hap, name: PolicyName, randomInput: boolean) {
@@ -33,22 +33,22 @@ export abstract class UTGInputPolicy extends InputPolicy {
         this.utg = new UTG(device, hap, randomInput);
     }
 
-    generateEvent(deviceState: DeviceState): Event {
-        this.currentState = deviceState;
+    generateEvent(page: Page): Event {
+        this.currentPage = page;
         this.updateUtg();
 
         // todo: script event
         let event = this.generateEventBasedOnUtg();
-        this.lastState = this.currentState;
+        this.lastPage = this.currentPage;
         this.lastEvent = event;
         return event;
     }
 
     private updateUtg(): void {
-        if (this.lastEvent && this.lastState && this.currentState) {
-            this.utg.addTransition(this.lastEvent, this.lastState, this.currentState);
+        if (this.lastEvent && this.lastPage && this.currentPage) {
+            this.utg.addTransition(this.lastEvent, this.lastPage, this.currentPage);
             // transition to StopState
-            this.utg.addTransitionToStop(this.currentState);
+            this.utg.addTransitionToStop(this.currentPage);
         }
     }
 

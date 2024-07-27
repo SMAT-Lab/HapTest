@@ -15,13 +15,13 @@
 
 import { Device } from '../device/device';
 import { Event } from '../event/event';
-import { Hap, HapRunningState } from '../model/hap';
-import { DeviceState } from '../model/device_state';
+import { Hap } from '../model/hap';
 import DirectedGraph from 'graphology';
 import { bidirectional } from 'graphology-shortest-path';
 import Logger from '../utils/logger';
 import { RandomUtils } from '../utils/random_utils';
 import { StopHapEvent } from '../event/system_event';
+import { Page } from '../model/page';
 const logger = Logger.getLogger();
 
 type EdgeAttributeType = Map<string, { id: number; event: Event }>;
@@ -33,157 +33,147 @@ export class UTG {
     device: Device;
     hap: Hap;
     randomInput: boolean;
-    transitions: [DeviceState, Event, DeviceState][];
-    contentStateGraph: DirectedGraph<DeviceState, EdgeAttributeType>;
-    structualStateGraph: DirectedGraph<DeviceState[], EdgeAttributeType>;
+    transitions: [Page, Event, Page][];
+    pageContentGraph: DirectedGraph<Page, EdgeAttributeType>;
+    pageStructualGraph: DirectedGraph<Page[], EdgeAttributeType>;
     ineffectiveEvent: Set<string>;
     effectiveEvent: Set<string>;
-    exploredState: Set<string>;
-    reachedState: Set<string>;
-    reachedPages: Set<string>;
-    firstState: DeviceState;
-    lastState: DeviceState;
+    exploredPage: Set<string>;
+    reachedPage: Set<string>;
+    firstPage: Page;
+    lastPage: Page;
     stopEvent: StopHapEvent;
-    stopState: DeviceState;
+    stopPage: Page;
 
     constructor(device: Device, hap: Hap, randomInput: boolean) {
         this.device = device;
         this.hap = hap;
         this.randomInput = randomInput;
         this.transitions = [];
-        this.contentStateGraph = new DirectedGraph();
-        this.structualStateGraph = new DirectedGraph();
+        this.pageContentGraph = new DirectedGraph();
+        this.pageStructualGraph = new DirectedGraph();
         this.ineffectiveEvent = new Set();
         this.effectiveEvent = new Set();
-        this.exploredState = new Set();
-        this.reachedState = new Set();
-        this.reachedPages = new Set();
+        this.exploredPage = new Set();
+
+        this.reachedPage = new Set();
         this.stopEvent = new StopHapEvent(this.hap.bundleName);
     }
 
-    addTransitionToStop(newState: DeviceState): void {
-        if (!this.stopState || newState.runningState != HapRunningState.FOREGROUND) {
+    addTransitionToStop(newPage: Page): void {
+        if (!this.stopPage || !newPage.isForeground()) {
             return;
         }
 
-        this.addTransition(this.stopEvent, newState, this.stopState);
+        this.addTransition(this.stopEvent, newPage, this.stopPage);
     }
 
-    addTransition(event: Event, oldState: DeviceState, newState: DeviceState): void {
-        this.addNode(oldState);
-        this.addNode(newState);
+    addTransition(event: Event, oldPage: Page, newPage: Page): void {
+        this.addNode(oldPage);
+        this.addNode(newPage);
 
-        this.transitions.push([oldState, event, newState]);
-        let eventState = event.eventStateSig(oldState);
+        this.transitions.push([oldPage, event, newPage]);
+        let eventPageSig = event.eventPageSig(oldPage);
 
         // ineffective event
-        if (oldState.getPageContentSig() == newState.getPageContentSig()) {
-            this.ineffectiveEvent.add(eventState);
+        if (oldPage.getContentSig() == newPage.getContentSig()) {
+            this.ineffectiveEvent.add(eventPageSig);
             return;
         }
 
-        this.effectiveEvent.add(eventState);
+        this.effectiveEvent.add(eventPageSig);
 
-        if (!this.contentStateGraph.hasEdge(oldState.getPageContentSig(), newState.getPageContentSig())) {
-            this.contentStateGraph.addEdge(oldState.getPageContentSig(), newState.getPageContentSig(), new Map());
+        if (!this.pageContentGraph.hasEdge(oldPage.getContentSig(), newPage.getContentSig())) {
+            this.pageContentGraph.addEdge(oldPage.getContentSig(), newPage.getContentSig(), new Map());
         }
-        let attr = this.contentStateGraph.getEdgeAttributes(oldState.getPageContentSig(), newState.getPageContentSig());
-        attr.set(eventState, { event: event, id: this.effectiveEvent.size });
+        let attr = this.pageContentGraph.getEdgeAttributes(oldPage.getContentSig(), newPage.getContentSig());
+        attr.set(eventPageSig, { event: event, id: this.effectiveEvent.size });
 
-        if (!this.structualStateGraph.hasEdge(oldState.getPageStructureSig(), newState.getPageStructureSig())) {
-            this.structualStateGraph.addEdge(oldState.getPageStructureSig(), newState.getPageStructureSig(), new Map());
+        if (!this.pageStructualGraph.hasEdge(oldPage.getStructualSig(), newPage.getStructualSig())) {
+            this.pageStructualGraph.addEdge(oldPage.getStructualSig(), newPage.getStructualSig(), new Map());
         }
 
-        attr = this.structualStateGraph.getEdgeAttributes(
-            oldState.getPageStructureSig(),
-            newState.getPageStructureSig()
-        );
-        attr.set(eventState, { event: event, id: this.effectiveEvent.size });
+        attr = this.pageStructualGraph.getEdgeAttributes(oldPage.getStructualSig(), newPage.getStructualSig());
+        attr.set(eventPageSig, { event: event, id: this.effectiveEvent.size });
 
-        this.lastState = newState;
+        this.lastPage = newPage;
     }
 
-    removeTransition(event: Event, oldState: DeviceState, newState: DeviceState): void {
+    removeTransition(event: Event, oldPage: Page, newPage: Page): void {
         // event bind oldState
-        let eventStr = event.eventStateSig(oldState);
-        if (this.contentStateGraph.hasEdge(oldState.getPageContentSig(), newState.getPageContentSig())) {
-            let attr = this.contentStateGraph.getEdgeAttributes(
-                oldState.getPageContentSig(),
-                newState.getPageContentSig()
-            );
+        let eventStr = event.eventPageSig(oldPage);
+        if (this.pageContentGraph.hasEdge(oldPage.getStructualSig(), newPage.getStructualSig())) {
+            let attr = this.pageContentGraph.getEdgeAttributes(oldPage.getStructualSig(), newPage.getStructualSig);
             if (attr.has(eventStr)) {
                 attr.delete(eventStr);
             }
             if (attr.size == 0) {
-                this.contentStateGraph.dropEdge(oldState.getPageContentSig(), newState.getPageContentSig());
+                this.pageContentGraph.dropEdge(oldPage.getStructualSig(), newPage.getStructualSig());
             }
         }
 
-        if (this.structualStateGraph.hasEdge(oldState.getPageStructureSig(), newState.getPageStructureSig())) {
-            let attr = this.structualStateGraph.getEdgeAttributes(
-                oldState.getPageStructureSig(),
-                newState.getPageStructureSig()
-            );
+        if (this.pageStructualGraph.hasEdge(oldPage.getStructualSig(), newPage.getStructualSig())) {
+            let attr = this.pageStructualGraph.getEdgeAttributes(oldPage.getStructualSig(), newPage.getStructualSig);
             if (attr.has(eventStr)) {
                 attr.delete(eventStr);
             }
             if (attr.size == 0) {
-                this.structualStateGraph.dropEdge(oldState.getPageStructureSig(), newState.getPageStructureSig());
+                this.pageStructualGraph.dropEdge(oldPage.getStructualSig(), newPage.getStructualSig());
             }
         }
     }
 
-    isEventExplored(event: Event, state: DeviceState): boolean {
-        let eventState = event.eventStateSig(state);
-        return this.effectiveEvent.has(eventState) || this.ineffectiveEvent.has(eventState);
+    isEventExplored(event: Event, page: Page): boolean {
+        let eventPageSig = event.eventPageSig(page);
+        return this.effectiveEvent.has(eventPageSig) || this.ineffectiveEvent.has(eventPageSig);
     }
 
-    isStateExplored(state: DeviceState): boolean {
-        if (this.exploredState.has(state.getPageContentSig())) {
+    isPageExplored(page: Page): boolean {
+        if (this.exploredPage.has(page.getContentSig())) {
             return true;
         }
 
-        for (const event of state.getPossibleUIEvents()) {
-            if (!this.isEventExplored(event, state)) {
+        for (const event of page.getPossibleUIEvents()) {
+            if (!this.isEventExplored(event, page)) {
                 return false;
             }
         }
 
-        this.exploredState.add(state.getPageContentSig());
+        this.exploredPage.add(page.getContentSig());
         return true;
     }
 
-    isStateReached(state: DeviceState): boolean {
-        if (this.reachedState.has(state.getPageContentSig())) {
+    isPageReached(page: Page): boolean {
+        if (this.reachedPage.has(page.getContentSig())) {
             return true;
         }
         // todo
-        this.reachedState.add(state.getPageContentSig());
+        this.reachedPage.add(page.getContentSig());
         return false;
     }
 
-    getReachableStates(currentState: DeviceState): DeviceState[] {
-        let reachableStates: DeviceState[] = [];
-        this.contentStateGraph.filterOutEdges(currentState.getPageContentSig(), (edge, attr, source, target) => {
-            let state = this.contentStateGraph.getNodeAttributes(target);
-            reachableStates.push(state);
+    getReachablePages(currentPage: Page): Page[] {
+        let reachablePages: Page[] = [];
+        this.pageContentGraph.filterOutEdges(currentPage.getContentSig(), (edge, attr, source, target) => {
+            let state = this.pageContentGraph.getNodeAttributes(target);
+            reachablePages.push(state);
         });
-        return reachableStates;
+        return reachablePages;
     }
 
-    getNavigationSteps(from: DeviceState, to: DeviceState): [DeviceState, Event][] | undefined {
-        const path = bidirectional(this.contentStateGraph, from.getPageContentSig(), to.getPageContentSig());
+    getNavigationSteps(from: Page, to: Page): [Page, Event][] | undefined {
+        const path = bidirectional(this.pageContentGraph, from.getContentSig(), to.getContentSig());
         if (!path || path.length < 2) {
-            logger.warn(`error get path from ${from.getPageContentSig()} to ${to.getPageContentSig()}`);
+            logger.warn(`error get path from ${from.getContentSig()} to ${to.getContentSig()}`);
             return;
         }
 
-        let steps: [DeviceState, Event][] = [];
+        let steps: [Page, Event][] = [];
         let source = path[0];
         for (let i = 1; i < path.length; i++) {
-            let sourceState = this.contentStateGraph.getNodeAttributes(source);
+            let sourceState = this.pageContentGraph.getNodeAttributes(source);
             let target = path[i];
-            let edgeAttr = this.contentStateGraph.getEdgeAttributes(source, target);
+            let edgeAttr = this.pageContentGraph.getEdgeAttributes(source, target);
             let eventKeys = Array.from(edgeAttr.keys());
             if (this.randomInput) {
                 RandomUtils.shuffle(eventKeys);
@@ -196,23 +186,23 @@ export class UTG {
         return steps;
     }
 
-    private addNode(state: DeviceState) {
-        if (this.firstState == undefined) {
-            this.firstState = state;
+    private addNode(page: Page) {
+        if (this.firstPage == undefined) {
+            this.firstPage = page;
         }
 
-        if (this.stopState == undefined && state.runningState == HapRunningState.STOP) {
-            this.stopState = state;
+        if (this.stopPage == undefined && page.isStop()) {
+            this.stopPage = page;
         }
 
-        if (!this.contentStateGraph.hasNode(state.getPageContentSig())) {
-            this.contentStateGraph.addNode(state.getPageContentSig(), state);
+        if (!this.pageContentGraph.hasNode(page.getContentSig())) {
+            this.pageContentGraph.addNode(page.getContentSig(), page);
         }
 
-        if (!this.structualStateGraph.hasNode(state.getPageStructureSig())) {
-            this.structualStateGraph.addNode(state.getPageStructureSig(), [state]);
+        if (!this.pageStructualGraph.hasNode(page.getStructualSig())) {
+            this.pageStructualGraph.addNode(page.getStructualSig(), [page]);
         } else {
-            this.structualStateGraph.getNodeAttributes(state.getPageStructureSig()).push(state);
+            this.pageStructualGraph.getNodeAttributes(page.getStructualSig()).push(page);
         }
         // reached ability
     }

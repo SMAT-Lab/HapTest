@@ -15,9 +15,9 @@
 
 import { Expose } from 'class-transformer';
 import { EventSimulator } from '../device/event_simulator';
-import { DeviceState } from '../model/device_state';
 import { Event } from './event';
 import { CryptoUtils } from '../utils/crypto_utils';
+import { Page } from '../model/page';
 
 export abstract class SystemEvent extends Event {}
 
@@ -37,7 +37,7 @@ export class AbilityEvent extends SystemEvent {
         simulator.startAblity(this.bundleName, this.abilityName);
     }
 
-    eventStateSig(state: DeviceState): string {
+    eventPageSig(page: Page): string {
         return CryptoUtils.sha256(this.toString());
     }
 }
@@ -55,7 +55,7 @@ export class StopHapEvent extends SystemEvent {
         simulator.forceStop(this.bundleName);
     }
 
-    eventStateSig(state: DeviceState): string {
+    eventPageSig(page: Page): string {
         return CryptoUtils.sha256(this.toString());
     }
 }
@@ -67,4 +67,3 @@ export class ExitEvent extends SystemEvent {
 
     send(simulator: EventSimulator): void {}
 }
-

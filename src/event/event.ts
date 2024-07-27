@@ -15,10 +15,10 @@
 
 import { Expose } from 'class-transformer';
 import { EventSimulator } from '../device/event_simulator';
-import { DeviceState } from '../model/device_state';
 import { SerializeUtils } from '../utils/serialize_utils';
 import { CryptoUtils } from '../utils/crypto_utils';
 import { Rank } from '../model/rank';
+import { Page } from '../model/page';
 
 export abstract class Event {
     @Expose()
@@ -34,8 +34,8 @@ export abstract class Event {
         return SerializeUtils.serialize(this);
     }
 
-    eventStateSig(state: DeviceState): string {
-        return CryptoUtils.sha256(SerializeUtils.serialize({ event: this, state: state.getPageContent() }));
+    eventPageSig(page: Page): string {
+        return CryptoUtils.sha256(SerializeUtils.serialize({ event: this, page: page.getContent() }));
     }
 
     getRank(): number {

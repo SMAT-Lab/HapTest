@@ -15,8 +15,8 @@
 
 import { Device } from '../device/device';
 import { Event } from '../event/event';
-import { DeviceState } from '../model/device_state';
 import { Hap } from '../model/hap';
+import { Page } from '../model/page';
 import { InputPolicy } from '../policy/input_policy';
 import { PolicyBuilder } from '../policy/policy_builder';
 import { EventAction } from './event_action';
@@ -41,10 +41,10 @@ export class InputManager {
     }
 
     async start() {
-        let state = this.device.getCurrentState(this.hap);
+        let page = this.device.getCurrentPage(this.hap);
         while (this.enabled && this.policy.enabled) {
-            let event = this.policy.generateEvent(state);
-            state = await this.addEvent(state, event);
+            let event = this.policy.generateEvent(page);
+            page = await this.addEvent(page, event);
         }
     }
 
@@ -52,13 +52,13 @@ export class InputManager {
         this.enabled = false;
     }
 
-    protected async addEvent(state: DeviceState, event: Event): Promise<DeviceState> {
-        let eventExcute = new EventAction(this.device, this.hap, state, event);
+    protected async addEvent(page: Page, event: Event): Promise<Page> {
+        let eventExcute = new EventAction(this.device, this.hap, page, event);
         eventExcute.start();
         // sleep interval
         await sleep(EVENT_INTERVAL);
         eventExcute.stop();
 
-        return eventExcute.toState;
+        return eventExcute.toPage;
     }
 }

@@ -15,9 +15,9 @@
 
 import { Expose } from 'class-transformer';
 import { EventSimulator } from '../device/event_simulator';
-import { DeviceState } from '../model/device_state';
 import { Event } from './event';
 import { CryptoUtils } from '../utils/crypto_utils';
+import { Page } from '../model/page';
 
 export class ManualEvent extends Event {
     @Expose()
@@ -30,7 +30,7 @@ export class ManualEvent extends Event {
 
     send(simulator: EventSimulator): void {}
 
-    eventStateSig(state: DeviceState): string {
+    eventPageSig(page: Page): string {
         return CryptoUtils.sha256(this.toString());
     }
 }
