@@ -1,0 +1,13 @@
+diff --git a/node_modules/adm-zip/zipEntry.js b/node_modules/adm-zip/zipEntry.js
+index 486e092..abccb3a 100644
+--- a/node_modules/adm-zip/zipEntry.js
++++ b/node_modules/adm-zip/zipEntry.js
+@@ -153,7 +153,7 @@ module.exports = function (/*Buffer*/ input) {
+     function parseExtra(data) {
+         var offset = 0;
+         var signature, size, part;
+-        while (offset < data.length) {
++        while (offset + 4 < data.length) {
+             signature = data.readUInt16LE(offset);
+             offset += 2;
+             size = data.readUInt16LE(offset);
