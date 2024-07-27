@@ -1,11 +1,11 @@
-# ArkTest
+# HapTest
 
 ## Description
-ArkTest is an OpenHarmony application UI automated testing framework. It supports a variety of testing strategies and can effectively automate UI testing, thereby improving the stability and quality of applications.
+HapTest is an OpenHarmony application UI automated testing framework. It supports a variety of testing strategies and can effectively automate UI testing, thereby improving the stability and quality of applications.
 
 ## Installation
 ```
-npm install ohos-arktest
+npm install ohos-haptest
 ```
 
 ## Build
@@ -23,7 +23,7 @@ npm pack
 
 ### 1. Usage 
 ```
-arktest [options]
+haptest [options]
 
 Options:
   -V, --version                          output the version number
