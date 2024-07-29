@@ -24,18 +24,14 @@ import { MAX_NUM_RESTARTS, UTGInputPolicy } from './utg_input_policy';
 import { PolicyName } from './input_policy';
 import { EventBuilder } from '../event/event_builder';
 import { Rank } from '../model/rank';
-import { KeyEvent } from '../event/key_event';
-import { KeyCode } from '../model/key_code';
 
 export class UtgNaiveSearchPolicy extends UTGInputPolicy {
     private pageComponentMap: Map<string, Component[]>;
-    private isNewPage: boolean;
 
     constructor(device: Device, hap: Hap, name: PolicyName) {
         super(device, hap, name, true);
         this.retryCount = 0;
         this.pageComponentMap = new Map();
-        this.isNewPage = false;
     }
 
     generateEventBasedOnUtg(): Event {
@@ -61,7 +57,6 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
 
         let pageSig = this.currentPage.getContentSig();
         if (!this.pageComponentMap.has(pageSig)) {
-            this.isNewPage = true;
             let components: Component[] = [];
             this.updatePreferableComponentRank(this.currentPage);
             for (const component of this.currentPage.getComponents()) {
@@ -132,16 +127,6 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
     }
 
     private getPossibleEvents(components: Component[]): Event[] {
-        let events: Event[] = EventBuilder.createPossibleUIEvents(components);
-        if (this.isNewPage) {
-            let back = new KeyEvent(KeyCode.KEYCODE_BACK);
-            if (this.name == PolicyName.BFS_NAIVE) {
-                back.setRank(Rank.URGENT);
-            } else {
-                back.setRank(Rank.LOW);
-            }
-            events.push(back);
-        }
-        return events;
+        return EventBuilder.createPossibleUIEvents(components);
     }
 }

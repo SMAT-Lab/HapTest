@@ -21,12 +21,18 @@ import { UIEvent } from '../event/ui_event';
 import { HapRunningState } from './hap';
 import { Snapshot } from './snapshot';
 import { ViewTree } from './viewtree';
+import { Expose } from 'class-transformer';
 
 export class Page {
+    @Expose()
     private viewTree: ViewTree;
+    @Expose()
     private abilityName: string;
+    @Expose()
     private bundleName: string;
+    @Expose()
     private pagePath: string;
+    @Expose()
     private snapshot: Snapshot;
 
     constructor(viewTree: ViewTree, abilityName: string, bundleName: string, pagePath: string) {
@@ -65,12 +71,12 @@ export class Page {
     }
 
     toJson(): Record<string, any> {
-        return SerializeUtils.instanceToPlain({
-            viewTree: this.viewTree.toJson(),
-            abilityName: this.abilityName,
-            bundleName: this.bundleName,
-            pagePath: this.pagePath,
-        });
+        return SerializeUtils.instanceToPlain(this, { groups: ['Content'] });
+    }
+
+    static fromJson(json: any): Page {
+        SerializeUtils.plainToInstance(Page, JSON.parse(json), { groups: ['Content'] });
+        return new Page(ViewTree.fromJson(json.viewTree), json.abilityName, json.bundleName, json.pagePath);
     }
 
     getContent(): string {

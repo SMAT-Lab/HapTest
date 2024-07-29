@@ -18,6 +18,7 @@ import { Hap } from '../model/hap';
 import { FuzzOptions } from '../runner/fuzz_options';
 import { InputPolicy, PolicyName } from './input_policy';
 import { ManualPolicy } from './manual_policy';
+import { ReplayPolicy } from './replay_policy';
 import { UtgGreedySearchPolicy } from './utg_greedy_search_policy';
 import { UtgNaiveSearchPolicy } from './utg_naive_search_policy';
 
@@ -25,14 +26,14 @@ export class PolicyBuilder {
     static buildPolicyByName(device: Device, hap: Hap, options: FuzzOptions): InputPolicy {
         if (options.policyName == PolicyName.MANUAL) {
             return new ManualPolicy(device, hap, PolicyName.MANUAL);
+        } else if (options.policyName == PolicyName.REPLAY) {
+            return new ReplayPolicy(device, hap, options.policyName, options.reportRoot!);
         } else if (options.policyName == PolicyName.BFS_GREEDY) {
             return new UtgGreedySearchPolicy(device, hap, PolicyName.BFS_GREEDY);
         } else if (options.policyName == PolicyName.DFS_GREEDY) {
             return new UtgGreedySearchPolicy(device, hap, PolicyName.DFS_GREEDY);
-        } else if (options.policyName == PolicyName.BFS_NAIVE) {
-            return new UtgNaiveSearchPolicy(device, hap, PolicyName.BFS_NAIVE);
         } else {
-            return new UtgNaiveSearchPolicy(device, hap, PolicyName.DFS_NAIVE);
+            return new UtgNaiveSearchPolicy(device, hap, PolicyName.NAIVE);
         }
     }
 }

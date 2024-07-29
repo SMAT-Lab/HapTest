@@ -22,4 +22,5 @@ export interface FuzzOptions {
     bundleName?: string;
     sourceRoot?: string;
     hapFile?: string;
+    reportRoot?: string;
 }

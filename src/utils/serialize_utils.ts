@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { ClassTransformOptions, instanceToPlain } from 'class-transformer';
+import { ClassConstructor, ClassTransformOptions, instanceToPlain, plainToInstance } from 'class-transformer';
 
 export class SerializeUtils {
     static instanceToPlain<T>(object: T, options?: ClassTransformOptions): Record<string, any> {
@@ -25,4 +25,11 @@ export class SerializeUtils {
     static serialize<T>(object: T, options?: ClassTransformOptions, space?: number): string {
         return JSON.stringify(SerializeUtils.instanceToPlain(object, options), null, space);
     }
+
+    static plainToInstance<T, V>(cls: ClassConstructor<T>, plain: V, options?: ClassTransformOptions): T {
+        let defaultOptions: ClassTransformOptions = { enableCircularCheck: true, excludeExtraneousValues: true };
+        defaultOptions.groups = options?.groups;
+
+        return plainToInstance(cls, plain, options);
+    } 
 }

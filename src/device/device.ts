@@ -30,6 +30,7 @@ import { HapProject } from 'bjc';
 import { findFiles } from '../utils/file_utils';
 import { Snapshot } from '../model/snapshot';
 import { getLogger } from 'log4js';
+import moment from 'moment';
 const logger = getLogger();
 
 export class Device implements EventSimulator {
@@ -45,7 +46,7 @@ export class Device implements EventSimulator {
     constructor(options: FuzzOptions) {
         this.options = options;
         this.hdc = new Hdc(options.connectkey);
-        this.output = path.resolve(options.output);
+        this.output = path.join(path.resolve(options.output), moment().format('YYYY-MM-DD-HH-mm-ss'));
         let size = this.hdc.getScreenSize();
         this.width = size.x;
         this.height = size.y;

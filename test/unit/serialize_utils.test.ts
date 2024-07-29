@@ -19,6 +19,7 @@ import { PageBuilder } from '../../src/model/builder/page_builder';
 import { SerializeUtils } from '../../src/utils/serialize_utils';
 import { CombinedKeyEvent } from '../../src/event/key_event';
 import { KeyCode } from '../../src/model/key_code';
+import { Page } from '../../src/model/page';
 
 describe('SerializeUtils Test', () => {
     it('test Component()', async () => {
@@ -28,11 +29,15 @@ describe('SerializeUtils Test', () => {
         expect(SerializeUtils.serialize(mainPage.getRoot()).length).eq(380);
 
         let json = mainPage.getContent();
-        expect(json.length).eq(20818);
+        expect(json.length).eq(20827);
+
+        json = SerializeUtils.serialize(mainPage, { groups: ['Content'] });
+        let page = SerializeUtils.plainToInstance(Page, JSON.parse(json), { groups: ['Content'] });
+        expect(mainPage.getContentSig()).eq(page.getContentSig());
     });
 
     it('test event', async () => {
         let event = new CombinedKeyEvent(KeyCode.KEYCODE_POWER, KeyCode.KEYCODE_VOLUME_UP);
         expect(SerializeUtils.serialize(event)).eq('{"keyCode":18,"type":"CombinedKeyEvent","keyCode1":16}');
-    })
+    });
 });

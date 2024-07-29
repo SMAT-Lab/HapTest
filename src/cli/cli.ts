@@ -33,6 +33,7 @@ const logger = getLogger();
         .option('--policy <policyName>', 'policy name', 'manu')
         .option('-t --target [connectkey]', 'hdc connectkey', undefined)
         .option('-c --coverage', 'enable coverage', false)
+        .option('--report [report root]', 'report root')
         .parse();
 
     HapTestLogger.configure('haptest.log', LOG_LEVEL.INFO);
@@ -46,6 +47,7 @@ const logger = getLogger();
         policyName: options.policy,
         output: options.output,
         coverage: options.coverage,
+        reportRoot: options.report,
     };
     let envChecker = new EnvChecker(fuzzOption);
     envChecker.check();

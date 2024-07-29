@@ -28,10 +28,10 @@ export enum PolicyFlag {
 
 export enum PolicyName {
     MANUAL = 'manual',
+    NAIVE = 'naive',
+    REPLAY = 'replay',
     DFS_GREEDY = 'greedy_dfs',
     BFS_GREEDY = 'greedy_bfs',
-    DFS_NAIVE = 'naive_dfs',
-    BFS_NAIVE = 'naive_bfs',
 }
 
 export abstract class InputPolicy {

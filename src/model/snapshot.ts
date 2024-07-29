@@ -15,22 +15,29 @@
 
 import { CoverageReport } from "bjc";
 import { Device } from "../device/device";
+import { Expose } from 'class-transformer';
 
 /**
  * Snapshots of the test site
  */
 export class Snapshot {
     /** screen width */
+    @Expose()
     screenWidth: number;
     /** screen height */
+    @Expose()
     screenHeight: number;
     /** cap screen path */
+    @Expose()
     screenCapPath: string;
     /** fault logs in device */
+    @Expose()
     faultLogs: Set<string>;
     /** coverage */
+    @Expose()
     coverage: CoverageReport | undefined;
     /** device udid */
+    @Expose()
     udid: string;
     
     constructor(device: Device, screen: string, faultLogs: Set<string>, coverage?: CoverageReport) {

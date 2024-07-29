@@ -13,10 +13,12 @@
  * limitations under the License.
  */
 
+import { Expose, plainToInstance } from 'class-transformer';
 import { SerializeUtils } from '../utils/serialize_utils';
 import { Component } from './component';
 
 export class ViewTree {
+    @Expose()
     private root: Component;
     private components: Component[];
 
@@ -39,6 +41,11 @@ export class ViewTree {
 
     toJson(): Record<string, any> {
         return SerializeUtils.instanceToPlain(this.getRoot(), { groups: ['Content'] });
+    }
+
+    static fromJson(json: any): ViewTree {
+        let root = plainToInstance(Component, json, { groups: ['Content'] });
+        return new ViewTree(root);
     }
 
     getContent(): string {
