@@ -24,6 +24,8 @@ import Logger from '../utils/logger';
 import { convertStr2RunningState, Hap, HapRunningState } from '../model/hap';
 const logger = Logger.getLogger();
 
+const NEWLINE = /\r\n|\n/;
+
 export class Hdc {
     private connectkey: string | undefined;
 
@@ -128,9 +130,9 @@ export class Hdc {
         if (output.length == 0) {
             return;
         }
-        let lines = output.split('\r\n');
+        let lines = output.split(NEWLINE); 
         try {
-            let info = JSON.parse(lines.slice(1).join('\r\n'));
+            let info = JSON.parse(lines.slice(1).join('\n'));
             return info;
         } catch (err) {
             return undefined;
@@ -141,7 +143,7 @@ export class Hdc {
         let logs: Set<string> = new Set();
         let output = this.excuteShellCommand('ls /data/log/faultlog/ -hlR');
         let curDir = '/data/log/faultl';
-        for (let line of output.split('\r\n')) {
+        for (let line of output.split(NEWLINE)) {
             if (line.startsWith('/data/log/faultlog/') && line.endsWith(':')) {
                 curDir = line.substring(0, line.length - 1);
                 continue;
@@ -159,7 +161,7 @@ export class Hdc {
 
     getDeviceUdid(): string {
         let output = this.excuteShellCommand('bm get -u');
-        let lines = output.split('\r\n');
+        let lines = output.split(NEWLINE);
         return lines[1];
     }
 
@@ -211,7 +213,7 @@ export class Hdc {
         let process: Map<string, HapRunningState> = new Map();
         let output = this.excuteShellCommand(...['aa', 'dump', '-a']);
         let bundleName = '';
-        for (let line of output.split('\r\n')) {
+        for (let line of output.split(NEWLINE)) {
             let matches = line.match(/process name \[([a-zA-Z.0-9:]+)\]/);
             if (matches) {
                 bundleName = matches[1].split(':')[0];
@@ -231,7 +233,7 @@ export class Hdc {
     netstatInfo(): Map<number, { pid: number; program: string }> {
         let info: Map<number, { pid: number; program: string }> = new Map();
         let output = this.excuteShellCommand(...['netstat', '-antulp']);
-        for (let line of output.split('\n')) {
+        for (let line of output.split(NEWLINE)) {
             if (line.startsWith('tcp') || line.startsWith('udp')) {
                 let matches = line.match(/[\S]+/g);
                 if (matches?.length == 7) {
@@ -296,7 +298,7 @@ export class Hdc {
                 `/data/storage/el2/base/${direct}`,
             ]
         );
-        for (let line of output.split('\r\n')) {
+        for (let line of output.split(NEWLINE)) {
             let matches = line.match(/[\S]+/g);
             if (matches?.length == 9) {
                 files.push([matches[8], matches[0].startsWith('d')]);
