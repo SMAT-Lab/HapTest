@@ -28,9 +28,9 @@ import { FuzzOptions } from '../runner/fuzz_options';
 import { execSync } from 'child_process';
 import { HapProject } from 'bjc';
 import { findFiles } from '../utils/file_utils';
-import Logger from '../utils/logger';
 import { Snapshot } from '../model/snapshot';
-const logger = Logger.getLogger();
+import { getLogger } from 'log4js';
+const logger = getLogger();
 
 export class Device implements EventSimulator {
     private hdc: Hdc;

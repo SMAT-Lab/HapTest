@@ -17,13 +17,14 @@ import { program } from 'commander';
 import { Fuzz } from '../runner/fuzz';
 import path from 'path';
 import fs from 'fs';
-import Logger from '../utils/logger';
+import { HapTestLogger, LOG_LEVEL } from '../utils/logger';
 import { FuzzOptions } from '../runner/fuzz_options';
 import { EnvChecker } from './env_checker';
-const logger = Logger.getLogger();
+import { getLogger } from 'log4js';
+const logger = getLogger();
 
 (async function (): Promise<void> {
-    let packageCfg = JSON.parse(fs.readFileSync(path.join(__dirname, '../../package.json'), {encoding: 'utf-8'}));
+    let packageCfg = JSON.parse(fs.readFileSync(path.join(__dirname, '../../package.json'), { encoding: 'utf-8' }));
     program
         .name(packageCfg.name)
         .version(packageCfg.version)
@@ -34,6 +35,8 @@ const logger = Logger.getLogger();
         .option('-c --coverage', 'enable coverage', false)
         .parse();
 
+    HapTestLogger.configure('haptest.log', LOG_LEVEL.INFO);
+
     let options = program.opts();
     logger.info(`haptest start by args ${JSON.stringify(options)}.`);
 
@@ -42,7 +45,7 @@ const logger = Logger.getLogger();
         hap: options.hap,
         policyName: options.policy,
         output: options.output,
-        coverage: options.coverage
+        coverage: options.coverage,
     };
     let envChecker = new EnvChecker(fuzzOption);
     envChecker.check();

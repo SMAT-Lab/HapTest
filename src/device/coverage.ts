@@ -19,8 +19,8 @@ import { HOME_KEY_EVENT } from '../event/key_event';
 import { Hap } from '../model/hap';
 import { Device } from './device';
 import { CoverageReport, Report } from 'bjc';
-import Logger from '../utils/logger';
-const logger = Logger.getLogger();
+import { getLogger } from 'log4js';
+const logger = getLogger();
 
 /**
  * cov file save at data/app/el2/100/base/{bundleName}/haps/{moduleName}/cache/black_test_result_xxx.json

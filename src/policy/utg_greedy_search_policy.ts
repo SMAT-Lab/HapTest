@@ -14,30 +14,23 @@
  */
 
 import { Hap } from '../model/hap';
-import { UTGInputPolicy } from './utg_input_policy';
+import { MAX_NUM_RESTARTS, UTGInputPolicy } from './utg_input_policy';
 import { Device } from '../device/device';
 import { Event } from '../event/event';
 import { InputTextEvent } from '../event/ui_event';
-import { ExitEvent, StopHapEvent, AbilityEvent } from '../event/system_event';
+import { ExitEvent } from '../event/system_event';
 import { BACK_KEY_EVENT } from '../event/key_event';
 import { RandomUtils } from '../utils/random_utils';
 import { Component, ComponentType } from '../model/component';
 import { EventBuilder } from '../event/event_builder';
 import { Page } from '../model/page';
 import { Rank } from '../model/rank';
-import Logger from '../utils/logger';
-import { PolicyFlag, PolicyName } from './input_policy';
-
-const logger = Logger.getLogger();
-
-export const MAX_NUM_RESTARTS = 5;
+import { PolicyName } from './input_policy';
 
 /**
  * DFS/BFS (according to search_method) strategy to explore UFG (new)
  */
 export class UtgGreedySearchPolicy extends UTGInputPolicy {
-    private retryCount: number;
-    private pageMap: Map<string, Page>;
     private pageComponentMap: Map<string, Component[]>;
     private selectComponentMap: Map<string, Component[]>;
 
@@ -48,7 +41,6 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
         super(device, hap, name, true);
         this.retryCount = 0;
         this.isNewPage = false;
-        this.pageMap = new Map();
         this.pageComponentMap = new Map();
         this.inputComponents = [];
 
@@ -61,29 +53,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
      * @returns {Event} The generated Event object.
      */
     generateEventBasedOnUtg(): Event {
-        if (this.flag == PolicyFlag.FLAG_INIT) {
-            if (!this.currentPage.isStop()) {
-                this.flag |= PolicyFlag.FLAG_STOP_APP;
-                return new StopHapEvent(this.hap.bundleName);
-            }
-        }
-
-        if (this.currentPage.isStop()) {
-            if (this.retryCount > MAX_NUM_RESTARTS) {
-                logger.error(`The number of HAP launch attempts exceeds ${MAX_NUM_RESTARTS}`);
-                throw new Error('The HAP cannot be started.');
-            }
-            this.retryCount++;
-            this.flag |= PolicyFlag.FLAG_START_APP;
-            return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
-        } else if (this.currentPage.isForeground()) {
-            this.flag = PolicyFlag.FLAG_STARTED;
-        } else {
-            return BACK_KEY_EVENT;
-        }
-
         this.updateState();
-
         // Get all possible input events
         let possibleEvent = this.getPossibleEvent();
 
@@ -181,16 +151,13 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
     }
 
     private updateState(): void {
-        if (this.currentPage.getBundleName() != this.hap.bundleName) {
+        if (!this.currentPage.isForeground()) {
             return;
         }
 
         let pageSig = this.currentPage.getContentSig();
-        if (!this.pageMap.has(pageSig)) {
-            this.pageMap.set(pageSig, this.currentPage);
-        }
-
         if (!this.pageComponentMap.has(pageSig)) {
+            this.isNewPage = true;
             let components: Component[] = [];
             this.updatePreferableComponentRank(this.currentPage);
             for (const component of this.currentPage.getComponents()) {

@@ -17,11 +17,11 @@ import path from 'path';
 import fs from 'fs';
 import { install } from 'bjc';
 import { which } from '../utils/which';
-import Logger from '../utils/logger';
 import { FileNotFoundError } from '../error/error';
 import { FuzzOptions } from '../runner/fuzz_options';
+import { getLogger } from 'log4js';
 
-const logger = Logger.getLogger();
+const logger = getLogger();
 
 export class EnvChecker {
     private cmdlineHome: string;

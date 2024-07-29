@@ -15,12 +15,16 @@
 
 import { Device } from '../device/device';
 import { Event } from '../event/event';
+import { BACK_KEY_EVENT } from '../event/key_event';
+import { AbilityEvent, StopHapEvent } from '../event/system_event';
 import { Hap } from '../model/hap';
 import { Page } from '../model/page';
-import { InputPolicy, PolicyName } from './input_policy';
+import { InputPolicy, PolicyFlag, PolicyName } from './input_policy';
 import { UTG } from './utg';
 
+export const MAX_NUM_RESTARTS = 5;
 export abstract class UTGInputPolicy extends InputPolicy {
+    protected retryCount: number;
     protected randomInput: boolean;
     protected lastEvent: Event;
     protected lastPage: Page;
@@ -36,6 +40,33 @@ export abstract class UTGInputPolicy extends InputPolicy {
     generateEvent(page: Page): Event {
         this.currentPage = page;
         this.updateUtg();
+        
+        if (this.flag == PolicyFlag.FLAG_INIT) {
+            if (!this.currentPage.isStop()) {
+                this.flag |= PolicyFlag.FLAG_STOP_APP;
+                return new StopHapEvent(this.hap.bundleName);
+            }
+        }
+
+        if (this.currentPage.isStop()) {
+            if (this.retryCount > MAX_NUM_RESTARTS) {
+                this.logger.error(`The number of HAP launch attempts exceeds ${MAX_NUM_RESTARTS}`);
+                throw new Error('The HAP cannot be started.');
+            }
+            this.retryCount++;
+            this.flag |= PolicyFlag.FLAG_START_APP;
+            return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
+        } else if (this.currentPage.isForeground()) {
+            this.flag = PolicyFlag.FLAG_STARTED;
+        } else {
+            if (this.retryCount > MAX_NUM_RESTARTS) {
+                this.flag |= PolicyFlag.FLAG_STOP_APP;
+                this.retryCount = 0;
+                return new StopHapEvent(this.hap.bundleName);
+            }
+            this.retryCount++;
+            return BACK_KEY_EVENT;
+        }
 
         // todo: script event
         let event = this.generateEventBasedOnUtg();

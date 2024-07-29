@@ -24,7 +24,7 @@ export enum LOG_LEVEL {
     TRACE = 'TRACE',
 }
 
-export default class ArkTestLogger {
+export class HapTestLogger {
     static hasConfigured: boolean = false;
     public static configure(logFilePath: string = 'haptest.log', level: LOG_LEVEL = LOG_LEVEL.DEBUG): void {
         configure({

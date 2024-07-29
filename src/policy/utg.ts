@@ -18,11 +18,11 @@ import { Event } from '../event/event';
 import { Hap } from '../model/hap';
 import DirectedGraph from 'graphology';
 import { bidirectional } from 'graphology-shortest-path';
-import Logger from '../utils/logger';
 import { RandomUtils } from '../utils/random_utils';
 import { StopHapEvent } from '../event/system_event';
 import { Page } from '../model/page';
-const logger = Logger.getLogger();
+import { getLogger } from 'log4js';
+const logger = getLogger();
 
 type EdgeAttributeType = Map<string, { id: number; event: Event }>;
 

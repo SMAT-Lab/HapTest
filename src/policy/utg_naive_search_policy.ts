@@ -14,66 +14,32 @@
  */
 
 import { Device } from '../device/device';
-import { AbilityEvent, ExitEvent, StopHapEvent } from '../event/system_event';
+import { ExitEvent } from '../event/system_event';
 import { Event } from '../event/event';
 import { Component, ComponentType } from '../model/component';
 import { Hap } from '../model/hap';
 import { Page } from '../model/page';
 import { RandomUtils } from '../utils/random_utils';
-import { UTGInputPolicy } from './utg_input_policy';
-import { PolicyFlag, PolicyName } from './input_policy';
+import { MAX_NUM_RESTARTS, UTGInputPolicy } from './utg_input_policy';
+import { PolicyName } from './input_policy';
 import { EventBuilder } from '../event/event_builder';
 import { Rank } from '../model/rank';
-import { BACK_KEY_EVENT, KeyEvent } from '../event/key_event';
+import { KeyEvent } from '../event/key_event';
 import { KeyCode } from '../model/key_code';
-import Logger from '../utils/logger';
-const logger = Logger.getLogger();
 
-export const MAX_NUM_RESTARTS = 5;
 export class UtgNaiveSearchPolicy extends UTGInputPolicy {
-    private retryCount: number;
-    private pageMap: Map<string, Page>;
     private pageComponentMap: Map<string, Component[]>;
     private isNewPage: boolean;
 
     constructor(device: Device, hap: Hap, name: PolicyName) {
         super(device, hap, name, true);
         this.retryCount = 0;
-        this.pageMap = new Map();
         this.pageComponentMap = new Map();
         this.isNewPage = false;
     }
 
     generateEventBasedOnUtg(): Event {
-        if (this.flag == PolicyFlag.FLAG_INIT) {
-            if (!this.currentPage.isStop()) {
-                this.flag |= PolicyFlag.FLAG_STOP_APP;
-                return new StopHapEvent(this.hap.bundleName);
-            }
-        }
-
-        if (this.currentPage.isStop()) {
-            if (this.retryCount > MAX_NUM_RESTARTS) {
-                logger.error(`The number of HAP launch attempts exceeds ${MAX_NUM_RESTARTS}`);
-                throw new Error('The HAP cannot be started.');
-            }
-            this.retryCount++;
-            this.flag |= PolicyFlag.FLAG_START_APP;
-            return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
-        } else if (this.currentPage.isForeground()) {
-            this.flag = PolicyFlag.FLAG_STARTED;
-        } else {
-            if (this.retryCount > MAX_NUM_RESTARTS) {
-                this.flag |= PolicyFlag.FLAG_STOP_APP;
-                this.retryCount = 0;
-                return new StopHapEvent(this.hap.bundleName);
-            }
-            this.retryCount++;
-            return BACK_KEY_EVENT;
-        }
-
         this.updateState();
-
         let event = this.selectEvent();
         if (event == undefined) {
             if (this.retryCount > MAX_NUM_RESTARTS) {
@@ -89,16 +55,13 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
     }
 
     private updateState(): void {
-        if (this.currentPage.getBundleName() != this.hap.bundleName) {
+        if (!this.currentPage.isForeground()) {
             return;
         }
 
         let pageSig = this.currentPage.getContentSig();
-        if (!this.pageMap.has(pageSig)) {
-            this.pageMap.set(pageSig, this.currentPage);
-        }
-
         if (!this.pageComponentMap.has(pageSig)) {
+            this.isNewPage = true;
             let components: Component[] = [];
             this.updatePreferableComponentRank(this.currentPage);
             for (const component of this.currentPage.getComponents()) {

@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import { Logger, getLogger } from 'log4js';
 import { Device } from '../device/device';
 import { Event } from '../event/event';
 import { Hap } from '../model/hap';
@@ -39,6 +40,7 @@ export abstract class InputPolicy {
     protected _enabled: boolean;
     protected flag: number;
     protected name: PolicyName;
+    protected logger: Logger = getLogger();
 
     constructor(device: Device, hap: Hap, name: PolicyName) {
         this.device = device;

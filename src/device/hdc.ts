@@ -20,10 +20,10 @@ import { Page } from '../model/page';
 import { Point } from '../model/point';
 import { PageBuilder } from '../model/builder/page_builder';
 import { Direct } from './event_simulator';
-import Logger from '../utils/logger';
 import { convertStr2RunningState, Hap, HapRunningState } from '../model/hap';
 import { HdcCmdError } from '../error/error';
-const logger = Logger.getLogger();
+import { getLogger } from 'log4js';
+const logger = getLogger();
 
 const NEWLINE = /\r\n|\n/;
 
@@ -131,7 +131,7 @@ export class Hdc {
         if (output.length == 0) {
             return;
         }
-        let lines = output.split(NEWLINE); 
+        let lines = output.split(NEWLINE);
         try {
             let info = JSON.parse(lines.slice(1).join('\n'));
             return info;

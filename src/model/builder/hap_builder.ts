@@ -16,10 +16,10 @@
 import fs from 'fs';
 import { Hap } from '../hap';
 import AdmZip from 'adm-zip';
-import Logger from '../../utils/logger';
 import { Device } from '../../device/device';
 import { FileNotFoundError } from '../../error/error';
-const logger = Logger.getLogger();
+import { getLogger } from 'log4js';
+const logger = getLogger();
 
 export class HapBuilder {
     static buildFromHapFile(hapFile: string): Hap {
