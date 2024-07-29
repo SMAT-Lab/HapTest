@@ -273,7 +273,13 @@ export class Device implements EventSimulator {
      * @returns screenshot file path
      */
     capScreen(): string {
-        return this.hdc.capScreen(this.temp);
+        let retryCnt = 5;
+        while (retryCnt-- >= 0) {
+            try {
+                return this.hdc.capScreen(this.temp);
+            } catch (error) {}
+        }
+        return '';
     }
 
     /**

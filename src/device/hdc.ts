@@ -22,6 +22,7 @@ import { PageBuilder } from '../model/builder/page_builder';
 import { Direct } from './event_simulator';
 import Logger from '../utils/logger';
 import { convertStr2RunningState, Hap, HapRunningState } from '../model/hap';
+import { HdcCmdError } from '../error/error';
 const logger = Logger.getLogger();
 
 const NEWLINE = /\r\n|\n/;
@@ -184,7 +185,7 @@ export class Hdc {
         let output = this.excuteShellCommand(...['uitest', 'screenCap']);
         if (!output.startsWith(outPrefix)) {
             logger.error(`Hdc->capScreen parse shell output fail. ${output}`);
-            throw new Error(`ScreenCap fail. ${output}`);
+            throw new HdcCmdError(`ScreenCap fail. ${output}`);
         }
         let remote = output.substring(outPrefix.length).trim();
         let localFile = path.join(localPath, path.basename(remote));
@@ -273,7 +274,7 @@ export class Hdc {
         if (netstatInfo.has(port)) {
             return { port: port, pid: netstatInfo.get(port)!.pid };
         }
-        throw new Error('start Bftp fail.');
+        throw new HdcCmdError('start Bftp fail.');
     }
 
     stopBftp(hap: Hap, pid: number): void {

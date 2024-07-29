@@ -19,3 +19,10 @@ export class FileNotFoundError extends Error {
         this.name = 'FileNotFoundError';
     }
 }
+
+export class HdcCmdError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'HdcCmdError';
+    }
+}
