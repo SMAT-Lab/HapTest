@@ -22,7 +22,7 @@ import { CombinedKeyEvent, KeyEvent } from './key_event';
 import { ManualEvent } from './manual_event';
 import { AbilityEvent, ExitEvent, StopHapEvent } from './system_event';
 import { InputTextEvent, LongTouchEvent, ScrollEvent, SwipeEvent, TouchEvent, UIEvent } from './ui_event';
-import { Point } from '../../lib/model/point';
+import { Point } from '../model/point';
 import { SerializeUtils } from '../utils/serialize_utils';
 
 export class EventBuilder {
@@ -129,7 +129,7 @@ export class EventBuilder {
 
     static randomText: string[] = [];
     static {
-        const textLen = [1, 32, 128, 512];
+        const textLen = [1, 8, 32, 128];
         for (const len of textLen) {
             this.randomText.push(RandomUtils.genRandomString(len));
         }

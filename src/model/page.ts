@@ -75,8 +75,7 @@ export class Page {
     }
 
     static fromJson(json: any): Page {
-        SerializeUtils.plainToInstance(Page, JSON.parse(json), { groups: ['Content'] });
-        return new Page(ViewTree.fromJson(json.viewTree), json.abilityName, json.bundleName, json.pagePath);
+        return SerializeUtils.plainToInstance(Page, json, { groups: ['Content'] });
     }
 
     getContent(): string {

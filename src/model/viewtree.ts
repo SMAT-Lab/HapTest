@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-import { Expose, plainToInstance } from 'class-transformer';
-import { SerializeUtils } from '../utils/serialize_utils';
+import { Expose } from 'class-transformer';
 import { Component } from './component';
 
 export class ViewTree {
@@ -37,19 +36,6 @@ export class ViewTree {
         }
 
         return this.components;
-    }
-
-    toJson(): Record<string, any> {
-        return SerializeUtils.instanceToPlain(this.getRoot(), { groups: ['Content'] });
-    }
-
-    static fromJson(json: any): ViewTree {
-        let root = plainToInstance(Component, json, { groups: ['Content'] });
-        return new ViewTree(root);
-    }
-
-    getContent(): string {
-        return SerializeUtils.serialize(this.getRoot(), { groups: ['Content'] });
     }
 
     getStructual(): string {
