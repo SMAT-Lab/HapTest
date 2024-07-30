@@ -26,6 +26,12 @@ const logger = getLogger();
 
 type EdgeAttributeType = Map<string, { id: number; event: Event }>;
 
+export interface Transition {
+    from: Page;
+    to: Page;
+    event: Event;
+}
+
 /**
  * UI transition graph
  */
@@ -33,7 +39,7 @@ export class UTG {
     device: Device;
     hap: Hap;
     randomInput: boolean;
-    transitions: [Page, Event, Page][];
+    transitions: Transition[];
     pageContentGraph: DirectedGraph<Page, EdgeAttributeType>;
     pageStructualGraph: DirectedGraph<Page[], EdgeAttributeType>;
     ineffectiveEvent: Set<string>;
@@ -72,7 +78,7 @@ export class UTG {
         this.addNode(oldPage);
         this.addNode(newPage);
 
-        this.transitions.push([oldPage, event, newPage]);
+        this.transitions.push({ from: oldPage, event: event, to: newPage });
         let eventPageSig = event.eventPageSig(oldPage);
 
         // ineffective event
@@ -154,6 +160,9 @@ export class UTG {
 
     getReachablePages(currentPage: Page): Page[] {
         let reachablePages: Page[] = [];
+        if (!this.pageContentGraph.hasNode(currentPage.getContentSig())) {
+            return reachablePages;
+        }
         this.pageContentGraph.filterOutEdges(currentPage.getContentSig(), (edge, attr, source, target) => {
             let state = this.pageContentGraph.getNodeAttributes(target);
             reachablePages.push(state);

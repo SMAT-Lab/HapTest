@@ -22,22 +22,19 @@ import { Hap } from '../model/hap';
 import { SerializeUtils } from '../utils/serialize_utils';
 import { Page } from '../model/page';
 import { getLogger } from 'log4js';
+import { Transition } from '../policy/utg';
 const logger = getLogger();
 
 export class EventAction {
     device: Device;
     hap: Hap;
-    event: Event;
-    eventPageSig: string;
-    fromPage: Page;
-    toPage: Page;
+    transition: Transition;
     output: string;
 
     constructor(device: Device, hap: Hap, page: Page, event: Event) {
         this.device = device;
         this.hap = hap;
-        this.fromPage = page;
-        this.event = event;
+        this.transition = { from: page, event: event, to: page };
         this.output = path.join(device.getOutput(), 'events');
         if (!fs.existsSync(this.output)) {
             fs.mkdirSync(this.output, { recursive: true });
@@ -45,33 +42,22 @@ export class EventAction {
     }
 
     start() {
-        logger.info(`EventAction->start: ${this.event.toString()}`);
-        this.eventPageSig = this.event.eventPageSig(this.fromPage);
-        this.device.sendEvent(this.event);
+        logger.info(`EventAction->start: ${this.transition.event.toString()}`);
+        this.device.sendEvent(this.transition.event);
     }
 
     stop() {
-        this.toPage = this.device.getCurrentPage(this.hap);
+        this.transition.to = this.device.getCurrentPage(this.hap);
         this.save();
     }
 
     toString(): string {
-        return SerializeUtils.serialize(
-            {
-                event: this.event,
-                page: this.fromPage.toJson(),
-                event_page_sig: this.eventPageSig,
-                from_page: this.fromPage?.getContentSig(),
-                to_page: this.toPage?.getContentSig(),
-            },
-            undefined,
-            4
-        );
+        return SerializeUtils.serialize(this.transition, undefined, 4);
     }
 
     private save() {
         let now = moment();
-        let file = path.join(this.output, `event_${now.format('YYYY-MM-DD-HH-mm-ss-SSS')}.json`);
+        let file = path.join(this.output, `transition_${now.format('YYYY-MM-DD-HH-mm-ss-SSS')}.json`);
         fs.writeFileSync(file, this.toString());
     }
 }

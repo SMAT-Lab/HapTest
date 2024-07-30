@@ -42,7 +42,6 @@ export class Coverage {
         let bftpd = this.device.getHdc().startBftp(this.hap);
         this.bftpPort = bftpd.port;
         this.bftpPid = bftpd.pid;
-        this.device.getHdc().mkLocalCovDir();
     }
 
     stopBftp(): void {
@@ -56,6 +55,7 @@ export class Coverage {
             this.device.sendEvent(HOME_KEY_EVENT);
             this.device.startAblity(this.hap.bundleName, this.hap.mainAbility);
         }
+        this.device.getHdc().mkLocalCovDir();
         let files = this.device.getHdc().listSandboxFile(this.bftpPort, `haps/${this.hap.entryModuleName}/cache`);
         for (let [file, isDir] of files) {
             if (!isDir && file.startsWith('bjc_cov_') && file.endsWith('.json') && !current.has(file)) {
@@ -69,8 +69,8 @@ export class Coverage {
                     );
             }
         }
-
         this.device.getHdc().recvFile(`/data/local/tmp/cov`, this.device.getOutput());
+        this.device.getHdc().rmLocalCovDir();
 
         let covFiles = Array.from(current);
         covFiles.sort();

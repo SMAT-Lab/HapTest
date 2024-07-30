@@ -231,6 +231,10 @@ export class Hdc {
         this.excuteShellCommand(...['mkdir', '-p', '/data/local/tmp/cov']);
     }
 
+    rmLocalCovDir(): void {
+        this.excuteShellCommand(...['rm', '-r', '/data/local/tmp/cov']);
+    }
+
     netstatInfo(): Map<number, { pid: number; program: string }> {
         let info: Map<number, { pid: number; program: string }> = new Map();
         let output = this.excuteShellCommand(...['netstat', '-antulp']);
@@ -359,6 +363,9 @@ export class Hdc {
         logger.info(`hdc excute: ${JSON.stringify(args)}`);
         let result = spawnSync('hdc', args, { encoding: 'utf-8', shell: true });
         logger.debug(`hdc result: ${JSON.stringify(result)}`);
+        if (result.stdout.trim() == '[Fail]ExecuteCommand need connect-key? please confirm a device by help info') {
+            throw new Error(`hdc ${result.stdout}`);
+        }
         return result;
     }
 }

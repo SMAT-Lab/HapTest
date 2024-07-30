@@ -59,6 +59,6 @@ export class InputManager {
         await sleep(EVENT_INTERVAL);
         eventExcute.stop();
 
-        return eventExcute.toPage;
+        return eventExcute.transition.to;
     }
 }
