@@ -18,6 +18,7 @@ import { Point } from '../model/point';
 import { Event } from './event';
 import { Direct, EventSimulator } from '../device/event_simulator';
 import { Expose } from 'class-transformer';
+import { KeyCode } from '../model/key_code';
 
 export abstract class UIEvent extends Event {
     @Expose()
@@ -117,6 +118,9 @@ export class InputTextEvent extends UIEvent {
     }
 
     send(simulator: EventSimulator): void {
+        simulator.click(this.point);
+        simulator.inputKey(KeyCode.KEYCODE_CTRL_LEFT, KeyCode.KEYCODE_A, undefined);
+        simulator.inputKey(KeyCode.KEYCODE_DEL, undefined, undefined);
         simulator.inputText(this.point, this.text);
     }
 }
