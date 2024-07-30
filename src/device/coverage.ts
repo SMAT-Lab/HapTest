@@ -38,9 +38,19 @@ export class Coverage {
     }
 
     startBftp(): void {
-        let bftpd = this.device.getHdc().startBftp(this.hap);
-        this.bftpPort = bftpd.port;
-        this.bftpPid = bftpd.pid;
+        let retryCnt = 5;
+        let error;
+        while (retryCnt-- >= 0) {
+            try {
+                let bftpd = this.device.getHdc().startBftp(this.hap);
+                this.bftpPort = bftpd.port;
+                this.bftpPid = bftpd.pid;
+                return;
+            } catch (err) {
+                error = err;
+            }
+        }
+        throw error;
     }
 
     stopBftp(): void {

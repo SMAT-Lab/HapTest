@@ -52,7 +52,7 @@ export class EventAction {
     }
 
     toString(): string {
-        return SerializeUtils.serialize(this.transition, undefined, 4);
+        return SerializeUtils.serialize(this.transition, { groups: ['Content'] }, 4);
     }
 
     private save() {

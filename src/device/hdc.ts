@@ -282,7 +282,7 @@ export class Hdc {
         if (netstatInfo.has(port)) {
             return { port: port, pid: netstatInfo.get(port)!.pid };
         }
-        throw new HdcCmdError('start Bftp fail.');
+        throw new HdcCmdError(`start Bftp fail ${port}.`);
     }
 
     stopBftp(hap: Hap, pid: number): void {
