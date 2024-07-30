@@ -398,4 +398,11 @@ export class Device implements EventSimulator {
         logger.error(`Not found HAP ${this.options.hap}`);
         process.exit();
     }
+
+    /**
+     * Excute cmd 'hdc shell aa dump -c -l' to trigger save cov file.  
+     */
+    aaDumpMission() {
+        this.hdc.aaDumpMission();
+    }
 }

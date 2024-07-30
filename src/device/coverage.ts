@@ -15,7 +15,6 @@
 
 import path from 'path';
 import fs from 'fs';
-import { HOME_KEY_EVENT } from '../event/key_event';
 import { Hap } from '../model/hap';
 import { Device } from './device';
 import { CoverageReport, Report } from 'bjc';
@@ -52,8 +51,7 @@ export class Coverage {
         // trigger UIAbility::onNewWant to save cov.
         let current: Set<string> = new Set();
         if (onForeground) {
-            this.device.sendEvent(HOME_KEY_EVENT);
-            this.device.startAblity(this.hap.bundleName, this.hap.mainAbility);
+            this.device.aaDumpMission();
         }
         this.device.getHdc().mkLocalCovDir();
         let files = this.device.getHdc().listSandboxFile(this.bftpPort, `haps/${this.hap.entryModuleName}/cache`);

@@ -227,6 +227,10 @@ export class Hdc {
         return process;
     }
 
+    aaDumpMission(): void {
+        this.excuteShellCommand(...['aa', 'dump', '-c', '-l']);
+    }
+
     mkLocalCovDir(): void {
         this.excuteShellCommand(...['mkdir', '-p', '/data/local/tmp/cov']);
     }
