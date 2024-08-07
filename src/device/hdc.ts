@@ -160,10 +160,36 @@ export class Hdc {
         return logs;
     }
 
-    getDeviceUdid(): string {
-        let output = this.excuteShellCommand('bm get -u');
+    fportLs(): Set<string[]> {
+        let fports = new Set<string[]>();
+        let output = this.excute('fport', 'ls').stdout;
+        for (let line of output.split(NEWLINE)) {
+            let matches = line.match(/[\S]+/g);
+            if (matches && matches.length == 4) {
+                fports.add([matches[0], matches[1], matches[2], matches[3]]);
+            }
+        }
+        return fports;
+    }
+
+    fportRm(localNode: string, remoteNode: string): void {
+        this.excute('fport', 'rm', localNode, remoteNode);
+    }
+
+    fport(localNode: string, remoteNode: string): void {
+        this.excute('fport', localNode, remoteNode);
+    }
+
+    pidof(bundleName: string): number {
+        let output = this.excuteShellCommand('pidof', bundleName);
         let lines = output.split(NEWLINE);
-        return lines[1];
+        return Number(lines[0]);
+    }
+
+    getDeviceSN(): string {
+        let output = this.excuteShellCommand('param get ohos.boot.sn');
+        let lines = output.split(NEWLINE);
+        return lines[0];
     }
 
     getDeviceType(): string {

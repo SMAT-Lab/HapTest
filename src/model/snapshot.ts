@@ -36,12 +36,12 @@ export class Snapshot {
     /** coverage */
     @Expose()
     coverage: CoverageReport | undefined;
-    /** device udid */
+    /** device sn */
     @Expose()
-    udid: string;
+    sn: string;
     
     constructor(device: Device, screen: string, faultLogs: Set<string>, coverage?: CoverageReport) {
-        this.udid = device.getUdid();
+        this.sn = device.getSN();
         this.screenWidth = device.getWidth();
         this.screenHeight = device.getHeight();
         this.screenCapPath = screen;

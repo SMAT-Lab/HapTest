@@ -31,6 +31,7 @@ import { findFiles } from '../utils/file_utils';
 import { Snapshot } from '../model/snapshot';
 import { getLogger } from 'log4js';
 import moment from 'moment';
+import { ArkUIInspector } from './arkui_inspector';
 const logger = getLogger();
 
 export class Device implements EventSimulator {
@@ -40,8 +41,9 @@ export class Device implements EventSimulator {
     private temp: string;
     private width: number;
     private height: number;
-    private udid: string;
+    private sn: string;
     private options: FuzzOptions;
+    private arkuiInspector: ArkUIInspector;
 
     constructor(options: FuzzOptions) {
         this.options = options;
@@ -50,12 +52,13 @@ export class Device implements EventSimulator {
         let size = this.hdc.getScreenSize();
         this.width = size.x;
         this.height = size.y;
-        this.udid = this.hdc.getDeviceUdid();
+        this.sn = this.hdc.getDeviceSN();
         if (!fs.existsSync(this.output)) {
             fs.mkdirSync(this.output, { recursive: true });
         }
         this.temp = path.join(this.output, 'temp');
         fs.mkdirSync(this.temp, { recursive: true });
+        this.arkuiInspector = new ArkUIInspector(this.hdc);
     }
 
     connect(hap: Hap) {
@@ -80,11 +83,11 @@ export class Device implements EventSimulator {
     }
 
     /**
-     * Get device udid
+     * Get device sn
      * @returns
      */
-    getUdid(): string {
-        return this.udid;
+    getSN(): string {
+        return this.sn;
     }
 
     getDeviceType(): string {
@@ -142,11 +145,11 @@ export class Device implements EventSimulator {
     }
 
     /**
-     * Get udid of the device
+     * Get SN of the device
      * @returns
      */
-    getDeviceUdid(): string {
-        return this.hdc.getDeviceUdid();
+    getDeviceSN(): string {
+        return this.hdc.getDeviceSN();
     }
 
     /**
@@ -184,6 +187,10 @@ export class Device implements EventSimulator {
             }
         }
         throw new Error('Device->dumpViewTree fail.');
+    }
+
+    async dumpInspector(bundleName: string): Promise<any[]> {
+        return this.arkuiInspector.dump(bundleName, this.options.connectkey);
     }
 
     /**
@@ -372,7 +379,7 @@ export class Device implements EventSimulator {
     buildHap(device: Device): Hap {
         // using hvigorw to build HAP
         if (this.options.sourceRoot) {
-            execSync(`hvigorw -p buildMode=debug -p coverage-mode=bjc clean assembleHap`, {
+            execSync(`hvigorw -p buildMode=debug -p coverage-mode=bjc -p debugLine=true clean assembleHap`, {
                 stdio: 'inherit',
                 cwd: this.options.sourceRoot,
             });
