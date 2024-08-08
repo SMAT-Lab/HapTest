@@ -215,6 +215,20 @@ export class Device implements EventSimulator {
                 }
             }
         }
+
+        for (const page of pages) {
+            if (page.getBundleName() != 'com.huawei.hmos.inputmethod') {
+                continue;
+            }
+
+            for (const component of page.getComponents()) {
+                if (component.id == 'hideButton') {
+                    this.sendEvent(new TouchEvent(component));
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 

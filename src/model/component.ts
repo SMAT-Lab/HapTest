@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { Expose } from 'class-transformer';
+import { Expose, Transform } from 'class-transformer';
 import { Point } from './point';
 import { Rank } from './rank';
 
@@ -67,6 +67,13 @@ export class Component {
     @Expose()
     selected: boolean;
     @Expose()
+    @Transform(({ value, key, obj, type }) => {
+        if (TEXT_INPUTABLE_TYPE.has(obj.type)) {
+            return '';
+        } else {
+            return value;
+        }
+    })
     text: string;
     @Expose()
     type: string;
