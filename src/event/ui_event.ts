@@ -37,14 +37,19 @@ export abstract class UIEvent extends Event {
         }
     }
 
+    setComponent(component: Component) {
+        this.component = component;
+    }
+
     getComponet(): Component | undefined {
         return this.component;
     }
 
-    getComponentId(): string | undefined{
-        if( this.component )
+    getComponentId(): string | undefined {
+        if (this.component) {
             return this.component.accessibilityId;
-        else return undefined;
+        }
+        return undefined;
     }
 }
 
@@ -122,6 +127,10 @@ export class InputTextEvent extends UIEvent {
         simulator.inputKey(KeyCode.KEYCODE_CTRL_LEFT, KeyCode.KEYCODE_A, undefined);
         simulator.inputKey(KeyCode.KEYCODE_DEL, undefined, undefined);
         simulator.inputText(this.point, this.text);
+    }
+
+    getText(): string {
+        return this.text;
     }
 }
 

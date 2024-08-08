@@ -1,0 +1,27 @@
+{
+    "events": [
+        {
+            "component": {
+                "accessibilityId": "15",
+                "type": "TextInput"
+            },
+            "type": "InputTextEvent",
+            "text": "admin"
+        }, 
+        {
+            "component": {
+                "accessibilityId": "17",
+                "type": "TextInput"
+            },
+            "type": "InputTextEvent",
+            "text": "123456"
+        },
+        {
+            "component": {
+                "accessibilityId": "23",
+                "type": "Button"
+            },
+            "type": "TouchEvent"
+        }
+    ]   
+}

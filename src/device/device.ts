@@ -32,6 +32,7 @@ import { Snapshot } from '../model/snapshot';
 import { getLogger } from 'log4js';
 import moment from 'moment';
 import { ArkUIInspector } from './arkui_inspector';
+import { TouchEvent } from '../event/ui_event';
 const logger = getLogger();
 
 export class Device implements EventSimulator {
@@ -90,6 +91,10 @@ export class Device implements EventSimulator {
         return this.sn;
     }
 
+    /**
+     * Get device type, eg: [phone, tablet, wearable, car, tv, 2in1]
+     * @returns
+     */
     getDeviceType(): string {
         return this.hdc.getDeviceType();
     }
@@ -178,6 +183,10 @@ export class Device implements EventSimulator {
         let retryCnt = 5;
         while (retryCnt-- >= 0) {
             let pages = this.hdc.dumpViewTree();
+            // if exist keyboard then close and dump again.
+            if (this.closeKeyboard(pages)) {
+                continue;
+            }
             pages.sort((a: Page, b: Page) => {
                 return b.getRoot().getHeight() - a.getRoot().getHeight();
             });
@@ -189,6 +198,31 @@ export class Device implements EventSimulator {
         throw new Error('Device->dumpViewTree fail.');
     }
 
+    /**
+     * Detect keyboard and close it.
+     * @param pages
+     * @returns
+     */
+    private closeKeyboard(pages: Page[]): boolean {
+        for (const page of pages) {
+            if (!(page.getBundleName() == 'com.ohos.sceneboard' && page.getRoot().id == 'keyboardPanel4')) {
+                continue;
+            }
+            for (const component of page.getComponents()) {
+                if (component.id == 'keyboardRightButton') {
+                    this.sendEvent(new TouchEvent(component));
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Dump inspector layout and snapshot
+     * @param bundleName
+     * @returns
+     */
     async dumpInspector(bundleName: string): Promise<any[]> {
         return this.arkuiInspector.dump(bundleName, this.options.connectkey);
     }
@@ -407,7 +441,7 @@ export class Device implements EventSimulator {
     }
 
     /**
-     * Excute cmd 'hdc shell aa dump -c -l' to trigger save cov file.  
+     * Excute cmd 'hdc shell aa dump -c -l' to trigger save cov file.
      */
     aaDumpMission() {
         this.hdc.aaDumpMission();

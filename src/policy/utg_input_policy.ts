@@ -20,6 +20,7 @@ import { AbilityEvent, StopHapEvent } from '../event/system_event';
 import { Hap } from '../model/hap';
 import { Page } from '../model/page';
 import { InputPolicy, PolicyFlag, PolicyName } from './input_policy';
+import { SceneDetect } from './scene_detect';
 import { UTG } from './utg';
 
 export const MAX_NUM_RESTARTS = 5;
@@ -30,17 +31,19 @@ export abstract class UTGInputPolicy extends InputPolicy {
     protected lastPage: Page;
     protected currentPage: Page;
     protected utg: UTG;
+    protected sceneDetect: SceneDetect;
 
     constructor(device: Device, hap: Hap, name: PolicyName, randomInput: boolean) {
         super(device, hap, name);
         this.randomInput = randomInput;
         this.utg = new UTG(device, hap, randomInput);
+        this.sceneDetect = new SceneDetect();
     }
 
     generateEvent(page: Page): Event {
         this.currentPage = page;
         this.updateUtg();
-        
+
         if (this.flag == PolicyFlag.FLAG_INIT) {
             if (!this.currentPage.isStop()) {
                 this.flag |= PolicyFlag.FLAG_STOP_APP;
@@ -68,8 +71,10 @@ export abstract class UTGInputPolicy extends InputPolicy {
             return BACK_KEY_EVENT;
         }
 
-        // todo: script event
-        let event = this.generateEventBasedOnUtg();
+        let event = this.sceneDetect.generateEventBasedOnModel(page);
+        if (!event) {
+            event = this.generateEventBasedOnUtg();
+        }
         this.lastPage = this.currentPage;
         this.lastEvent = event;
         return event;
