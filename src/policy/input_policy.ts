@@ -32,6 +32,7 @@ export enum PolicyName {
     REPLAY = 'replay',
     DFS_GREEDY = 'greedy_dfs',
     BFS_GREEDY = 'greedy_bfs',
+    RANDOM = 'random',
 }
 
 export abstract class InputPolicy {
