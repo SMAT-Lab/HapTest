@@ -185,6 +185,8 @@ export class Device implements EventSimulator {
             let pages = this.hdc.dumpViewTree();
             // if exist keyboard then close and dump again.
             if (this.closeKeyboard(pages)) {
+                // for sleep
+                this.hdc.getDeviceSN();
                 continue;
             }
             pages.sort((a: Page, b: Page) => {
@@ -205,18 +207,6 @@ export class Device implements EventSimulator {
      */
     private closeKeyboard(pages: Page[]): boolean {
         for (const page of pages) {
-            if (!(page.getBundleName() == 'com.ohos.sceneboard' && page.getRoot().id == 'keyboardPanel4')) {
-                continue;
-            }
-            for (const component of page.getComponents()) {
-                if (component.id == 'keyboardRightButton') {
-                    this.sendEvent(new TouchEvent(component));
-                    return true;
-                }
-            }
-        }
-
-        for (const page of pages) {
             if (page.getBundleName() != 'com.huawei.hmos.inputmethod') {
                 continue;
             }
@@ -227,6 +217,21 @@ export class Device implements EventSimulator {
                     return true;
                 }
             }
+
+            let components = page.getComponents().filter((value) => {
+                return value.hasUIEvent();
+            });
+
+            components = components.sort((a, b) => {
+                if (a.bounds[0].y != b.bounds[0].y) {
+                    return a.bounds[0].y - b.bounds[0].y;
+                }
+
+                return a.bounds[0].x - b.bounds[0].x;
+            });
+
+            this.sendEvent(new TouchEvent(components[2]));
+            return true;
         }
 
         return false;

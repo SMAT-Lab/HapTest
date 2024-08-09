@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-import { Device } from '../device/device';
 import { Event } from '../event/event';
 import { Hap } from '../model/hap';
 import DirectedGraph from 'graphology';
@@ -36,23 +35,21 @@ export interface Transition {
  * UI transition graph
  */
 export class UTG {
-    device: Device;
-    hap: Hap;
-    randomInput: boolean;
-    transitions: Transition[];
-    pageContentGraph: DirectedGraph<Page, EdgeAttributeType>;
-    pageStructualGraph: DirectedGraph<Page[], EdgeAttributeType>;
-    ineffectiveEvent: Set<string>;
-    effectiveEvent: Set<string>;
-    exploredPage: Set<string>;
-    reachedPage: Set<string>;
-    firstPage: Page;
-    lastPage: Page;
-    stopEvent: StopHapEvent;
-    stopPage: Page;
+    private hap: Hap;
+    private randomInput: boolean;
+    private transitions: Transition[];
+    private pageContentGraph: DirectedGraph<Page, EdgeAttributeType>;
+    private pageStructualGraph: DirectedGraph<Page[], EdgeAttributeType>;
+    private ineffectiveEvent: Set<string>;
+    private effectiveEvent: Set<string>;
+    private exploredPage: Set<string>;
+    private reachedPage: Set<string>;
+    private firstPage: Page;
+    private stopEvent: StopHapEvent;
+    private stopPage: Page;
+    private wantTransition?: Transition;
 
-    constructor(device: Device, hap: Hap, randomInput: boolean) {
-        this.device = device;
+    constructor(hap: Hap, randomInput: boolean) {
         this.hap = hap;
         this.randomInput = randomInput;
         this.transitions = [];
@@ -66,6 +63,11 @@ export class UTG {
         this.stopEvent = new StopHapEvent(this.hap.bundleName);
     }
 
+    setWantTransition(transition: Transition) {
+        this.wantTransition = transition;
+        logger.info(`utg want transition ${transition.from.getContentSig()} -> ${transition.to.getContentSig()}`);
+    }
+
     addTransitionToStop(newPage: Page): void {
         if (!this.stopPage || !newPage.isForeground()) {
             return;
@@ -75,6 +77,30 @@ export class UTG {
     }
 
     addTransition(event: Event, oldPage: Page, newPage: Page): void {
+        if (this.wantTransition) {
+            logger.info(`utg want transition ${oldPage.getContentSig()} -> ${newPage.getContentSig()}`);
+            if (
+                this.wantTransition.from == oldPage &&
+                this.wantTransition.event == event &&
+                this.wantTransition.to.getContentSig() != newPage.getContentSig()
+            ) {
+                logger.info(
+                    `utg drop edge ${this.wantTransition.from.getContentSig()} -> ${this.wantTransition.to.getContentSig()}`
+                );
+                this.pageContentGraph.dropDirectedEdge(
+                    this.wantTransition.from.getContentSig(),
+                    this.wantTransition.to.getContentSig()
+                );
+                this.wantTransition = undefined;
+            } else {
+                logger.info(
+                    `utg not need drop ${this.wantTransition.from == oldPage}, ${this.wantTransition.event == event}, ${
+                        this.wantTransition.to.getContentSig() != newPage.getContentSig()
+                    }`
+                );
+            }
+        }
+
         this.addNode(oldPage);
         this.addNode(newPage);
 
@@ -89,20 +115,19 @@ export class UTG {
 
         this.effectiveEvent.add(eventPageSig);
 
-        if (!this.pageContentGraph.hasEdge(oldPage.getContentSig(), newPage.getContentSig())) {
-            this.pageContentGraph.addEdge(oldPage.getContentSig(), newPage.getContentSig(), new Map());
+        if (!this.pageContentGraph.hasDirectedEdge(oldPage.getContentSig(), newPage.getContentSig())) {
+            this.pageContentGraph.addDirectedEdge(oldPage.getContentSig(), newPage.getContentSig(), new Map());
+            logger.info(`utg add edge ${oldPage.getContentSig()} -> ${newPage.getContentSig()}`);
         }
         let attr = this.pageContentGraph.getEdgeAttributes(oldPage.getContentSig(), newPage.getContentSig());
         attr.set(eventPageSig, { event: event, id: this.effectiveEvent.size });
 
-        if (!this.pageStructualGraph.hasEdge(oldPage.getStructualSig(), newPage.getStructualSig())) {
-            this.pageStructualGraph.addEdge(oldPage.getStructualSig(), newPage.getStructualSig(), new Map());
+        if (!this.pageStructualGraph.hasDirectedEdge(oldPage.getStructualSig(), newPage.getStructualSig())) {
+            this.pageStructualGraph.addDirectedEdge(oldPage.getStructualSig(), newPage.getStructualSig(), new Map());
         }
 
         attr = this.pageStructualGraph.getEdgeAttributes(oldPage.getStructualSig(), newPage.getStructualSig());
         attr.set(eventPageSig, { event: event, id: this.effectiveEvent.size });
-
-        this.lastPage = newPage;
     }
 
     removeTransition(event: Event, oldPage: Page, newPage: Page): void {
@@ -177,6 +202,8 @@ export class UTG {
             return;
         }
 
+        logger.info(`shortest path ${from.getContentSig()} -> ${to.getContentSig()} ${path}`);
+
         let steps: [Page, Event][] = [];
         let source = path[0];
         for (let i = 1; i < path.length; i++) {
@@ -206,6 +233,7 @@ export class UTG {
 
         if (!this.pageContentGraph.hasNode(page.getContentSig())) {
             this.pageContentGraph.addNode(page.getContentSig(), page);
+            logger.info(`utg add node ${page.getContentSig()}`);
         }
 
         if (!this.pageStructualGraph.hasNode(page.getStructualSig())) {

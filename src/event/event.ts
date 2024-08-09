@@ -31,11 +31,15 @@ export abstract class Event {
     }
 
     toString(): string {
-        return SerializeUtils.serialize(this);
+        return SerializeUtils.serialize(this.toJson());
+    }
+
+    toJson(): Record<string, any> {
+        return SerializeUtils.instanceToPlain(this);
     }
 
     eventPageSig(page: Page): string {
-        return CryptoUtils.sha256(SerializeUtils.serialize({ event: this, page: page.getContent() }));
+        return CryptoUtils.sha256(SerializeUtils.serialize({ event: this.toJson(), page: page.getContent() }));
     }
 
     getRank(): number {

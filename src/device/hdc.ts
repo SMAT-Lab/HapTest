@@ -56,7 +56,7 @@ export class Hdc {
         if (matches) {
             let layoutJson = matches[1];
             let localFile = path.join(os.tmpdir(), path.basename(layoutJson));
-            logger.info('dumpLayout save to: ', localFile);
+            logger.debug('dumpLayout save to: ', localFile);
             this.recvFile(layoutJson, localFile);
 
             return PageBuilder.buildPagesFromDumpLayoutFile(localFile);
@@ -390,7 +390,7 @@ export class Hdc {
             args.push(...['-t', this.connectkey]);
         }
         args.push(...[command, ...params]);
-        logger.info(`hdc excute: ${JSON.stringify(args)}`);
+        logger.debug(`hdc excute: ${JSON.stringify(args)}`);
         let result = spawnSync('hdc', args, { encoding: 'utf-8', shell: true });
         logger.debug(`hdc result: ${JSON.stringify(result)}`);
         if (result.stdout.trim() == '[Fail]ExecuteCommand need connect-key? please confirm a device by help info') {

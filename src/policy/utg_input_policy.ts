@@ -36,7 +36,7 @@ export abstract class UTGInputPolicy extends InputPolicy {
     constructor(device: Device, hap: Hap, name: PolicyName, randomInput: boolean) {
         super(device, hap, name);
         this.randomInput = randomInput;
-        this.utg = new UTG(device, hap, randomInput);
+        this.utg = new UTG(hap, randomInput);
         this.sceneDetect = new SceneDetect();
     }
 

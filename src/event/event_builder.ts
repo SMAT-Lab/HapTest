@@ -85,7 +85,9 @@ export class EventBuilder {
     static createPossibleUIEvents(components: Component[]): UIEvent[] {
         let events: UIEvent[] = [];
         for (const component of components) {
-            events.push(...EventBuilder.createComponentPossibleUIEvents(component));
+            if (component.hasUIEvent()) {
+                events.push(...EventBuilder.createComponentPossibleUIEvents(component));
+            }
         }
         return events;
     }

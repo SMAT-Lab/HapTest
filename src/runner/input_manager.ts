@@ -22,7 +22,7 @@ import { PolicyBuilder } from '../policy/policy_builder';
 import { EventAction } from './event_action';
 import { FuzzOptions } from './fuzz_options';
 
-const EVENT_INTERVAL = 500;
+const EVENT_INTERVAL = 1000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export class InputManager {

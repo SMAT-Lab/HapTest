@@ -57,14 +57,8 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
 
         let pageSig = this.currentPage.getContentSig();
         if (!this.pageComponentMap.has(pageSig)) {
-            let components: Component[] = [];
             this.updatePreferableComponentRank(this.currentPage);
-            for (const component of this.currentPage.getComponents()) {
-                if (component.hasUIEvent()) {
-                    components.push(component);
-                }
-            }
-            this.pageComponentMap.set(pageSig, components);
+            this.pageComponentMap.set(pageSig, this.currentPage.getComponents());
         }
     }
 
@@ -97,6 +91,12 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
 
             let steps = this.utg.getNavigationSteps(this.currentPage, page);
             if (steps && steps.length > 0) {
+                if (steps.length == 1) {
+                    this.utg.setWantTransition({ from: this.currentPage, event: steps[0][1], to: page });
+                } else {
+                    this.utg.setWantTransition({ from: this.currentPage, event: steps[0][1], to: steps[1][0] });
+                }
+
                 return steps[0][1];
             }
         }

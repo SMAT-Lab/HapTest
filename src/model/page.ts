@@ -79,7 +79,12 @@ export class Page {
     }
 
     getContent(): string {
-        return SerializeUtils.serialize(this.toJson());
+        return SerializeUtils.serialize({
+            viewTree: SerializeUtils.instanceToPlain(this.viewTree, { groups: ['Content'] }),
+            abilityName: this.abilityName,
+            bundleName: this.bundleName,
+            pagePath: this.pagePath,
+        });
     }
 
     getStructual(): string {

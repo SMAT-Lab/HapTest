@@ -32,7 +32,6 @@ const TEXT_INPUTABLE_TYPE: Set<string> = new Set([
 ]);
 
 export class Component {
-    @Expose()
     accessibilityId: string;
     @Expose()
     bounds: Point[];
@@ -48,7 +47,6 @@ export class Component {
     enabled: boolean;
     @Expose()
     focused: boolean;
-    @Expose()
     hashcode: string;
     @Expose()
     hint: string;
