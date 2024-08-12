@@ -17,7 +17,7 @@
   "dependencies": {
     "@types/ws": "^8.5.12",
     "adm-zip": "^0.5.14",
-    "bjc": "^1.0.9",
+    "bjc": "^1.0.10",
     "class-transformer": "^0.5.1",
     "commander": "^12.1.0",
     "graphology": "^0.25.4",
