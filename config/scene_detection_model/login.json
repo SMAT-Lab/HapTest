@@ -2,7 +2,7 @@
     "events": [
         {
             "component": {
-                "accessibilityId": "15",
+                "bounds": [{"x": 42, "y": 1165}, {"x": 1302, "y": 1333}],
                 "type": "TextInput"
             },
             "type": "InputTextEvent",
@@ -10,7 +10,7 @@
         }, 
         {
             "component": {
-                "accessibilityId": "17",
+                "bounds": [{"x": 42, "y": 1349}, {"x": 1302, "y": 1517}],
                 "type": "TextInput"
             },
             "type": "InputTextEvent",
@@ -18,7 +18,7 @@
         },
         {
             "component": {
-                "accessibilityId": "23",
+                "bounds": [{"x": 42, "y": 1854}, {"x": 1302, "y": 1994}],
                 "type": "Button"
             },
             "type": "TouchEvent"

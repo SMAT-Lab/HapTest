@@ -1,6 +1,6 @@
 {
   "name": "haptest",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "HapTest is an OpenHarmony application UI automated testing framework.",
   "bin": {
     "haptest": "bin/haptest"
@@ -9,14 +9,13 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest",
-    "haptest": "node -r ts-node/register src/cli/cli.ts --policy greedy_dfs -i com.huawei.hmos.files -o out",
-    "postinstall": "patch-package"
+    "haptest": "node -r ts-node/register src/cli/cli.ts --policy greedy_dfs -i com.huawei.hmos.files -o out"
   },
   "author": "",
   "license": "Apache License, Version 2.0",
   "dependencies": {
     "@types/ws": "^8.5.12",
-    "adm-zip": "^0.5.14",
+    "adm-zip": "^0.5.15",
     "bjc": "^1.0.10",
     "class-transformer": "^0.5.1",
     "commander": "^12.1.0",
@@ -24,7 +23,6 @@
     "graphology-shortest-path": "^2.1.0",
     "log4js": "^6.9.1",
     "moment": "^2.30.1",
-    "patch-package": "^8.0.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {

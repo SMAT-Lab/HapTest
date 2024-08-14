@@ -67,22 +67,20 @@ export class SceneDetect {
     private match(page: Page): UIEvent[] {
         let idComponentMap = new Map<string, Component>();
         for (const component of page.getComponents()) {
-            idComponentMap.set(component.accessibilityId, component);
+            idComponentMap.set(component.uniqueId, component);
         }
         let events: UIEvent[] = [];
         for (const [_, value] of this.models) {
             events = [];
             for (const event of value.events) {
-                let component = event.component;
-                if (!idComponentMap.has(component!.accessibilityId)) {
+                let component = new Component();
+                component.type = event.component.type;
+                component.bounds = event.component.bounds;
+                if (!idComponentMap.has(component.uniqueId)) {
                     break;
                 }
 
-                let target = idComponentMap.get(component!.accessibilityId);
-                if (target?.type != component!.type) {
-                    break;
-                }
-
+                let target = idComponentMap.get(component.uniqueId);
                 event.component = target;
                 events.push(EventBuilder.createEventFromJson(event) as UIEvent);
             }

@@ -46,8 +46,8 @@ export class EventAction {
         this.device.sendEvent(this.transition.event);
     }
 
-    stop() {
-        this.transition.to = this.device.getCurrentPage(this.hap);
+    async stop() {
+        this.transition.to = await this.device.getCurrentPage(this.hap);
         this.save();
     }
 

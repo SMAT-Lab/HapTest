@@ -16,6 +16,8 @@
 import { Expose, Transform } from 'class-transformer';
 import { Point } from './point';
 import { Rank } from './rank';
+import { CryptoUtils } from '../utils/crypto_utils';
+import { SerializeUtils } from '../utils/serialize_utils';
 
 export enum ComponentType {
     ModalPage = 'ModalPage',
@@ -32,8 +34,6 @@ const TEXT_INPUTABLE_TYPE: Set<string> = new Set([
 ]);
 
 export class Component {
-    accessibilityId: string;
-    @Expose()
     bounds: Point[];
     @Expose()
     checkable: boolean;
@@ -42,16 +42,10 @@ export class Component {
     @Expose()
     clickable: boolean;
     @Expose()
-    description: string;
-    @Expose()
     enabled: boolean;
     @Expose()
     focused: boolean;
-    hashcode: string;
-    @Expose()
     hint: string;
-    @Expose()
-    hostWindowId: string;
     @Expose()
     id: string;
     @Expose()
@@ -77,6 +71,10 @@ export class Component {
     type: string;
     @Expose()
     visible: boolean;
+    @Expose()
+    debugLine: string;
+    @Expose()
+    name: string;
 
     rank: number;
 
@@ -107,12 +105,15 @@ export class Component {
         return Math.abs(this.bounds[0].y - this.bounds[1].y);
     }
 
-    structure(): Object {
-        return { accessibilityId: this.accessibilityId, type: this.type };
+    get uniqueId(): string {
+        return CryptoUtils.sha256(SerializeUtils.serialize({ bounds: this.bounds, type: this.type }));
     }
 
     hasUIEvent(): boolean {
-        return this.enabled && (this.checkable || this.clickable || this.longClickable || this.scrollable || this.inputable);
+        return (
+            this.enabled &&
+            (this.checkable || this.clickable || this.longClickable || this.scrollable || this.inputable)
+        );
     }
 
     get inputable(): boolean {

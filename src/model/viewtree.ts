@@ -41,7 +41,7 @@ export class ViewTree {
     getStructual(): string {
         let structures: Object[] = [];
         this.getComponents().forEach((value) => {
-            structures.push(value.structure());
+            structures.push(value.uniqueId);
         });
 
         return JSON.stringify(structures);

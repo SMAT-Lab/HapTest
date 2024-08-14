@@ -41,7 +41,7 @@ export class InputManager {
     }
 
     async start() {
-        let page = this.device.getCurrentPage(this.hap);
+        let page = await this.device.getCurrentPage(this.hap);
         while (this.enabled && this.policy.enabled) {
             let event = this.policy.generateEvent(page);
             page = await this.addEvent(page, event);
@@ -57,7 +57,7 @@ export class InputManager {
         eventExcute.start();
         // sleep interval
         await sleep(EVENT_INTERVAL);
-        eventExcute.stop();
+        await eventExcute.stop();
 
         return eventExcute.transition.to;
     }

@@ -242,7 +242,7 @@ export class Device implements EventSimulator {
      * @param bundleName
      * @returns
      */
-    async dumpInspector(bundleName: string): Promise<any[]> {
+    async dumpInspector(bundleName: string): Promise<any> {
         return this.arkuiInspector.dump(bundleName, this.options.connectkey);
     }
 
@@ -355,8 +355,10 @@ export class Device implements EventSimulator {
      * @param hap
      * @returns
      */
-    getCurrentPage(hap: Hap): Page {
+    async getCurrentPage(hap: Hap): Promise<Page> {
         let page = this.dumpViewTree();
+        let inspector = await this.dumpInspector(hap.bundleName);
+        page.mergeInspector(inspector.layout);
 
         // set hap running state
         if (page.getBundleName() == hap.bundleName) {

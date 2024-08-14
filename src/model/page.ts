@@ -139,6 +139,24 @@ export class Page {
         return !(this.isStop() || this.isBackground());
     }
 
+    mergeInspector(viewTree: ViewTree) {
+        if (!viewTree) {
+            return;
+        }
+        let map = new Map<string, Component>();
+        for (const component of viewTree.getComponents()) {
+            map.set(component.uniqueId, component);
+        }
+
+        for (let component of this.getComponents()) {
+            let other = map.get(component.uniqueId);
+            if (other) {
+                component.debugLine = other.debugLine;
+                component.name = other.name;
+            }
+        }
+    }
+
     static collectComponent(component: Component, selector: (item: Component) => boolean): Component[] {
         if (!selector) {
             selector = (item) => {

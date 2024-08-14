@@ -17,6 +17,9 @@ import * as net from 'net';
 import WebSocket from 'ws';
 import { Hdc } from './hdc';
 import { getLogger } from 'log4js';
+import { Component } from '../model/component';
+import { Point } from '../model/point';
+import { ViewTree } from '../model/viewtree';
 const logger = getLogger();
 
 /**
@@ -32,6 +35,32 @@ export class ArkUIInspector {
         this.hdc = hdc;
     }
 
+    private buildComponent(node: any, parent: Component | null = null): Component {
+        let component = new Component();
+        let points: Point[] = [];
+        if (node.$rect) {
+            for (let point of node.$rect.split('],[')) {
+                let [x, y] = point.replace('[', '').replace(']', '').split(',');
+                if (x && y) {
+                    points.push({ x: Math.floor(Number(x)), y: Math.floor(Number(y)) });
+                }
+            }
+            component.bounds = points;
+        }
+        component.type = node.$type;
+        component.debugLine = node.$debugLine;
+        component.name = node.state?.viewInfo.componentName;
+        component.parent = parent;
+
+        if (node.$children) {
+            for (let child of node.$children) {
+                component.addChild(this.buildComponent(child, component));
+            }
+        }
+
+        return component;
+    }
+
     private async getUnusedPort(): Promise<number> {
         return new Promise((resolve, reject) => {
             const server = net.createServer();
@@ -43,7 +72,7 @@ export class ArkUIInspector {
         });
     }
 
-    async dump(bundleName: string, sn?: string): Promise<any[]> {
+    async dump(bundleName: string, sn?: string): Promise<any> {
         // remove last forward
         let fportls = this.hdc.fportLs();
         fportls.forEach((value) => {
@@ -62,34 +91,40 @@ export class ArkUIInspector {
         return new Promise((resolve, reject) => {
             let pid = this.hdc.pidof(bundleName);
             if (pid == 0) {
-                resolve([{ err: 'bundle not running.' }]);
+                resolve({ err: 'bundle not running.' });
                 return;
             }
 
             // forward
             this.hdc.fport(`tcp:${port}`, `ark:${pid}@${bundleName}`);
-            let response = new Array<any>(2);
+            let response: any = {};
             let idx = 0;
 
             const wss = new WebSocket(`ws://localhost:${port}`);
             wss.on('open', () => {
                 wss.send(JSON.stringify({ type: 'tree' }));
                 setTimeout(() => {
-                    response[0] = { err: 'timeout' };
                     wss.close();
-                }, 500);
+                }, 1000);
             });
 
             wss.on('message', (data: WebSocket.RawData) => {
-                response[idx++] = JSON.parse(data.toString('utf-8'));
-                if (idx == 2) {
+                let object = JSON.parse(data.toString('utf-8'));
+                if (object.type == 'root') {
+                    let component = this.buildComponent(object.content);
+                    response.layout = new ViewTree(component);
+                } else if (object.type == 'snapShot') {
+                    response.screen = Buffer.from(object.pixelMapBase64, 'base64');
+                }
+
+                if (++idx == 2) {
                     wss.close();
                 }
             });
 
             wss.on('error', (err: Error) => {
                 logger.error(err);
-                resolve([{ err: err.message }]);
+                resolve({ err: err.message });
             });
 
             wss.on('close', () => {

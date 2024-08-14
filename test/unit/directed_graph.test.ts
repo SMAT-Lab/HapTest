@@ -36,7 +36,6 @@ describe('DirectedGraph Test', () => {
         graph.addDirectedEdge(4, 5);
 
         let edges = graph.filterOutEdges(1, (edge, attr, source, target) => {
-            console.log(edge, source, target);
             return true;
         });
 
@@ -55,6 +54,5 @@ describe('DirectedGraph Test', () => {
         });
 
         expect(edges.length).eq(0);
-
     });
 });

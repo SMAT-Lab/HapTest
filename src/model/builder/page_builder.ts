@@ -100,17 +100,13 @@ export class PageBuilder {
 
     static buildComponent(node: DumpLayoutNode, parent: Component | null = null): Component {
         let component = new Component();
-        component.accessibilityId = node.attributes.accessibilityId;
         component.bounds = node.attributes.bounds;
         component.checkable = node.attributes.checkable;
         component.checked = node.attributes.checked;
         component.clickable = node.attributes.clickable;
-        component.description = node.attributes.description;
         component.enabled = node.attributes.enabled;
         component.focused = node.attributes.focused;
-        component.hashcode = node.attributes.hashcode;
         component.hint = node.attributes.hint;
-        component.hostWindowId = node.attributes.hostWindowId;
         component.id = node.attributes.id;
         component.key = node.attributes.key;
         component.longClickable = node.attributes.longClickable;

@@ -47,7 +47,7 @@ export abstract class UIEvent extends Event {
 
     getComponentId(): string | undefined {
         if (this.component) {
-            return this.component.accessibilityId;
+            return this.component.uniqueId;
         }
         return undefined;
     }
