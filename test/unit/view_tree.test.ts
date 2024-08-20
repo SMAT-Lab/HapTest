@@ -32,7 +32,7 @@ describe('ViewTree Test', () => {
         expect(clickableBtns.length).eq(3);
     });
 
-    it('test close keyboard', async () => {
+    it('test close keyboard1', async () => {
         let pages = PageBuilder.buildPagesFromDumpLayoutFile(path.join(__dirname, '../resource/layout_normal_keyboard.json'));
         for (const page of pages) {
             if (page.getBundleName() == 'com.huawei.hmos.inputmethod') {
@@ -40,15 +40,20 @@ describe('ViewTree Test', () => {
                     return value.hasUIEvent();
                 })
                 expect(components.length).eq(15);
-                components = components.sort((a, b) => {
-                    if (a.bounds[0].y != b.bounds[0].y) {
-                        return a.bounds[0].y - b.bounds[0].y;
-                    }
-
-                    return a.bounds[0].x - b.bounds[0].x;
-                })
-
                 expect(components[2].bounds[0].x).eq(1153);
+            }
+        }
+    })
+
+    it('test close keyboard2', async () => {
+        let pages = PageBuilder.buildPagesFromDumpLayoutFile(path.join(__dirname, '../resource/layout_normal_keyboard2.json'));
+        for (const page of pages) {
+            if (page.getBundleName() == 'com.huawei.hmos.inputmethod') {
+                let components = page.getComponents().filter((value) => {
+                    return value.hasUIEvent();
+                })
+                expect(components.length).eq(4);
+                expect(components[2].bounds[0].x).eq(959);
             }
         }
     })

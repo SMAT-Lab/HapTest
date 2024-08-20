@@ -42,9 +42,10 @@ export class Device implements EventSimulator {
     private temp: string;
     private width: number;
     private height: number;
-    private sn: string;
+    private udid: string;
     private options: FuzzOptions;
     private arkuiInspector: ArkUIInspector;
+    private lastFaultlogs: Set<string>;
 
     constructor(options: FuzzOptions) {
         this.options = options;
@@ -53,13 +54,14 @@ export class Device implements EventSimulator {
         let size = this.hdc.getScreenSize();
         this.width = size.x;
         this.height = size.y;
-        this.sn = this.hdc.getDeviceSN();
+        this.udid = this.hdc.getDeviceUdid();
         if (!fs.existsSync(this.output)) {
             fs.mkdirSync(this.output, { recursive: true });
         }
         this.temp = path.join(this.output, 'temp');
         fs.mkdirSync(this.temp, { recursive: true });
         this.arkuiInspector = new ArkUIInspector(this.hdc);
+        this.lastFaultlogs = this.collectFaultLogger();
     }
 
     connect(hap: Hap) {
@@ -84,11 +86,11 @@ export class Device implements EventSimulator {
     }
 
     /**
-     * Get device sn
+     * Get device udid
      * @returns
      */
-    getSN(): string {
-        return this.sn;
+    getUdid(): string {
+        return this.udid;
     }
 
     /**
@@ -146,15 +148,8 @@ export class Device implements EventSimulator {
      * @returns
      */
     collectFaultLogger(): Set<string> {
-        return this.hdc.collectFaultLogger();
-    }
-
-    /**
-     * Get SN of the device
-     * @returns
-     */
-    getDeviceSN(): string {
-        return this.hdc.getDeviceSN();
+        this.hdc.recvFile('/data/log/faultlog/', this.output);
+        return new Set<string>(findFiles(path.join(this.output, 'faultlog'), []));
     }
 
     /**
@@ -186,7 +181,7 @@ export class Device implements EventSimulator {
             // if exist keyboard then close and dump again.
             if (this.closeKeyboard(pages)) {
                 // for sleep
-                this.hdc.getDeviceSN();
+                this.hdc.getDeviceUdid();
                 continue;
             }
             pages.sort((a: Page, b: Page) => {
@@ -220,14 +215,6 @@ export class Device implements EventSimulator {
 
             let components = page.getComponents().filter((value) => {
                 return value.hasUIEvent();
-            });
-
-            components = components.sort((a, b) => {
-                if (a.bounds[0].y != b.bounds[0].y) {
-                    return a.bounds[0].y - b.bounds[0].y;
-                }
-
-                return a.bounds[0].x - b.bounds[0].x;
             });
 
             this.sendEvent(new TouchEvent(components[2]));
@@ -387,10 +374,18 @@ export class Device implements EventSimulator {
     getSnapshot(onForeground: boolean): Snapshot {
         let screen = this.capScreen();
         let faultlogs = this.collectFaultLogger();
+        let diffLogs = new Set<string>();
+        for (const log of faultlogs) {
+            if (!this.lastFaultlogs.has(log)) {
+                diffLogs.add(log);
+            }
+        }
+        this.lastFaultlogs = faultlogs;
+        
         return new Snapshot(
             this,
             screen,
-            faultlogs,
+            diffLogs,
             this.coverage ? this.coverage.getCoverageFile(onForeground) : undefined
         );
     }

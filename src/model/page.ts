@@ -97,11 +97,11 @@ export class Page {
     }
 
     getContentSig(): string {
-        return CryptoUtils.sha256(this.getContent());
+        return CryptoUtils.sha1(this.getContent());
     }
 
     getStructualSig(): string {
-        return CryptoUtils.sha256(this.getStructual());
+        return CryptoUtils.sha1(this.getStructual());
     }
 
     getPossibleUIEvents(): UIEvent[] {

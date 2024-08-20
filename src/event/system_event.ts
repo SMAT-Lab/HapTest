@@ -38,7 +38,7 @@ export class AbilityEvent extends SystemEvent {
     }
 
     eventPageSig(page: Page): string {
-        return CryptoUtils.sha256(this.toString());
+        return CryptoUtils.sha1(this.toString());
     }
 }
 
@@ -56,7 +56,7 @@ export class StopHapEvent extends SystemEvent {
     }
 
     eventPageSig(page: Page): string {
-        return CryptoUtils.sha256(this.toString());
+        return CryptoUtils.sha1(this.toString());
     }
 }
 

@@ -106,7 +106,7 @@ export class Component {
     }
 
     get uniqueId(): string {
-        return CryptoUtils.sha256(SerializeUtils.serialize({ bounds: this.bounds, type: this.type }));
+        return CryptoUtils.sha1(SerializeUtils.serialize({ bounds: this.bounds, type: this.type }));
     }
 
     hasUIEvent(): boolean {

@@ -14,6 +14,7 @@
   "author": "",
   "license": "Apache License, Version 2.0",
   "dependencies": {
+    "@ts-graphviz/adapter": "^2.0.3",
     "@types/ws": "^8.5.12",
     "adm-zip": "^0.5.15",
     "bjc": "^1.0.10",
@@ -23,6 +24,7 @@
     "graphology-shortest-path": "^2.1.0",
     "log4js": "^6.9.1",
     "moment": "^2.30.1",
+    "ts-graphviz": "^2.1.2",
     "ws": "^8.18.0"
   },
   "devDependencies": {

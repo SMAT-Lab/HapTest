@@ -140,26 +140,6 @@ export class Hdc {
         }
     }
 
-    collectFaultLogger(): Set<string> {
-        let logs: Set<string> = new Set();
-        let output = this.excuteShellCommand('ls /data/log/faultlog/ -hlR');
-        let curDir = '/data/log/faultl';
-        for (let line of output.split(NEWLINE)) {
-            if (line.startsWith('/data/log/faultlog/') && line.endsWith(':')) {
-                curDir = line.substring(0, line.length - 1);
-                continue;
-            }
-
-            let matches = line.match(/[\S]+/g);
-            if (matches && matches.length == 8) {
-                if (matches[0].startsWith('-')) {
-                    logs.add(`${curDir}/${matches[7]}`);
-                }
-            }
-        }
-        return logs;
-    }
-
     fportLs(): Set<string[]> {
         let fports = new Set<string[]>();
         let output = this.excute('fport', 'ls').stdout;
@@ -186,10 +166,10 @@ export class Hdc {
         return Number(lines[0]);
     }
 
-    getDeviceSN(): string {
-        let output = this.excuteShellCommand('param get ohos.boot.sn');
+    getDeviceUdid(): string {
+        let output = this.excuteShellCommand('bm get -u');
         let lines = output.split(NEWLINE);
-        return lines[0];
+        return lines[1];
     }
 
     getDeviceType(): string {

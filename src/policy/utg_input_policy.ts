@@ -85,6 +85,7 @@ export abstract class UTGInputPolicy extends InputPolicy {
             this.utg.addTransition(this.lastEvent, this.lastPage, this.currentPage);
             // transition to StopState
             this.utg.addTransitionToStop(this.currentPage);
+            this.utg.dumpSvg(this.device.getOutput(), 'http://localhost:3001');
         }
     }
 

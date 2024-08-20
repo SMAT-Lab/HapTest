@@ -19,6 +19,12 @@ export class CryptoUtils {
     static sha256(content: string): string {
         let sha256 = crypto.createHash('sha256');
         sha256.update(content);
-        return sha256.digest('hex');
+        return sha256.digest('base64url');
+    }
+
+    static sha1(content: string): string {
+        let sha1 = crypto.createHash('sha1');
+        sha1.update(content);
+        return sha1.digest('base64url');
     }
 }

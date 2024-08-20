@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+import { toFile } from '@ts-graphviz/adapter';
+import { attribute as _, Digraph, Node, Edge, toDot } from 'ts-graphviz';
 import { Event } from '../event/event';
 import { Hap } from '../model/hap';
 import DirectedGraph from 'graphology';
@@ -21,6 +23,7 @@ import { RandomUtils } from '../utils/random_utils';
 import { StopHapEvent } from '../event/system_event';
 import { Page } from '../model/page';
 import { getLogger } from 'log4js';
+import * as path from 'path';
 const logger = getLogger();
 
 type EdgeAttributeType = Map<string, { id: number; event: Event }>;
@@ -220,6 +223,34 @@ export class UTG {
         }
 
         return steps;
+    }
+
+    async dumpSvg(output: string, rootUrl: string) {
+        const dotGraph = new Digraph('UTG');
+        let nodes = new Map<string, Node>();
+        for (const id of this.pageContentGraph.nodes()) {
+            let dotNode = new Node(id, {
+                [_.color]: 'blue',
+                [_.URL]: `${rootUrl}/node/${id}`,
+            });
+            dotGraph.addNode(dotNode);
+            nodes.set(id, dotNode);
+        }
+
+        for (const source of this.pageContentGraph.nodes()) {
+            for (const target of this.pageContentGraph.nodes()) {
+                if (this.pageContentGraph.hasDirectedEdge(source, target)) {
+                    const edge = new Edge([nodes.get(source)!, nodes.get(target)!], {
+                        [_.color]: 'pink',
+                        [_.URL]: `${rootUrl}/edge/${source}/${target}`,
+                    });
+                    dotGraph.addEdge(edge);
+                }
+            }
+        }
+
+        const dot = toDot(dotGraph);
+        await toFile(dot, path.join(output, 'utg.svg'), { format: 'svg' });
     }
 
     private addNode(page: Page) {

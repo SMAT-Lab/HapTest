@@ -39,7 +39,7 @@ export abstract class Event {
     }
 
     eventPageSig(page: Page): string {
-        return CryptoUtils.sha256(SerializeUtils.serialize({ event: this.toJson(), page: page.getContent() }));
+        return CryptoUtils.sha1(SerializeUtils.serialize({ event: this.toJson(), page: page.getContent() }));
     }
 
     getRank(): number {

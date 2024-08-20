@@ -31,6 +31,6 @@ export class ManualEvent extends Event {
     send(simulator: EventSimulator): void {}
 
     eventPageSig(page: Page): string {
-        return CryptoUtils.sha256(this.toString());
+        return CryptoUtils.sha1(this.toString());
     }
 }
