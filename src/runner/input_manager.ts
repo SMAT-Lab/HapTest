@@ -43,7 +43,7 @@ export class InputManager {
     async start() {
         let page = await this.device.getCurrentPage(this.hap);
         while (this.enabled && this.policy.enabled) {
-            let event = this.policy.generateEvent(page);
+            let event = await this.policy.generateEvent(page);
             page = await this.addEvent(page, event);
         }
     }

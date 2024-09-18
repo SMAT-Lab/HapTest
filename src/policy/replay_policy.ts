@@ -34,7 +34,7 @@ export class ReplayPolicy extends InputPolicy {
         this.loadEvents(path.join(reportRoot, 'events'));
     }
 
-    generateEvent(page: Page): Event {
+    async generateEvent(page: Page): Promise<Event> {
         if (this.currentStep == this.steps.length) {
             this.stop();
             return new ExitEvent();
@@ -55,7 +55,7 @@ export class ReplayPolicy extends InputPolicy {
         for (let file of files) {
             let report = JSON.parse(fs.readFileSync(path.resolve(reportRoot, file), {encoding: 'utf-8'}));
             let event = EventBuilder.createEventFromJson(report.event);
-            let page = Page.fromJson(report.page);
+            let page = Page.fromJson(report.from);
             this.steps.push([page, event]);
         }
     }

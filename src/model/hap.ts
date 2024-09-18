@@ -24,6 +24,12 @@ export class Hap {
 
     constructor() {
         this._ablities = [];
+        this._bundleName = '';
+        this._versionCode = 0;
+        this._entryModuleName = '';
+        this._mainAbility = '';
+        this._hapFile = '';
+        this._reqPermissions = [];
     }
 
     public get bundleName(): string {

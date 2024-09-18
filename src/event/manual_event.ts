@@ -22,10 +22,13 @@ import { Page } from '../model/page';
 export class ManualEvent extends Event {
     @Expose()
     protected time: number;
+    @Expose()
+    protected event: Event;
 
-    constructor() {
+    constructor(event: Event) {
         super('ManualEvent');
         this.time = new Date().getTime();
+        this.event = event;
     }
 
     send(simulator: EventSimulator): void {}

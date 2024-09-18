@@ -33,7 +33,7 @@ export class Page {
     @Expose()
     private pagePath: string;
     @Expose()
-    private snapshot: Snapshot;
+    private snapshot?: Snapshot;
 
     constructor(viewTree: ViewTree, abilityName: string, bundleName: string, pagePath: string) {
         this.viewTree = viewTree;
@@ -42,7 +42,7 @@ export class Page {
         this.pagePath = pagePath;
     }
 
-    getSnapshot(): Snapshot {
+    getSnapshot(): Snapshot | undefined {
         return this.snapshot;
     }
 
@@ -115,7 +115,7 @@ export class Page {
     selectComponentsByType(types: string[]): Component[] {
         let typeSet = new Set(types);
         return this.selectComponents((item) => {
-            return typeSet.has(item.type);
+            return typeSet.has(item.type!);
         });
     }
 

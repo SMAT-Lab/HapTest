@@ -15,7 +15,6 @@
 
 import { spawnSync, SpawnSyncReturns } from 'child_process';
 import path from 'path';
-import * as os from 'os';
 import { Page } from '../model/page';
 import { Point } from '../model/point';
 import { PageBuilder } from '../model/builder/page_builder';
@@ -23,9 +22,10 @@ import { Direct } from './event_simulator';
 import { convertStr2RunningState, Hap, HapRunningState } from '../model/hap';
 import { HdcCmdError } from '../error/error';
 import { getLogger } from 'log4js';
+
 const logger = getLogger();
 
-const NEWLINE = /\r\n|\n/;
+export const NEWLINE = /\r\n|\n/;
 
 export class Hdc {
     private connectkey: string | undefined;
@@ -50,12 +50,12 @@ export class Hdc {
         return output.status;
     }
 
-    dumpViewTree(): Page[] {
+    dumpViewTree(temp: string): Page[] {
         let output = this.excuteShellCommand('uitest', 'dumpLayout');
         let matches = output.match(/DumpLayout saved to:([a-zA-Z/0-9_]*.json)/);
         if (matches) {
             let layoutJson = matches[1];
-            let localFile = path.join(os.tmpdir(), path.basename(layoutJson));
+            let localFile = path.join(temp, path.basename(layoutJson));
             logger.debug('dumpLayout save to: ', localFile);
             this.recvFile(layoutJson, localFile);
 
@@ -324,36 +324,22 @@ export class Hdc {
     }
 
     mvSandboxFile2Local(port: number, local: string, sandboxFile: string) {
-        this.excuteShellCommand(
-            ...[
-                'ftpget',
-                '-p',
-                `${port}`,
-                '-P',
-                'guest',
-                '-u',
-                'anonymous',
-                'localhost',
-                '-g',
-                local,
-                `/data/storage/el2/base/${sandboxFile}`,
-            ]
-        );
+        let ftpCmd = ['ftpget', '-p', `${port}`, '-P', 'guest', '-u', 'anonymous', 'localhost'];
+        let ftpGetCmd = [...ftpCmd, '-g', local, `/data/storage/el2/base/${sandboxFile}`];
+        let ftpRmCmd = [...ftpCmd, '-d', `/data/storage/el2/base/${sandboxFile}`];
 
-        this.excuteShellCommand(
-            ...[
-                'ftpget',
-                '-p',
-                `${port}`,
-                '-P',
-                'guest',
-                '-u',
-                'anonymous',
-                'localhost',
-                '-d',
-                `/data/storage/el2/base/${sandboxFile}`,
-            ]
-        );
+        this.excuteShellCommand(...ftpGetCmd);
+        this.excuteShellCommand(...ftpRmCmd);
+    }
+
+    kill(name: string): void {
+        let output = this.excuteShellCommand('ps -A');
+        for (let line of output.split(NEWLINE)) {
+            let matches = line.match(/[\S]+/g);
+            if (matches?.length == 4 && matches[3] == name) {
+                this.excuteShellCommand(...['kill', '-9', matches[0]]);
+            }
+        }
     }
 
     uiInputCommand(...args: string[]): string {

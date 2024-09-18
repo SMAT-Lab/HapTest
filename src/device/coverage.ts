@@ -26,10 +26,10 @@ const logger = getLogger();
  * https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ide-device-file-explorer-0000001558037338-V5#section675334122615
  */
 export class Coverage {
-    bftpPort: number;
-    bftpPid: number;
+    bftpPort?: number;
+    bftpPid?: number;
     hap: Hap;
-    last: CoverageReport;
+    last?: CoverageReport;
     private device: Device;
 
     constructor(device: Device, hap: Hap) {
@@ -54,10 +54,15 @@ export class Coverage {
     }
 
     stopBftp(): void {
-        this.device.getHdc().stopBftp(this.hap, this.bftpPid);
+        if (this.bftpPid) {
+            this.device.getHdc().stopBftp(this.hap, this.bftpPid);
+        }
     }
 
-    getCoverageFile(onForeground: boolean): CoverageReport {
+    getCoverageFile(onForeground: boolean): CoverageReport | undefined {
+        if (!this.bftpPort) {
+            return this.last;
+        }
         // trigger UIAbility::onNewWant to save cov.
         let current: Set<string> = new Set();
         if (onForeground) {

@@ -41,4 +41,3 @@
 \end{algorithmic}
 \end{algorithm}
 </pre>
-```

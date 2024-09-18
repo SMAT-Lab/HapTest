@@ -73,6 +73,16 @@ export class LongTouchEvent extends UIEvent {
     }
 }
 
+export class DoubleClickEvent extends UIEvent {
+    constructor(componentOrPoint: Component | Point) {
+        super('DoubleClickEvent', componentOrPoint);
+    }
+
+    send(simulator: EventSimulator): void {
+        simulator.doubleClick(this.point);
+    }
+}
+
 export class ScrollEvent extends UIEvent {
     @Expose()
     protected velocity: number;
@@ -138,7 +148,7 @@ export class SwipeEvent extends UIEvent {
     @Expose()
     protected toPoint: Point;
     @Expose()
-    protected toComponent: Component;
+    protected toComponent?: Component;
     @Expose()
     protected velocity: number;
 
@@ -155,5 +165,31 @@ export class SwipeEvent extends UIEvent {
 
     send(simulator: EventSimulator): void {
         simulator.swipe(this.point, this.toPoint, this.velocity);
+    }
+}
+
+export class FlingEvent extends SwipeEvent {
+    @Expose()
+    protected step: number;
+
+    constructor(from: Point | Component, to: Point | Component, velocity: number = 600, step: number) {
+        super(from, to, velocity);
+        this.step = step;
+        this.type = 'FlingEvent';
+    }
+
+    send(simulator: EventSimulator): void {
+        simulator.fling(this.point, this.toPoint, this.velocity, this.step);
+    }
+}
+
+export class DragEvent extends SwipeEvent {
+    constructor(from: Point | Component, to: Point | Component, velocity: number = 600) {
+        super(from, to, velocity);
+        this.type = 'DragEvent';
+    }
+
+    send(simulator: EventSimulator): void {
+        simulator.drag(this.point, this.toPoint, this.velocity);
     }
 }

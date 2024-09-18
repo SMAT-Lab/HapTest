@@ -17,7 +17,7 @@
     "@ts-graphviz/adapter": "^2.0.3",
     "@types/ws": "^8.5.12",
     "adm-zip": "^0.5.15",
-    "bjc": "^1.0.10",
+    "bjc": "^1.0.13",
     "class-transformer": "^0.5.1",
     "commander": "^12.1.0",
     "graphology": "^0.25.4",

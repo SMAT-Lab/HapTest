@@ -19,7 +19,6 @@ import { Component } from '../model/component';
 import { RandomUtils } from '../utils/random_utils';
 import { Event } from './event';
 import { CombinedKeyEvent, KeyEvent } from './key_event';
-import { ManualEvent } from './manual_event';
 import { AbilityEvent, ExitEvent, StopHapEvent } from './system_event';
 import { InputTextEvent, LongTouchEvent, ScrollEvent, SwipeEvent, TouchEvent, UIEvent } from './ui_event';
 import { Point } from '../model/point';
@@ -27,16 +26,15 @@ import { SerializeUtils } from '../utils/serialize_utils';
 
 export class EventBuilder {
     static createEventFromJson(json: any): Event {
+        if (json.type == 'ManualEvent') {
+            return EventBuilder.createEventFromJson(json.event);
+        }
         if (json.type == 'KeyEvent') {
             return new KeyEvent(json.keyCode);
         }
 
         if (json.type == 'CombinedKeyEvent') {
             return new CombinedKeyEvent(json.keyCode, json.keyCode1, json.keyCode2);
-        }
-
-        if (json.type == 'ManualEvent') {
-            return new ManualEvent();
         }
 
         if (json.type == 'AbilityEvent') {

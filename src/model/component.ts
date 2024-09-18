@@ -34,30 +34,30 @@ const TEXT_INPUTABLE_TYPE: Set<string> = new Set([
 ]);
 
 export class Component {
-    bounds: Point[];
+    bounds?: Point[];
     @Expose()
-    checkable: boolean;
+    checkable?: boolean;
     @Expose()
-    checked: boolean;
+    checked?: boolean;
     @Expose()
-    clickable: boolean;
+    clickable?: boolean;
     @Expose()
-    enabled: boolean;
+    enabled?: boolean;
     @Expose()
-    focused: boolean;
-    hint: string;
+    focused?: boolean;
+    hint?: string;
     @Expose()
-    id: string;
+    id?: string;
     @Expose()
-    key: string;
+    key?: string;
     @Expose()
-    longClickable: boolean;
+    longClickable?: boolean;
     @Expose()
-    origBounds: Point[];
+    origBounds?: Point[];
     @Expose()
-    scrollable: boolean;
+    scrollable?: boolean;
     @Expose()
-    selected: boolean;
+    selected?: boolean;
     @Expose()
     @Transform(({ value, key, obj, type }) => {
         if (TEXT_INPUTABLE_TYPE.has(obj.type)) {
@@ -66,19 +66,19 @@ export class Component {
             return value;
         }
     })
-    text: string;
+    text?: string;
     @Expose()
-    type: string;
+    type?: string;
     @Expose()
-    visible: boolean;
+    visible?: boolean;
     @Expose()
-    debugLine: string;
+    debugLine?: string;
     @Expose()
-    name: string;
+    name?: string;
 
     rank: number;
 
-    parent: Component | null;
+    parent?: Component | null;
     @Expose({ groups: ['Content'] })
     children: Component[];
 
@@ -92,16 +92,25 @@ export class Component {
     }
 
     getCenterPoint(): Point {
+        if (!this.bounds) {
+            return { x: 0, y: 0};
+        }
         const centerX = Math.round((this.bounds[0].x + this.bounds[1].x) / 2);
         const centerY = Math.round((this.bounds[0].y + this.bounds[1].y) / 2);
         return { x: centerX, y: centerY };
     }
 
     getWidth(): number {
+        if (!this.bounds) {
+            return 0;
+        }
         return Math.abs(this.bounds[0].x - this.bounds[1].x);
     }
 
     getHeight(): number {
+        if (!this.bounds) {
+            return 0;
+        }
         return Math.abs(this.bounds[0].y - this.bounds[1].y);
     }
 
@@ -111,12 +120,12 @@ export class Component {
 
     hasUIEvent(): boolean {
         return (
-            this.enabled &&
+            this.enabled == true &&
             (this.checkable || this.clickable || this.longClickable || this.scrollable || this.inputable)
         );
     }
 
     get inputable(): boolean {
-        return TEXT_INPUTABLE_TYPE.has(this.type);
+        return TEXT_INPUTABLE_TYPE.has(this.type!);
     }
 }

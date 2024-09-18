@@ -37,7 +37,7 @@ const logger = getLogger();
 
 export class Device implements EventSimulator {
     private hdc: Hdc;
-    private coverage: Coverage;
+    private coverage?: Coverage;
     private output: string;
     private temp: string;
     private width: number;
@@ -177,7 +177,7 @@ export class Device implements EventSimulator {
     dumpViewTree(): Page {
         let retryCnt = 5;
         while (retryCnt-- >= 0) {
-            let pages = this.hdc.dumpViewTree();
+            let pages = this.hdc.dumpViewTree(this.temp);
             // if exist keyboard then close and dump again.
             if (this.closeKeyboard(pages)) {
                 // for sleep
@@ -429,7 +429,7 @@ export class Device implements EventSimulator {
     buildHap(device: Device): Hap {
         // using hvigorw to build HAP
         if (this.options.sourceRoot) {
-            execSync(`hvigorw -p buildMode=debug -p coverage-mode=bjc -p debugLine=true clean assembleHap`, {
+            execSync(`hvigorw -p buildMode=debug -p coverage-mode=full -p debugLine=true clean assembleHap`, {
                 stdio: 'inherit',
                 cwd: this.options.sourceRoot,
             });
@@ -437,6 +437,10 @@ export class Device implements EventSimulator {
             let deviceType = device.getDeviceType();
             let project = new HapProject(this.options.sourceRoot);
             let module = project.getModule(deviceType);
+            if (!module) {
+                logger.error(`${deviceType}`);
+                process.exit();
+            }
             let hapFiles = findFiles(path.join(module.path, 'build'), ['.hap']);
             hapFiles.sort();
             if (hapFiles.length > 0) {

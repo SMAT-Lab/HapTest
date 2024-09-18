@@ -27,7 +27,7 @@ const MOCK_SHELL_OUTPUT_GetForegroundProcess = fs.readFileSync(path.join(__dirna
 const MOCK_SHELL_OUTPUT_Netstat = fs.readFileSync(path.join(__dirname, '../resource/netstat.txt'), {
     encoding: 'utf-8',
 });
-describe('hdc Test', () => {
+describe('hdc Test', async () => {
     let hdc = new Hdc();
 
     it('test getForegroundProcess', async () => {

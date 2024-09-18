@@ -27,9 +27,9 @@ export const MAX_NUM_RESTARTS = 5;
 export abstract class UTGInputPolicy extends InputPolicy {
     protected retryCount: number;
     protected randomInput: boolean;
-    protected lastEvent: Event;
-    protected lastPage: Page;
-    protected currentPage: Page;
+    protected lastEvent?: Event;
+    protected lastPage?: Page;
+    protected currentPage?: Page;
     protected utg: UTG;
     protected sceneDetect: SceneDetect;
 
@@ -38,9 +38,10 @@ export abstract class UTGInputPolicy extends InputPolicy {
         this.randomInput = randomInput;
         this.utg = new UTG(hap, randomInput);
         this.sceneDetect = new SceneDetect();
+        this.retryCount = 0;
     }
 
-    generateEvent(page: Page): Event {
+    async generateEvent(page: Page): Promise<Event> {
         this.currentPage = page;
         this.updateUtg();
 

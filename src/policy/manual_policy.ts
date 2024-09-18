@@ -20,21 +20,25 @@ import { ManualEvent } from '../event/manual_event';
 import { Hap } from '../model/hap';
 import { InputPolicy, PolicyName } from './input_policy';
 import { Page } from '../model/page';
+import { UIRecord } from '../device/ui_record';
 
 export class ManualPolicy extends InputPolicy {
     private firstEvent: boolean;
+    private uiRecord: UIRecord;
 
     constructor(device: Device, hap: Hap, name: PolicyName) {
         super(device, hap, name);
         this.firstEvent = true;
+        this.uiRecord = new UIRecord(device.getHdc());
     }
-
-    generateEvent(page: Page): Event {
+    
+    async generateEvent(page: Page): Promise<Event> {
         if (this.firstEvent) {
             this.firstEvent = false;
             return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
         }
 
-        return new ManualEvent();
+        let event = await this.uiRecord.recordOnceEvent();
+        return new ManualEvent(event);
     }
 }

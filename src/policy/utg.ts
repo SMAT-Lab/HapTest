@@ -47,9 +47,9 @@ export class UTG {
     private effectiveEvent: Set<string>;
     private exploredPage: Set<string>;
     private reachedPage: Set<string>;
-    private firstPage: Page;
+    private firstPage?: Page;
     private stopEvent: StopHapEvent;
-    private stopPage: Page;
+    private stopPage?: Page;
     private wantTransition?: Transition;
 
     constructor(hap: Hap, randomInput: boolean) {

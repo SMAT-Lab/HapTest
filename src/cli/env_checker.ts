@@ -24,7 +24,6 @@ import { getLogger } from 'log4js';
 const logger = getLogger();
 
 export class EnvChecker {
-    private cmdlineHome: string;
     private options: FuzzOptions;
 
     constructor(options: FuzzOptions) {
@@ -73,8 +72,8 @@ export class EnvChecker {
     private checkHvigorw(): boolean {
         try {
             let hvigorFile = which('hvigorw');
-            this.cmdlineHome = path.normalize(path.join(path.dirname(hvigorFile), '..'));
-            let sdk = path.join(this.cmdlineHome, 'sdk');
+            let cmdlineHome = path.normalize(path.join(path.dirname(hvigorFile), '..'));
+            let sdk = path.join(cmdlineHome, 'sdk');
             if (process.env.DEVECO_SDK_HOME) {
                 sdk = process.env.DEVECO_SDK_HOME;
             }

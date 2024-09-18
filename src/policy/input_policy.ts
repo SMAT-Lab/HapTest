@@ -59,5 +59,5 @@ export abstract class InputPolicy {
         this._enabled = false;
     }
 
-    abstract generateEvent(page: Page): Event;
+    abstract generateEvent(page: Page): Promise<Event>;
 }

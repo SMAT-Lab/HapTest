@@ -71,8 +71,8 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
     }
 
     private getPossibleEvent(): Event | undefined {
-        let components: Component[] = this.currentPage.getComponents();
-        let pageString: string = this.currentPage.getContentSig();
+        let components: Component[] = this.currentPage!.getComponents();
+        let pageString: string = this.currentPage!.getContentSig();
 
         // get the sorted components
         if (this.selectComponentMap.has(pageString)) {
@@ -117,7 +117,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
                 }
             }
 
-            if (!this.utg.isEventExplored(event, this.currentPage)) {
+            if (!this.utg.isEventExplored(event, this.currentPage!)) {
                 return event;
             }
         }
@@ -151,16 +151,16 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
     }
 
     private updateState(): void {
-        if (!this.currentPage.isForeground()) {
+        if (!this.currentPage!.isForeground()) {
             return;
         }
 
-        let pageSig = this.currentPage.getContentSig();
+        let pageSig = this.currentPage!.getContentSig();
         if (!this.pageComponentMap.has(pageSig)) {
             this.isNewPage = true;
             let components: Component[] = [];
-            this.updatePreferableComponentRank(this.currentPage);
-            for (const component of this.currentPage.getComponents()) {
+            this.updatePreferableComponentRank(this.currentPage!);
+            for (const component of this.currentPage!.getComponents()) {
                 if (component.hasUIEvent()) {
                     components.push(component);
                 }

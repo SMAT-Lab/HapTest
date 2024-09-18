@@ -49,14 +49,14 @@ export class UtgRandomSearchPolicy extends UTGInputPolicy {
     }
 
     private updateState(): void {
-        if (!this.currentPage.isForeground()) {
+        if (!this.currentPage!.isForeground()) {
             return;
         }
 
-        let pageSig = this.currentPage.getContentSig();
+        let pageSig = this.currentPage!.getContentSig();
         if (!this.pageComponentMap.has(pageSig)) {
             let components: Component[] = [];
-            for (const component of this.currentPage.getComponents()) {
+            for (const component of this.currentPage!.getComponents()) {
                 if (component.hasUIEvent()) {
                     components.push(component);
                 }
@@ -66,7 +66,7 @@ export class UtgRandomSearchPolicy extends UTGInputPolicy {
     }
 
     private selectEvent(): Event | undefined {
-        let pageSig = this.currentPage.getContentSig();
+        let pageSig = this.currentPage!.getContentSig();
         let components = this.pageComponentMap.get(pageSig);
         if (!components) {
             return undefined;
@@ -74,16 +74,16 @@ export class UtgRandomSearchPolicy extends UTGInputPolicy {
 
         //unexplored events
         let events = this.getPossibleEvents(components).filter((event) => {
-            return !this.utg.isEventExplored(event, this.currentPage);
+            return !this.utg.isEventExplored(event, this.currentPage!);
         });
 
         // from current page translate to unexpored page Event
-        for (const page of this.utg.getReachablePages(this.currentPage)) {
+        for (const page of this.utg.getReachablePages(this.currentPage!)) {
             if (this.utg.isPageExplored(page) || page.getBundleName() != this.hap.bundleName) {
                 continue;
             }
 
-            let steps = this.utg.getNavigationSteps(this.currentPage, page);
+            let steps = this.utg.getNavigationSteps(this.currentPage!, page);
             if (steps && steps.length > 0) {
                 events.push(steps[0][1]);
             }

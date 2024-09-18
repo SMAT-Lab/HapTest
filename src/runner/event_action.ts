@@ -48,6 +48,7 @@ export class EventAction {
 
     async stop() {
         this.transition.to = await this.device.getCurrentPage(this.hap);
+        logger.info(`EventAction->stop`);
         this.save();
     }
 
@@ -60,8 +61,7 @@ export class EventAction {
                 fromContentSig: this.transition.from.getContentSig(),
                 toContentSig: this.transition.from.getContentSig(),
             },
-            { groups: ['Content'] },
-            4
+            { groups: ['Content'] }
         );
     }
 
