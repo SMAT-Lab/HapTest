@@ -111,6 +111,7 @@ export class Coverage {
 
     parseCovFile(cov: string): CoverageReport {
         let report = new Report(cov);
+        report.writeReport('cov');
         return report.generateReport();
     }
 }

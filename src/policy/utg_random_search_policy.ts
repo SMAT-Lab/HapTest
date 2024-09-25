@@ -72,7 +72,7 @@ export class UtgRandomSearchPolicy extends UTGInputPolicy {
             return undefined;
         }
 
-        //unexplored events
+        // unexplored events
         let events = this.getPossibleEvents(components).filter((event) => {
             return !this.utg.isEventExplored(event, this.currentPage!);
         });

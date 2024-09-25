@@ -20,9 +20,10 @@ import { RandomUtils } from '../utils/random_utils';
 import { Event } from './event';
 import { CombinedKeyEvent, KeyEvent } from './key_event';
 import { AbilityEvent, ExitEvent, StopHapEvent } from './system_event';
-import { InputTextEvent, LongTouchEvent, ScrollEvent, SwipeEvent, TouchEvent, UIEvent } from './ui_event';
+import { FlingEvent, InputTextEvent, LongTouchEvent, ScrollEvent, SwipeEvent, TouchEvent, UIEvent, DragEvent } from './ui_event';
 import { Point } from '../model/point';
 import { SerializeUtils } from '../utils/serialize_utils';
+import { Gesture, GestureEvent } from './gesture';
 
 export class EventBuilder {
     static createEventFromJson(json: any): Event {
@@ -45,6 +46,15 @@ export class EventBuilder {
             return new StopHapEvent(json.bundleName);
         }
 
+        if (json.type == 'GestureEvent') {
+            let gestures: Gesture[] = [];
+            for (const gestureJson of json.gestures) {
+                gestures.push(SerializeUtils.plainToInstance(Gesture, gestureJson));
+            }
+
+            return new GestureEvent(gestures, json.speed);
+        }
+
         let component;
         if (json.component) {
             component = SerializeUtils.plainToInstance(Component, json.component);
@@ -60,8 +70,8 @@ export class EventBuilder {
             return new LongTouchEvent(point);
         }
         if (json.type == 'ScrollEvent') {
-            if (component) return new ScrollEvent(component, json.direct, json.velocity, json.step);
-            return new ScrollEvent(point, json.direct, json.velocity, json.step);
+            if (component) return new ScrollEvent(component, json.direct, json.step, json.speed);
+            return new ScrollEvent(point, json.direct, json.step, json.speed);
         }
 
         if (json.type == 'InputTextEvent') {
@@ -70,8 +80,15 @@ export class EventBuilder {
         }
 
         if (json.type == 'SwipeEvent') {
-            if (component) return new SwipeEvent(component, json.toPoint, json.velocity);
-            return new SwipeEvent(point, json.toPoint, json.velocity);
+            return SerializeUtils.plainToInstance(SwipeEvent, json);
+        }
+
+        if (json.type == 'FlingEvent') {
+            return SerializeUtils.plainToInstance(FlingEvent, json);
+        }
+
+        if (json.type == 'DragEvent') {
+            return SerializeUtils.plainToInstance(DragEvent, json);
         }
 
         if (json.type == 'ExitEvent') {

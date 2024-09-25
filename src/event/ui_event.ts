@@ -58,8 +58,8 @@ export class TouchEvent extends UIEvent {
         super('TouchEvent', componentOrPoint);
     }
 
-    send(simulator: EventSimulator): void {
-        simulator.click(this.point);
+    async send(simulator: EventSimulator): Promise<void> {
+        await simulator.click(this.point);
     }
 }
 
@@ -68,8 +68,8 @@ export class LongTouchEvent extends UIEvent {
         super('LongTouchEvent', componentOrPoint);
     }
 
-    send(simulator: EventSimulator): void {
-        simulator.longClick(this.point);
+    async send(simulator: EventSimulator): Promise<void> {
+        await simulator.longClick(this.point);
     }
 }
 
@@ -78,27 +78,27 @@ export class DoubleClickEvent extends UIEvent {
         super('DoubleClickEvent', componentOrPoint);
     }
 
-    send(simulator: EventSimulator): void {
-        simulator.doubleClick(this.point);
+    async send(simulator: EventSimulator): Promise<void> {
+        await simulator.doubleClick(this.point);
     }
 }
 
 export class ScrollEvent extends UIEvent {
     @Expose()
-    protected velocity: number;
+    protected speed: number;
     @Expose()
     protected step: number;
     @Expose()
     protected direct: Direct;
 
-    constructor(componentOrPoint: Component | Point, direct: Direct, velocity: number = 40000, step: number = 100) {
+    constructor(componentOrPoint: Component | Point, direct: Direct, step: number = 60, speed: number = 40000) {
         super('ScrollEvent', componentOrPoint);
-        this.velocity = velocity;
+        this.speed = speed;
         this.direct = direct;
         this.step = step;
     }
 
-    send(simulator: EventSimulator): void {
+    async send(simulator: EventSimulator): Promise<void> {
         let from: Point = { x: this.point.x, y: this.point.y };
         let to: Point = { x: this.point.x, y: this.point.y };
 
@@ -119,7 +119,7 @@ export class ScrollEvent extends UIEvent {
             to.x -= Math.round((width * 2) / 5);
         }
 
-        simulator.fling(from, to, this.velocity, this.step);
+        await simulator.fling(from, to, this.step, this.speed);
     }
 }
 
@@ -132,11 +132,11 @@ export class InputTextEvent extends UIEvent {
         this.text = text;
     }
 
-    send(simulator: EventSimulator): void {
-        simulator.click(this.point);
-        simulator.inputKey(KeyCode.KEYCODE_CTRL_LEFT, KeyCode.KEYCODE_A, undefined);
-        simulator.inputKey(KeyCode.KEYCODE_DEL, undefined, undefined);
-        simulator.inputText(this.point, this.text);
+    async send(simulator: EventSimulator): Promise<void> {
+        await simulator.click(this.point);
+        await simulator.inputKey(KeyCode.KEYCODE_CTRL_LEFT, KeyCode.KEYCODE_A);
+        await simulator.inputKey(KeyCode.KEYCODE_DEL);
+        await simulator.inputText(this.point, this.text);
     }
 
     getText(): string {
@@ -150,9 +150,9 @@ export class SwipeEvent extends UIEvent {
     @Expose()
     protected toComponent?: Component;
     @Expose()
-    protected velocity: number;
+    protected speed: number;
 
-    constructor(from: Point | Component, to: Point | Component, velocity: number = 600) {
+    constructor(from: Point | Component, to: Point | Component, speed: number = 600) {
         super('SwipeEvent', from);
         if (to instanceof Component) {
             this.toComponent = to;
@@ -160,11 +160,11 @@ export class SwipeEvent extends UIEvent {
         } else {
             this.toPoint = to;
         }
-        this.velocity = velocity;
+        this.speed = speed;
     }
 
-    send(simulator: EventSimulator): void {
-        simulator.swipe(this.point, this.toPoint, this.velocity);
+    async send(simulator: EventSimulator): Promise<void> {
+        await simulator.swipe(this.point, this.toPoint, this.speed);
     }
 }
 
@@ -172,24 +172,24 @@ export class FlingEvent extends SwipeEvent {
     @Expose()
     protected step: number;
 
-    constructor(from: Point | Component, to: Point | Component, velocity: number = 600, step: number) {
-        super(from, to, velocity);
+    constructor(from: Point | Component, to: Point | Component, step: number, speed: number = 600) {
+        super(from, to, speed);
         this.step = step;
         this.type = 'FlingEvent';
     }
 
-    send(simulator: EventSimulator): void {
-        simulator.fling(this.point, this.toPoint, this.velocity, this.step);
+    async send(simulator: EventSimulator): Promise<void> {
+        await simulator.fling(this.point, this.toPoint, this.step, this.speed);
     }
 }
 
 export class DragEvent extends SwipeEvent {
-    constructor(from: Point | Component, to: Point | Component, velocity: number = 600) {
-        super(from, to, velocity);
+    constructor(from: Point | Component, to: Point | Component, speed: number = 600) {
+        super(from, to, speed);
         this.type = 'DragEvent';
     }
 
-    send(simulator: EventSimulator): void {
-        simulator.drag(this.point, this.toPoint, this.velocity);
+    async send(simulator: EventSimulator): Promise<void> {
+        await simulator.drag(this.point, this.toPoint, this.speed);
     }
 }

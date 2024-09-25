@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-import * as net from 'net';
 import WebSocket from 'ws';
 import { Hdc } from './hdc';
 import { getLogger } from 'log4js';
 import { Component } from '../model/component';
 import { Point } from '../model/point';
 import { ViewTree } from '../model/viewtree';
+import { hostUnusedPort } from '../utils/net_utils';
 const logger = getLogger();
 
 /**
@@ -61,17 +61,6 @@ export class ArkUIInspector {
         return component;
     }
 
-    private async getUnusedPort(): Promise<number> {
-        return new Promise((resolve, reject) => {
-            const server = net.createServer();
-            server.listen(() => {
-                let address: net.AddressInfo = server.address() as net.AddressInfo;
-                server.close();
-                resolve(address.port);
-            });
-        });
-    }
-
     async dump(bundleName: string, sn?: string): Promise<any> {
         // remove last forward
         let fportls = this.hdc.fportLs();
@@ -87,7 +76,7 @@ export class ArkUIInspector {
             }
         });
 
-        let port = await this.getUnusedPort();
+        let port = await hostUnusedPort();
         return new Promise((resolve, reject) => {
             let pid = this.hdc.pidof(bundleName);
             if (pid == 0) {

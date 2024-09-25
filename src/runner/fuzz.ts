@@ -35,7 +35,7 @@ export class Fuzz {
     }
 
     async start() {
-        this.device.connect(this.hap);
+        await this.device.connect(this.hap);
         await this.inputManager.start();
     }
 }

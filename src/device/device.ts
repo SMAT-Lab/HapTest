@@ -21,7 +21,7 @@ import { BACKGROUND_PAGE, Page, STOP_PAGE } from '../model/page';
 import { Point } from '../model/point';
 import { Hdc } from './hdc';
 import path from 'path';
-import { Direct, EventSimulator } from './event_simulator';
+import { EventSimulator } from './event_simulator';
 import { HapBuilder } from '../model/builder/hap_builder';
 import { Coverage } from './coverage';
 import { FuzzOptions } from '../runner/fuzz_options';
@@ -33,6 +33,9 @@ import { getLogger } from 'log4js';
 import moment from 'moment';
 import { ArkUIInspector } from './arkui_inspector';
 import { TouchEvent } from '../event/ui_event';
+import { ArkUiDriver } from './uidriver/arkui_driver';
+import { buildDriverImpl } from './uidriver/build';
+import { Gesture } from '../event/gesture';
 const logger = getLogger();
 
 export class Device implements EventSimulator {
@@ -40,20 +43,17 @@ export class Device implements EventSimulator {
     private coverage?: Coverage;
     private output: string;
     private temp: string;
-    private width: number;
-    private height: number;
+    private displaySize?: Point;
     private udid: string;
     private options: FuzzOptions;
     private arkuiInspector: ArkUIInspector;
     private lastFaultlogs: Set<string>;
+    private driver?: ArkUiDriver;
 
     constructor(options: FuzzOptions) {
         this.options = options;
         this.hdc = new Hdc(options.connectkey);
         this.output = path.join(path.resolve(options.output), moment().format('YYYY-MM-DD-HH-mm-ss'));
-        let size = this.hdc.getScreenSize();
-        this.width = size.x;
-        this.height = size.y;
         this.udid = this.hdc.getDeviceUdid();
         if (!fs.existsSync(this.output)) {
             fs.mkdirSync(this.output, { recursive: true });
@@ -64,13 +64,20 @@ export class Device implements EventSimulator {
         this.lastFaultlogs = this.collectFaultLogger();
     }
 
-    connect(hap: Hap) {
+    async connect(hap: Hap) {
         // install hap
         this.installHap(hap);
         if (this.options.coverage) {
             this.coverage = new Coverage(this, hap);
             this.coverage.startBftp();
         }
+
+        this.driver = await buildDriverImpl(this);
+        this.displaySize = await this.driver.getDisplaySize();
+    }
+
+    getDriver(): ArkUiDriver {
+        return this.driver!;
     }
 
     /**
@@ -105,9 +112,9 @@ export class Device implements EventSimulator {
      * Send event
      * @param event
      */
-    sendEvent(event: Event): void {
+    async sendEvent(event: Event): Promise<void> {
         this.wakeupScreen();
-        event.send(this);
+        await event.send(this);
     }
 
     /**
@@ -115,7 +122,7 @@ export class Device implements EventSimulator {
      * @returns
      */
     getWidth(): number {
-        return this.width;
+        return this.displaySize!.x;
     }
 
     /**
@@ -123,7 +130,7 @@ export class Device implements EventSimulator {
      * @returns
      */
     getHeight(): number {
-        return this.height;
+        return this.displaySize!.y;
     }
 
     /**
@@ -237,24 +244,24 @@ export class Device implements EventSimulator {
      * Simulate a single click
      * @param point
      */
-    click(point: Point): void {
-        this.hdc.click(point);
+    async click(point: Point): Promise<void> {
+        await this.driver?.click(point.x, point.y);
     }
 
     /**
      * Simulate a double-click operation
      * @param point
      */
-    doubleClick(point: Point) {
-        this.hdc.doubleClick(point);
+    async doubleClick(point: Point): Promise<void> {
+        await this.driver?.doubleClick(point.x, point.y);
     }
 
     /**
      * Simulate a long press
      * @param point
      */
-    longClick(point: Point) {
-        this.hdc.longClick(point);
+    async longClick(point: Point): Promise<void> {
+        await this.driver?.longClick(point.x, point.y);
     }
 
     /**
@@ -262,48 +269,39 @@ export class Device implements EventSimulator {
      * @param point
      * @param text
      */
-    inputText(point: Point, text: string) {
-        this.hdc.inputText(point, text);
+    async inputText(point: Point, text: string): Promise<void> {
+        await this.driver?.inputText(point, text);
     }
 
     /**
      * Simulate a fast-swipe operation
      * @param from
      * @param to
-     * @param velocity value range [200-40000]
+     * @param speed value range [200-40000]
      * @param step swipe step size
      */
-    fling(from: Point, to: Point, velocity: number = 600, step: number = 50) {
-        this.hdc.fling(from, to, velocity, step);
+    async fling(from: Point, to: Point, step: number = 50, speed: number = 600): Promise<void> {
+        await this.driver?.fling(from, to, step, speed);
     }
 
-    /**
-     * Simulate a fast-direct-swipe operation
-     * @param direct
-     * @param velocity value range [200-40000]
-     * @param step
-     */
-    directFling(direct: Direct = Direct.LEFT, velocity: number = 600, step: number = 50) {
-        this.hdc.directFling(direct, velocity, step);
-    }
     /**
      * Simulate a slow swipe operation
      * @param from
      * @param to
-     * @param velocity value range [200-40000]
+     * @param speed value range [200-40000]
      */
-    swipe(from: Point, to: Point, velocity: number = 600) {
-        this.hdc.swipe(from, to, velocity);
+    async swipe(from: Point, to: Point, speed: number = 600) {
+        await this.driver?.swipe(from.x, from.y, to.x, to.y, speed);
     }
 
     /**
      * Simulate drag-and-drop operation
      * @param from
      * @param to
-     * @param velocity value range [200-40000]
+     * @param speed value range [200-40000]
      */
-    drag(from: Point, to: Point, velocity: number = 600) {
-        this.hdc.drag(from, to, velocity);
+    async drag(from: Point, to: Point, speed: number = 600) {
+        await this.driver?.drag(from.x, from.y, to.x, to.y, speed);
     }
 
     /**
@@ -312,8 +310,16 @@ export class Device implements EventSimulator {
      * @param key1
      * @param key2
      */
-    inputKey(key0: KeyCode, key1: KeyCode | undefined = undefined, key2: KeyCode | undefined = undefined) {
-        this.hdc.inputKey(key0, key1, key2);
+    async inputKey(key0: KeyCode, key1?: KeyCode, key2?: KeyCode) {
+        if (!key1) {
+            await this.driver?.triggerKey(key0);
+        } else {
+            await this.driver?.triggerCombineKeys(key0, key1, key2);
+        }
+    }
+
+    async injectGesture(gestures: Gesture[], speed: number) {
+        await this.driver?.injectGesture(gestures, speed);
     }
 
     /**
@@ -381,7 +387,7 @@ export class Device implements EventSimulator {
             }
         }
         this.lastFaultlogs = faultlogs;
-        
+
         return new Snapshot(
             this,
             screen,

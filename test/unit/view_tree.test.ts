@@ -26,7 +26,7 @@ describe('ViewTree Test', () => {
         let modalPage = mainPage.getModalPage();
         expect(modalPage.length).eq(1);
         let clickableBtns = Page.collectComponent(modalPage[0], (item): boolean => {
-            return item.clickable;
+            return item.clickable!;
         });
 
         expect(clickableBtns.length).eq(3);
@@ -40,7 +40,7 @@ describe('ViewTree Test', () => {
                     return value.hasUIEvent();
                 })
                 expect(components.length).eq(15);
-                expect(components[2].bounds[0].x).eq(1153);
+                expect(components[2].bounds![0].x).eq(1153);
             }
         }
     })
@@ -53,7 +53,7 @@ describe('ViewTree Test', () => {
                     return value.hasUIEvent();
                 })
                 expect(components.length).eq(4);
-                expect(components[2].bounds[0].x).eq(959);
+                expect(components[2].bounds![0].x).eq(959);
             }
         }
     })

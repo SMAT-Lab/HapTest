@@ -17,3 +17,5 @@ export interface Point {
     x: number;
     y: number;
 }
+
+export type Rect = [Point, Point];

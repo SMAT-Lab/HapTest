@@ -27,8 +27,8 @@ export class KeyEvent extends Event {
         this.keyCode = keyCode;
     }
 
-    send(simulator: EventSimulator): void {
-        simulator.inputKey(this.keyCode, undefined, undefined);
+    async send(simulator: EventSimulator): Promise<void> {
+        await simulator.inputKey(this.keyCode, undefined, undefined);
     }
 }
 
@@ -45,11 +45,11 @@ export class CombinedKeyEvent extends KeyEvent {
         this.keyCode2 = code2;
     }
 
-    send(simulator: EventSimulator): void {
+    async send(simulator: EventSimulator): Promise<void>  {
         if (this.keyCode2 == undefined) {
-            simulator.inputKey(this.keyCode, this.keyCode1, undefined);
+            await simulator.inputKey(this.keyCode, this.keyCode1, undefined);
         } else {
-            simulator.inputKey(this.keyCode, this.keyCode1, this.keyCode2);
+            await simulator.inputKey(this.keyCode, this.keyCode1, this.keyCode2);
         }
     }
 }

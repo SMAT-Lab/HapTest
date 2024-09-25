@@ -41,9 +41,9 @@ export class EventAction {
         }
     }
 
-    start() {
+    async start() {
         logger.info(`EventAction->start: ${this.transition.event.toString()}`);
-        this.device.sendEvent(this.transition.event);
+        await this.device.sendEvent(this.transition.event);
     }
 
     async stop() {

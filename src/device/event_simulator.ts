@@ -15,6 +15,7 @@
 
 import { KeyCode } from '../model/key_code';
 import { Point } from '../model/point';
+import { Gesture } from '../event/gesture';
 
 export enum Direct {
     LEFT = 0,
@@ -53,33 +54,26 @@ export interface EventSimulator {
      * Simulate a fast-swipe operation
      * @param from
      * @param to
-     * @param velocity value range [200-40000]
+     * @param speed value range [200-40000]
      * @param step swipe step size
      */
-    fling(from: Point, to: Point, velocity: number, step: number): void;
+    fling(from: Point, to: Point, step: number, speed: number): void;
 
-    /**
-     * Simulate a fast-direct-swipe operation
-     * @param direct
-     * @param velocity value range [200-40000]
-     * @param step
-     */
-    directFling(direct: Direct, velocity: number, step: number): void;
     /**
      * Simulate a slow swipe operation
      * @param from
      * @param to
-     * @param velocity value range [200-40000]
+     * @param speed value range [200-40000]
      */
-    swipe(from: Point, to: Point, velocity: number): void;
+    swipe(from: Point, to: Point, speed: number): void;
 
     /**
      * Simulate drag-and-drop operation
      * @param from
      * @param to
-     * @param velocity value range [200-40000]
+     * @param speed value range [200-40000]
      */
-    drag(from: Point, to: Point, velocity: number): void;
+    drag(from: Point, to: Point, speed: number): void;
 
     /**
      * Simulate key input operation
@@ -87,7 +81,7 @@ export interface EventSimulator {
      * @param key1
      * @param key2
      */
-    inputKey(key0: KeyCode, key1: KeyCode | undefined, key2: KeyCode | undefined): void;
+    inputKey(key0: KeyCode, key1?: KeyCode, key2?: KeyCode): void;
 
     /**
      * Start ablity to run Hap
@@ -114,4 +108,6 @@ export interface EventSimulator {
      * @returns
      */
     getHeight(): number;
+
+    injectGesture(gestures: Gesture[], speed: number): void;
 }
