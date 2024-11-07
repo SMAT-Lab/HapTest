@@ -14,10 +14,10 @@
  */
 
 import * as net from 'net';
+import PromiseSocket from 'promise-socket';
 import { getLogger } from 'log4js';
 
 const logger = getLogger();
-type TimeoutHandler = () => void;
 
 /**
  * @example
@@ -31,166 +31,52 @@ type TimeoutHandler = () => void;
  * await client.close();
  */
 export class ClientSocket {
-    private socket: net.Socket;
-    private timeoutHandler?: TimeoutHandler;
+    private socket: PromiseSocket<net.Socket>;
 
     constructor() {
-        this.socket = new net.Socket();
+        this.socket = new PromiseSocket(new net.Socket());
     }
 
-    async connect(port: number, address: string): Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            const errorHandler = (err: Error) => {
-                logger.error(err);
-                resolve(false);
-            };
-
-            this.socket.once('error', errorHandler);
-
-            this.socket.connect(port, address, () => {
-                this.socket.removeListener('error', errorHandler);
-                resolve(true);
-            });
-        });
+    async connect(port: number, address: string): Promise<void> {
+        await this.socket.connect(port, address);
     }
 
     async write(chunk: string): Promise<number> {
-        const stream = this.socket;
-        let rejected = false;
-
-        return new Promise((resolve, reject) => {
-            if (!stream.writable || stream.closed || stream.destroyed) {
-                return reject(new Error('write after end'));
-            }
-
-            const writeErrorHandler = (err: Error) => {
-                rejected = true;
-                reject(err);
-            };
-
-            stream.once('error', writeErrorHandler);
-
-            logger.info(`ClientSocket write: ${chunk.trim()}`);
-            const canWrite = stream.write(chunk);
-
-            stream.removeListener('error', writeErrorHandler);
-
-            if (canWrite) {
-                if (!rejected) {
-                    resolve(chunk.length);
-                }
-            } else {
-                const errorHandler = (err: Error) => {
-                    removeListeners();
-                    reject(err);
-                };
-
-                const drainHandler = () => {
-                    removeListeners();
-                    resolve(chunk.length);
-                };
-
-                const closeHandler = () => {
-                    removeListeners();
-                    resolve(chunk.length);
-                };
-
-                const finishHandler = () => {
-                    removeListeners();
-                    resolve(chunk.length);
-                };
-
-                const removeListeners = () => {
-                    stream.removeListener('close', closeHandler);
-                    stream.removeListener('drain', drainHandler);
-                    stream.removeListener('error', errorHandler);
-                    stream.removeListener('finish', finishHandler);
-                };
-
-                stream.on('close', closeHandler);
-                stream.on('drain', drainHandler);
-                stream.on('error', errorHandler);
-                stream.on('finish', finishHandler);
-            }
-        });
+        logger.info(`ClientSocket write: ${chunk.trim()}`);
+        return await this.socket.write(chunk);
     }
 
     async read(): Promise<string | undefined> {
-        const stream = this.socket;
+        let chunks: string[] = [];
 
-        return new Promise((resolve, reject) => {
-            if (!stream.readable || stream.closed || stream.destroyed) {
-                return resolve(undefined);
+        // Use the JSON validity to determine whether the fragmented packet is received
+        let readMore = false;
+        do {
+            let content = await this.socket.read();
+            if (content instanceof Buffer) {
+                content = content.toString();
             }
+            if (content) {
+                chunks.push(content);
+            }
+            try {
+                JSON.parse(chunks.join(''));
+                readMore = false;
+            } catch {
+                readMore = true;
+            }
+        } while(readMore);
 
-            const readableHandler = () => {
-                const chunk = stream.read();
-
-                if (chunk !== null) {
-                    removeListeners();
-                    logger.info(`ClientSocket read: ${chunk.toString()}`);
-                    resolve(chunk.toString());
-                }
-            };
-
-            const closeHandler = () => {
-                removeListeners();
-                resolve(undefined);
-            };
-
-            const endHandler = () => {
-                removeListeners();
-                resolve(undefined);
-            };
-
-            const errorHandler = (err: Error) => {
-                removeListeners();
-                reject(err);
-            };
-
-            const removeListeners = () => {
-                stream.removeListener('close', closeHandler);
-                stream.removeListener('error', errorHandler);
-                stream.removeListener('end', endHandler);
-                stream.removeListener('readable', readableHandler);
-            };
-
-            stream.on('close', closeHandler);
-            stream.on('end', endHandler);
-            stream.on('error', errorHandler);
-            stream.on('readable', readableHandler);
-
-            readableHandler();
-        });
+        logger.info(`ClientSocket read: ${chunks.join('')}`);
+        return chunks.join('');
     }
 
     async close(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.socket.end(() => {
-                resolve();
-            });
-        });
+        await this.socket.end();
     }
 
     setTimeout(timeout: number): this {
-        const socket = this.socket;
-        if (timeout === 0) {
-            if (this.timeoutHandler) {
-                socket.removeListener('timeout', this.timeoutHandler);
-                this.timeoutHandler = undefined;
-            }
-        } else {
-            if (!this.timeoutHandler) {
-                this.timeoutHandler = () => {
-                    this.timeoutHandler = undefined;
-                    socket.destroy(new Error('timeout'));
-                };
-                socket.once('timeout', this.timeoutHandler);
-            }
-        }
-
-        socket.setTimeout(timeout);
-
+        this.socket.setTimeout(timeout);
         return this;
     }
 }

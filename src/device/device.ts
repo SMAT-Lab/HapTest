@@ -36,6 +36,7 @@ import { TouchEvent } from '../event/ui_event';
 import { ArkUiDriver } from './uidriver/arkui_driver';
 import { buildDriverImpl } from './uidriver/build';
 import { Gesture } from '../event/gesture';
+import { PageBuilder } from '../model/builder/page_builder';
 const logger = getLogger();
 
 export class Device implements EventSimulator {
@@ -181,10 +182,11 @@ export class Device implements EventSimulator {
      * Dump UI component view tree
      * @returns
      */
-    dumpViewTree(): Page {
+    async dumpViewTree(): Promise<Page> {
         let retryCnt = 5;
         while (retryCnt-- >= 0) {
-            let pages = this.hdc.dumpViewTree(this.temp);
+            let layout = await this.driver!.dumpLayout();
+            let pages = PageBuilder.buildPagesFromJson(JSON.stringify(layout));
             // if exist keyboard then close and dump again.
             if (this.closeKeyboard(pages)) {
                 // for sleep
@@ -349,9 +351,9 @@ export class Device implements EventSimulator {
      * @returns
      */
     async getCurrentPage(hap: Hap): Promise<Page> {
-        let page = this.dumpViewTree();
-        let inspector = await this.dumpInspector(hap.bundleName);
-        page.mergeInspector(inspector.layout);
+        let page = await this.dumpViewTree();
+        // let inspector = await this.dumpInspector(hap.bundleName);
+        // page.mergeInspector(inspector.layout);
 
         // set hap running state
         if (page.getBundleName() == hap.bundleName) {

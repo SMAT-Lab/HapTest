@@ -15,8 +15,6 @@
 
 import { spawnSync, SpawnSyncReturns } from 'child_process';
 import path from 'path';
-import { Page } from '../model/page';
-import { PageBuilder } from '../model/builder/page_builder';
 import { convertStr2RunningState, Hap, HapRunningState } from '../model/hap';
 import { HdcCmdError } from '../error/error';
 import { getLogger } from 'log4js';
@@ -51,20 +49,6 @@ export class Hdc {
     hasFile(remote: string): boolean {
         let output = this.excuteShellCommand(`ls ${remote}`);
         return output.indexOf('No such file') == 0;
-    }
-
-    dumpViewTree(temp: string): Page[] {
-        let output = this.excuteShellCommand('uitest', 'dumpLayout');
-        let matches = output.match(/DumpLayout saved to:([a-zA-Z/0-9_]*.json)/);
-        if (matches) {
-            let layoutJson = matches[1];
-            let localFile = path.join(temp, path.basename(layoutJson));
-            logger.debug('dumpLayout save to: ', localFile);
-            this.recvFile(layoutJson, localFile);
-
-            return PageBuilder.buildPagesFromDumpLayoutFile(localFile);
-        }
-        return [];
     }
 
     getAllBundleNames(): string[] {
@@ -284,10 +268,6 @@ export class Hdc {
                 this.excuteShellCommand(...['kill', '-9', matches[0]]);
             }
         }
-    }
-
-    uiInputCommand(...args: string[]): string {
-        return this.excuteShellCommand('uitest', 'uiInput', ...args);
     }
 
     excuteShellCommand(...args: string[]): string {

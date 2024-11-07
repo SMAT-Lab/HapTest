@@ -34,11 +34,14 @@ const logger = getLogger();
         .option('-t --target [connectkey]', 'hdc connectkey', undefined)
         .option('-c --coverage', 'enable coverage', false)
         .option('--report [report root]', 'report root')
+        .option('--debug', 'debug log level', false)
         .parse();
-
-    HapTestLogger.configure('haptest.log', LOG_LEVEL.INFO);
-
     let options = program.opts();
+    let logLevel = LOG_LEVEL.INFO;
+    if (options.debug) {
+        logLevel = LOG_LEVEL.DEBUG;
+    }
+    HapTestLogger.configure('haptest.log', logLevel);
     logger.info(`haptest start by args ${JSON.stringify(options)}.`);
 
     let fuzzOption: FuzzOptions = {

@@ -24,8 +24,8 @@ export class FrontEnd {
         this.backendObjRef = '';
     }
 
-    async doRpc(params: any): Promise<any | undefined> {
-        return await this.rpc.request(params);
+    async doRpc(method:string, params: any): Promise<any | undefined> {
+        return await this.rpc.request(method, params);
     }
 
     activate(backendObjRef: string) {
@@ -46,9 +46,16 @@ const ClassNameMap: Map<string, string> = new Map([
     ['PointerMatrix', 'PointerMatrix'],
 ]);
 
-export function RpcApiCall() {
+export function RpcApiCall(method?: string, api?: string) {
     return (target: FrontEnd, propertyKey: string, descriptor: PropertyDescriptor) => {
         descriptor.value = async function (...args: any) {
+            if (!method) {
+                method = 'callHypiumApi';
+            }
+            if (!api) {
+                api = `${ClassNameMap.get(target.constructor.name)}.${propertyKey}`
+            }
+
             let argsArray: any[] = [];
             for (const arg of args) {
                 if (arg instanceof FrontEnd) {
@@ -60,8 +67,8 @@ export function RpcApiCall() {
 
             let thisFrontEnd = this as FrontEnd;
             if (propertyKey == 'create') {
-                let response = await thisFrontEnd.doRpc({
-                    api: `${ClassNameMap.get(target.constructor.name)}.${propertyKey}`,
+                let response = await thisFrontEnd.doRpc(method, {
+                    api: api,
                     this: null,
                     args: argsArray,
                     message_type: 'hypium',
@@ -73,7 +80,7 @@ export function RpcApiCall() {
             }
 
             if (propertyKey == 'free') {
-                let response = await thisFrontEnd.doRpc({
+                let response = await thisFrontEnd.doRpc(method, {
                     api: `BackendObjectsCleaner`,
                     this: null,
                     args: [thisFrontEnd.getBackendObjRef()],
@@ -85,8 +92,8 @@ export function RpcApiCall() {
                 return;
             }
 
-            return await thisFrontEnd.doRpc({
-                api: `${ClassNameMap.get(target.constructor.name)}.${propertyKey}`,
+            return await thisFrontEnd.doRpc(method, {
+                api: api,
                 this: thisFrontEnd.getBackendObjRef(),
                 args: argsArray,
                 message_type: 'hypium',

@@ -66,8 +66,8 @@ interface DumpLayoutNode {
 }
 
 export class PageBuilder {
-    static buildPagesFromDumpLayoutFile(layoutFile: string): Page[] {
-        let layout: DumpLayoutNode = JSON.parse(fs.readFileSync(layoutFile, 'utf-8'), (key: string, value: any) => {
+    static buildPagesFromJson(json: string): Page[] {
+        let layout: DumpLayoutNode = JSON.parse(json, (key: string, value: any) => {
             if (BOOLEAN_TYPE_KEYS.has(key)) {
                 return value == 'true';
             } else if (POINT_TYPE_KEYS.has(key)) {
@@ -96,6 +96,10 @@ export class PageBuilder {
         }
 
         return pages;
+    }
+    
+    static buildPagesFromDumpLayoutFile(layoutFile: string): Page[] {
+        return this.buildPagesFromJson(fs.readFileSync(layoutFile, 'utf-8'));
     }
 
     static buildComponent(node: DumpLayoutNode, parent: Component | null = null): Component {

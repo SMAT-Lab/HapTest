@@ -29,7 +29,7 @@ export class HypiumRpc {
 
     async connect(port: number, address: string = '127.0.0.1'): Promise<boolean> {
         this.socket.setTimeout(this.timeout);
-        this.connected = await this.socket.connect(port, address);
+        await this.socket.connect(port, address);
         this.socket.setTimeout(0);
         return this.connected;
     }
@@ -40,13 +40,13 @@ export class HypiumRpc {
         }
     }
 
-    async request(params: any): Promise<any | undefined> {
-        if (!this.connected) {
-            throw new Error('Socket not connected.');
-        }
+    async request(method: string, params: any): Promise<any | undefined> {
+        // if (!this.connected) {
+        //     throw new Error('Socket not connected.');
+        // }
         let data = {
             module: 'com.ohos.devicetest.hypiumApiHelper',
-            method: 'callHypiumApi',
+            method: method,
             params: params,
             request_id: moment().format('YYYYMMDDHHmmssSSSSSS'),
             client: '127.0.0.1',
