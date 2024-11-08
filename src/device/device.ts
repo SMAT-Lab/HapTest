@@ -352,8 +352,10 @@ export class Device implements EventSimulator {
      */
     async getCurrentPage(hap: Hap): Promise<Page> {
         let page = await this.dumpViewTree();
-        // let inspector = await this.dumpInspector(hap.bundleName);
-        // page.mergeInspector(inspector.layout);
+        if (this.options.sourceRoot) {
+            let inspector = await this.dumpInspector(hap.bundleName);
+            page.mergeInspector(inspector.layout);
+        }
 
         // set hap running state
         if (page.getBundleName() == hap.bundleName) {

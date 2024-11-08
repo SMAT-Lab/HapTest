@@ -67,7 +67,7 @@ export class ClientSocket {
             }
         } while(readMore);
 
-        logger.info(`ClientSocket read: ${chunks.join('')}`);
+        logger.debug(`ClientSocket read: ${chunks.join('')}`);
         return chunks.join('');
     }
 
