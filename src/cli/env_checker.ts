@@ -22,6 +22,12 @@ import { FuzzOptions } from '../runner/fuzz_options';
 import { getLogger } from 'log4js';
 
 const logger = getLogger();
+const REQUIRED_HOST_TOOLS: Map<string, string> = new Map(
+    [
+        ['hdc', 'Please add hdc to PATH environment variable.'],
+        ['java', 'Please add hdc to PATH environment variable.'],
+        ['dot', 'Please download graphviz from https://graphviz.org/download/.']
+    ]);
 
 export class EnvChecker {
     private options: FuzzOptions;
@@ -31,9 +37,6 @@ export class EnvChecker {
     }
 
     check(): void {
-        if (!this.checkHdc()) {
-            process.exit();
-        }
         if (!fs.existsSync(this.options.hap)) {
             this.options.bundleName = this.options.hap;
         } else {
@@ -54,19 +57,25 @@ export class EnvChecker {
                 process.exit();
             }
         }
+
+        if (!this.checkRequiredHostTools()) {
+            process.exit();
+        }
     }
 
-    private checkHdc(): boolean {
-        try {
-            which('hdc');
-            return true;
-        } catch (error) {
-            if (error instanceof FileNotFoundError) {
-                logger.error(`${error.message}`);
-                logger.error('Please add hdc to PATH environment variable.');
+    private checkRequiredHostTools(): boolean {
+        let passed = true;
+        for (const [key, msg] of REQUIRED_HOST_TOOLS) {
+            try {
+                which(key);
+            } catch (error) {
+                if (error instanceof FileNotFoundError) {
+                    logger.error(msg);
+                    passed = false;
+                }
             }
-            return false;
         }
+        return passed;
     }
 
     private checkHvigorw(): boolean {

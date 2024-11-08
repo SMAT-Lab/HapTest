@@ -77,6 +77,7 @@ export class ArkUiDriver extends FrontEnd {
         let pointerMatrix = await buildPointerMetrix(this.rpc, gestures, speed);
         await this.injectMultiPointerAction(pointerMatrix, speed);
     }
+
     @RpcApiCall('Captures', 'captureLayout')
     async dumpLayout(): Promise<string> {
         return '';
