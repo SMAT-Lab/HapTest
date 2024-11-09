@@ -20,7 +20,7 @@ classDiagram
 
     }
 
-    Policy --o InputManager: policy
+    Policy --o RunnerManager: policy
     Event --o Policy: generateEvent()
 
     ManualPolicy --|> Policy

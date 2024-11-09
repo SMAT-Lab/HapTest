@@ -13,7 +13,7 @@ classDiagram
         -options: FuzzOptions
         -device: Device
         -hap: Hap
-        -inputManager: InputManager
+        -manager: RunnerManager
 
         +start()
     }
@@ -32,7 +32,7 @@ classDiagram
         hdc: Hdc
     }
 
-    class InputManager {
+    class RunnerManager {
         -policy: Policy
         +start()
         +stop()
@@ -52,9 +52,9 @@ classDiagram
     Hap --o Fuzz: hap
     FuzzOptions --o Fuzz: options
     Device --o Fuzz: device
-    InputManager --o Fuzz: inputManager
-    Policy --o InputManager: policy
+    RunnerManager --o Fuzz: manager
+    Policy --o RunnerManager: policy
 
-    Event --o InputManager: addEvent
+    Event --o RunnerManager: addEvent
     EventSimulator --o Event: send
 ```
