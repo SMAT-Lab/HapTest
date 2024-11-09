@@ -16,12 +16,12 @@
 import { toFile } from '@ts-graphviz/adapter';
 import { attribute as _, Digraph, Node, Edge, toDot } from 'ts-graphviz';
 import { Event } from '../event/event';
-import { Hap } from '../model/hap';
+import { Hap } from './hap';
 import DirectedGraph from 'graphology';
 import { bidirectional } from 'graphology-shortest-path';
 import { RandomUtils } from '../utils/random_utils';
 import { StopHapEvent } from '../event/system_event';
-import { Page } from '../model/page';
+import { Page } from './page';
 import { getLogger } from 'log4js';
 import * as path from 'path';
 const logger = getLogger();
@@ -35,9 +35,9 @@ export interface Transition {
 }
 
 /**
- * UI transition graph
+ * UI Page transition graph
  */
-export class UTG {
+export class PTG {
     private hap: Hap;
     private randomInput: boolean;
     private transitions: Transition[];
@@ -68,7 +68,7 @@ export class UTG {
 
     setWantTransition(transition: Transition) {
         this.wantTransition = transition;
-        logger.info(`utg want transition ${transition.from.getContentSig()} -> ${transition.to.getContentSig()}`);
+        logger.info(`ptg want transition ${transition.from.getContentSig()} -> ${transition.to.getContentSig()}`);
     }
 
     addTransitionToStop(newPage: Page): void {
@@ -81,14 +81,14 @@ export class UTG {
 
     addTransition(event: Event, oldPage: Page, newPage: Page): void {
         if (this.wantTransition) {
-            logger.info(`utg want transition ${oldPage.getContentSig()} -> ${newPage.getContentSig()}`);
+            logger.info(`ptg want transition ${oldPage.getContentSig()} -> ${newPage.getContentSig()}`);
             if (
                 this.wantTransition.from == oldPage &&
                 this.wantTransition.event == event &&
                 this.wantTransition.to.getContentSig() != newPage.getContentSig()
             ) {
                 logger.info(
-                    `utg drop edge ${this.wantTransition.from.getContentSig()} -> ${this.wantTransition.to.getContentSig()}`
+                    `ptg drop edge ${this.wantTransition.from.getContentSig()} -> ${this.wantTransition.to.getContentSig()}`
                 );
                 this.pageContentGraph.dropDirectedEdge(
                     this.wantTransition.from.getContentSig(),
@@ -97,7 +97,7 @@ export class UTG {
                 this.wantTransition = undefined;
             } else {
                 logger.info(
-                    `utg not need drop ${this.wantTransition.from == oldPage}, ${this.wantTransition.event == event}, ${
+                    `ptg not need drop ${this.wantTransition.from == oldPage}, ${this.wantTransition.event == event}, ${
                         this.wantTransition.to.getContentSig() != newPage.getContentSig()
                     }`
                 );
@@ -120,7 +120,7 @@ export class UTG {
 
         if (!this.pageContentGraph.hasDirectedEdge(oldPage.getContentSig(), newPage.getContentSig())) {
             this.pageContentGraph.addDirectedEdge(oldPage.getContentSig(), newPage.getContentSig(), new Map());
-            logger.info(`utg add edge ${oldPage.getContentSig()} -> ${newPage.getContentSig()}`);
+            logger.info(`ptg add edge ${oldPage.getContentSig()} -> ${newPage.getContentSig()}`);
         }
         let attr = this.pageContentGraph.getEdgeAttributes(oldPage.getContentSig(), newPage.getContentSig());
         attr.set(eventPageSig, { event: event, id: this.effectiveEvent.size });
@@ -250,7 +250,7 @@ export class UTG {
         }
 
         const dot = toDot(dotGraph);
-        await toFile(dot, path.join(output, 'utg.svg'), { format: 'svg' });
+        await toFile(dot, path.join(output, 'ptg.svg'), { format: 'svg' });
     }
 
     private addNode(page: Page) {
@@ -264,7 +264,7 @@ export class UTG {
 
         if (!this.pageContentGraph.hasNode(page.getContentSig())) {
             this.pageContentGraph.addNode(page.getContentSig(), page);
-            logger.info(`utg add node ${page.getContentSig()}`);
+            logger.info(`ptg add node ${page.getContentSig()}`);
         }
 
         if (!this.pageStructualGraph.hasNode(page.getStructualSig())) {

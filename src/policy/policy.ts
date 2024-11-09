@@ -35,7 +35,7 @@ export enum PolicyName {
     RANDOM = 'random',
 }
 
-export abstract class InputPolicy {
+export abstract class Policy {
     protected device: Device;
     protected hap: Hap;
     protected _enabled: boolean;

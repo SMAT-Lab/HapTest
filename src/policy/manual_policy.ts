@@ -18,11 +18,11 @@ import { AbilityEvent } from '../event/system_event';
 import { Event } from '../event/event';
 import { ManualEvent } from '../event/manual_event';
 import { Hap } from '../model/hap';
-import { InputPolicy, PolicyName } from './input_policy';
+import { Policy, PolicyName } from './policy';
 import { Page } from '../model/page';
 import { UIRecord } from '../device/ui_record';
 
-export class ManualPolicy extends InputPolicy {
+export class ManualPolicy extends Policy {
     private firstEvent: boolean;
     private uiRecord: UIRecord;
 

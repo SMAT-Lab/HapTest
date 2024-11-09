@@ -16,7 +16,7 @@
 import { Device } from '../device/device';
 import { Hap } from '../model/hap';
 import { FuzzOptions } from './fuzz_options';
-import { InputManager } from './input_manager';
+import { RunnerManager } from './runner_manager';
 
 /**
  * Fuzz test entrance
@@ -25,17 +25,17 @@ export class Fuzz {
     options: FuzzOptions;
     device: Device;
     hap: Hap;
-    inputManager: InputManager;
+    manager: RunnerManager;
 
     constructor(options: FuzzOptions) {
         this.options = options;
         this.device = new Device(this.options);
         this.hap = this.device.buildHap(this.device);
-        this.inputManager = new InputManager(this.device, this.hap, this.options);
+        this.manager = new RunnerManager(this.device, this.hap, this.options);
     }
 
     async start() {
         await this.device.connect(this.hap);
-        await this.inputManager.start();
+        await this.manager.start();
     }
 }

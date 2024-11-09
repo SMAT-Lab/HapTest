@@ -6,7 +6,7 @@
 2. 打开任意ts文件，点击右键“Format Document With...”根据弹框把"Prettier - Code formatter"设为默认
 
 #### 1.2 LaTex 插件Markdown Preview Enhanced
-1. 打开VSCode插件市场，搜索Prettier，找到"Markdown Preview Enhanced"后安装  
+1. 打开VSCode插件市场，搜索Markdown，找到"Markdown Preview Enhanced"后安装  
 2. 按组合键"Ctrl + Shit + P" 搜Markdown Preview Enhanced全局配置，粘贴以下代码
 ```
 ({
@@ -33,4 +33,4 @@
   },
 });
 ```
-3. 打开doc\utg_search_algorithm.md 开启Markdown Preview，选择右键"Open In Browser"在浏览器中可预览LaTex
+3. 打开doc\ptg_search_algorithm.md 开启Markdown Preview，选择右键"Open In Browser"在浏览器中可预览LaTex

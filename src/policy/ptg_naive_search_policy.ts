@@ -20,12 +20,12 @@ import { Component, ComponentType } from '../model/component';
 import { Hap } from '../model/hap';
 import { Page } from '../model/page';
 import { RandomUtils } from '../utils/random_utils';
-import { MAX_NUM_RESTARTS, UTGInputPolicy } from './utg_input_policy';
-import { PolicyName } from './input_policy';
+import { MAX_NUM_RESTARTS, PTGPolicy } from './ptg_policy';
+import { PolicyName } from './policy';
 import { EventBuilder } from '../event/event_builder';
 import { Rank } from '../model/rank';
 
-export class UtgNaiveSearchPolicy extends UTGInputPolicy {
+export class PtgNaiveSearchPolicy extends PTGPolicy {
     private pageComponentMap: Map<string, Component[]>;
 
     constructor(device: Device, hap: Hap, name: PolicyName) {
@@ -34,7 +34,7 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
         this.pageComponentMap = new Map();
     }
 
-    generateEventBasedOnUtg(): Event {
+    generateEventBasedOnPtg(): Event {
         this.updateState();
         let event = this.selectEvent();
         if (event == undefined) {
@@ -71,7 +71,7 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
 
         // unexplored events
         let events = this.getPossibleEvents(components).filter((event) => {
-            return !this.utg.isEventExplored(event, this.currentPage!);
+            return !this.ptg.isEventExplored(event, this.currentPage!);
         });
 
         // sort by rank
@@ -84,17 +84,17 @@ export class UtgNaiveSearchPolicy extends UTGInputPolicy {
         }
 
         // from current page translate to unexpored page Event
-        for (const page of this.utg.getReachablePages(this.currentPage!)) {
-            if (this.utg.isPageExplored(page) || page.getBundleName() != this.hap.bundleName) {
+        for (const page of this.ptg.getReachablePages(this.currentPage!)) {
+            if (this.ptg.isPageExplored(page) || page.getBundleName() != this.hap.bundleName) {
                 continue;
             }
 
-            let steps = this.utg.getNavigationSteps(this.currentPage!, page);
+            let steps = this.ptg.getNavigationSteps(this.currentPage!, page);
             if (steps && steps.length > 0) {
                 if (steps.length == 1) {
-                    this.utg.setWantTransition({ from: this.currentPage!, event: steps[0][1], to: page });
+                    this.ptg.setWantTransition({ from: this.currentPage!, event: steps[0][1], to: page });
                 } else {
-                    this.utg.setWantTransition({ from: this.currentPage!, event: steps[0][1], to: steps[1][0] });
+                    this.ptg.setWantTransition({ from: this.currentPage!, event: steps[0][1], to: steps[1][0] });
                 }
 
                 return steps[0][1];

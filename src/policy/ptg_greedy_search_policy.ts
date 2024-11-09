@@ -14,7 +14,7 @@
  */
 
 import { Hap } from '../model/hap';
-import { MAX_NUM_RESTARTS, UTGInputPolicy } from './utg_input_policy';
+import { MAX_NUM_RESTARTS, PTGPolicy } from './ptg_policy';
 import { Device } from '../device/device';
 import { Event } from '../event/event';
 import { InputTextEvent } from '../event/ui_event';
@@ -25,12 +25,12 @@ import { Component, ComponentType } from '../model/component';
 import { EventBuilder } from '../event/event_builder';
 import { Page } from '../model/page';
 import { Rank } from '../model/rank';
-import { PolicyName } from './input_policy';
+import { PolicyName } from './policy';
 
 /**
  * DFS/BFS (according to search_method) strategy to explore UFG (new)
  */
-export class UtgGreedySearchPolicy extends UTGInputPolicy {
+export class PtgGreedySearchPolicy extends PTGPolicy {
     private pageComponentMap: Map<string, Component[]>;
     private selectComponentMap: Map<string, Component[]>;
 
@@ -52,7 +52,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
      *
      * @returns {Event} The generated Event object.
      */
-    generateEventBasedOnUtg(): Event {
+    generateEventBasedOnPtg(): Event {
         this.updateState();
         // Get all possible input events
         let possibleEvent = this.getPossibleEvent();
@@ -117,7 +117,7 @@ export class UtgGreedySearchPolicy extends UTGInputPolicy {
                 }
             }
 
-            if (!this.utg.isEventExplored(event, this.currentPage!)) {
+            if (!this.ptg.isEventExplored(event, this.currentPage!)) {
                 return event;
             }
         }

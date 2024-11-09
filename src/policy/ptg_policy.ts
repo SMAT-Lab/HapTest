@@ -19,31 +19,31 @@ import { BACK_KEY_EVENT } from '../event/key_event';
 import { AbilityEvent, StopHapEvent } from '../event/system_event';
 import { Hap } from '../model/hap';
 import { Page } from '../model/page';
-import { InputPolicy, PolicyFlag, PolicyName } from './input_policy';
+import { Policy, PolicyFlag, PolicyName } from './policy';
 import { SceneDetect } from './scene_detect';
-import { UTG } from './utg';
+import { PTG } from '../model/ptg';
 
 export const MAX_NUM_RESTARTS = 5;
-export abstract class UTGInputPolicy extends InputPolicy {
+export abstract class PTGPolicy extends Policy {
     protected retryCount: number;
     protected randomInput: boolean;
     protected lastEvent?: Event;
     protected lastPage?: Page;
     protected currentPage?: Page;
-    protected utg: UTG;
+    protected ptg: PTG;
     protected sceneDetect: SceneDetect;
 
     constructor(device: Device, hap: Hap, name: PolicyName, randomInput: boolean) {
         super(device, hap, name);
         this.randomInput = randomInput;
-        this.utg = new UTG(hap, randomInput);
+        this.ptg = new PTG(hap, randomInput);
         this.sceneDetect = new SceneDetect();
         this.retryCount = 0;
     }
 
     async generateEvent(page: Page): Promise<Event> {
         this.currentPage = page;
-        this.updateUtg();
+        this.updatePtg();
 
         if (this.flag == PolicyFlag.FLAG_INIT) {
             if (!this.currentPage.isStop()) {
@@ -74,21 +74,21 @@ export abstract class UTGInputPolicy extends InputPolicy {
 
         let event = this.sceneDetect.generateEventBasedOnModel(page);
         if (!event) {
-            event = this.generateEventBasedOnUtg();
+            event = this.generateEventBasedOnPtg();
         }
         this.lastPage = this.currentPage;
         this.lastEvent = event;
         return event;
     }
 
-    private updateUtg(): void {
+    private updatePtg(): void {
         if (this.lastEvent && this.lastPage && this.currentPage) {
-            this.utg.addTransition(this.lastEvent, this.lastPage, this.currentPage);
+            this.ptg.addTransition(this.lastEvent, this.lastPage, this.currentPage);
             // transition to StopState
-            this.utg.addTransitionToStop(this.currentPage);
-            this.utg.dumpSvg(this.device.getOutput(), 'http://localhost:3001');
+            this.ptg.addTransitionToStop(this.currentPage);
+            this.ptg.dumpSvg(this.device.getOutput(), 'http://localhost:3001');
         }
     }
 
-    abstract generateEventBasedOnUtg(): Event;
+    abstract generateEventBasedOnPtg(): Event;
 }

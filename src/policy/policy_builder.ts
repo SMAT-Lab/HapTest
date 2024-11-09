@@ -16,27 +16,27 @@
 import { Device } from '../device/device';
 import { Hap } from '../model/hap';
 import { FuzzOptions } from '../runner/fuzz_options';
-import { InputPolicy, PolicyName } from './input_policy';
+import { Policy, PolicyName } from './policy';
 import { ManualPolicy } from './manual_policy';
 import { ReplayPolicy } from './replay_policy';
-import { UtgGreedySearchPolicy } from './utg_greedy_search_policy';
-import { UtgNaiveSearchPolicy } from './utg_naive_search_policy';
-import { UtgRandomSearchPolicy } from './utg_random_search_policy';
+import { PtgGreedySearchPolicy } from './ptg_greedy_search_policy';
+import { PtgNaiveSearchPolicy } from './ptg_naive_search_policy';
+import { PtgRandomSearchPolicy } from './ptg_random_search_policy';
 
 export class PolicyBuilder {
-    static buildPolicyByName(device: Device, hap: Hap, options: FuzzOptions): InputPolicy {
+    static buildPolicyByName(device: Device, hap: Hap, options: FuzzOptions): Policy {
         if (options.policyName == PolicyName.MANUAL) {
             return new ManualPolicy(device, hap, PolicyName.MANUAL);
         } else if (options.policyName == PolicyName.REPLAY) {
             return new ReplayPolicy(device, hap, options.policyName, options.reportRoot!);
         } else if (options.policyName == PolicyName.BFS_GREEDY) {
-            return new UtgGreedySearchPolicy(device, hap, PolicyName.BFS_GREEDY);
+            return new PtgGreedySearchPolicy(device, hap, PolicyName.BFS_GREEDY);
         } else if (options.policyName == PolicyName.DFS_GREEDY) {
-            return new UtgGreedySearchPolicy(device, hap, PolicyName.DFS_GREEDY);
+            return new PtgGreedySearchPolicy(device, hap, PolicyName.DFS_GREEDY);
         } else if (options.policyName == PolicyName.RANDOM) {
-            return new UtgRandomSearchPolicy(device, hap, PolicyName.RANDOM);
+            return new PtgRandomSearchPolicy(device, hap, PolicyName.RANDOM);
         } else {
-            return new UtgNaiveSearchPolicy(device, hap, PolicyName.NAIVE);
+            return new PtgNaiveSearchPolicy(device, hap, PolicyName.NAIVE);
         }
     }
 }

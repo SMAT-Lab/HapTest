@@ -17,7 +17,7 @@ import { Device } from '../device/device';
 import { Event } from '../event/event';
 import { Hap } from '../model/hap';
 import { Page } from '../model/page';
-import { InputPolicy } from '../policy/input_policy';
+import { Policy } from '../policy/policy';
 import { PolicyBuilder } from '../policy/policy_builder';
 import { EventAction } from './event_action';
 import { FuzzOptions } from './fuzz_options';
@@ -25,11 +25,11 @@ import { FuzzOptions } from './fuzz_options';
 const EVENT_INTERVAL = 1000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export class InputManager {
+export class RunnerManager {
     protected device: Device;
     protected hap: Hap;
     protected options: FuzzOptions;
-    protected policy: InputPolicy;
+    protected policy: Policy;
     protected enabled: boolean;
 
     constructor(device: Device, hap: Hap, options: FuzzOptions) {

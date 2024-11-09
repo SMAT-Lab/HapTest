@@ -4,14 +4,14 @@ classDiagram
         send(device: EventSimulator)*
     }
 
-    class InputPolicy {
+    class Policy {
         enabled: boolean
         +stop()
         +generateEvent(deviceState: DeviceState): Event*
     }
 
-    class InputManager {
-        -policy: InputPolicy
+    class RunnerManager {
+        -policy: Policy
         +start()
         +stop()
     }
@@ -20,12 +20,12 @@ classDiagram
 
     }
 
-    InputPolicy --o InputManager: policy
-    Event --o InputPolicy: generateEvent()
+    Policy --o InputManager: policy
+    Event --o Policy: generateEvent()
 
-    ManualPolicy --|> InputPolicy
-    UTGInputPolicy --|> InputPolicy
-    UtgNaiveSearchPolicy --|> UTGInputPolicy
-    UtgGreedySearchPolicy --|> UTGInputPolicy
+    ManualPolicy --|> Policy
+    PTGPolicy --|> Policy
+    PtgNaiveSearchPolicy --|> PTGPolicy
+    PtgGreedySearchPolicy --|> PTGPolicy
 
 ```

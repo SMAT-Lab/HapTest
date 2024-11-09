@@ -18,12 +18,12 @@ import { Device } from '../device/device';
 import { Event } from '../event/event';
 import { Hap } from '../model/hap';
 import { Page } from '../model/page';
-import { InputPolicy, PolicyName } from './input_policy';
+import { Policy, PolicyName } from './policy';
 import { ExitEvent } from '../event/system_event';
 import path from 'path';
 import { EventBuilder } from '../event/event_builder';
 
-export class ReplayPolicy extends InputPolicy {
+export class ReplayPolicy extends Policy {
     steps:[Page, Event][];
     currentStep: number;
     

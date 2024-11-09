@@ -22,7 +22,7 @@ import { Hap } from '../model/hap';
 import { SerializeUtils } from '../utils/serialize_utils';
 import { Page } from '../model/page';
 import { getLogger } from 'log4js';
-import { Transition } from '../policy/utg';
+import { Transition } from '../model/ptg';
 const logger = getLogger();
 
 export class EventAction {

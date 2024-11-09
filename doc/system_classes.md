@@ -33,12 +33,12 @@ classDiagram
     }
 
     class InputManager {
-        -policy: InputPolicy
+        -policy: Policy
         +start()
         +stop()
     }
 
-    class InputPolicy {
+    class Policy {
         enabled: boolean
         +stop()
         +generateEvent(deviceState: DeviceState): Event*
@@ -53,7 +53,7 @@ classDiagram
     FuzzOptions --o Fuzz: options
     Device --o Fuzz: device
     InputManager --o Fuzz: inputManager
-    InputPolicy --o InputManager: policy
+    Policy --o InputManager: policy
 
     Event --o InputManager: addEvent
     EventSimulator --o Event: send
