@@ -226,8 +226,10 @@ export class Device implements EventSimulator {
                 return value.hasUIEvent();
             });
 
-            this.sendEvent(new TouchEvent(components[2]));
-            return true;
+            if (components.length > 1) {
+                this.sendEvent(new TouchEvent(components[2]));
+                return true;
+            }
         }
 
         return false;
@@ -353,8 +355,8 @@ export class Device implements EventSimulator {
     async getCurrentPage(hap: Hap): Promise<Page> {
         let page = await this.dumpViewTree();
         if (this.options.sourceRoot) {
-            let inspector = await this.dumpInspector(hap.bundleName);
-            page.mergeInspector(inspector.layout);
+            // let inspector = await this.dumpInspector(hap.bundleName);
+            // page.mergeInspector(inspector.layout);
         }
 
         // set hap running state
@@ -448,7 +450,7 @@ export class Device implements EventSimulator {
             let project = new HapProject(this.options.sourceRoot);
             let module = project.getModule(deviceType);
             if (!module) {
-                logger.error(`${deviceType}`);
+                logger.error(`Device->buildHap Not found ${deviceType} module.`);
                 process.exit();
             }
             let hapFiles = findFiles(path.join(module.path, 'build'), ['.hap']);

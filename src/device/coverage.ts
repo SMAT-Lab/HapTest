@@ -39,7 +39,6 @@ export class Coverage {
 
     startBftp(): void {
         let retryCnt = 5;
-        let error;
         while (retryCnt-- >= 0) {
             try {
                 let bftpd = this.device.getHdc().startBftp(this.hap);
@@ -47,10 +46,10 @@ export class Coverage {
                 this.bftpPid = bftpd.pid;
                 return;
             } catch (err) {
-                error = err;
+                logger.error('Please add the ohos.permission.INTERNET permission to the HAP.');
+                process.exit();
             }
         }
-        throw error;
     }
 
     stopBftp(): void {
@@ -102,7 +101,7 @@ export class Coverage {
                     return this.last;
                 }
             } catch (err) {
-                logger.error(err);
+                logger.error(`Coverage->getCoverageFile ${err}`);
             }
         }
 

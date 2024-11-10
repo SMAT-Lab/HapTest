@@ -112,7 +112,7 @@ export class ArkUIInspector {
             });
 
             wss.on('error', (err: Error) => {
-                logger.error(err);
+                logger.error(`ArkUIInspector wss error: ${err}`);
                 resolve({ err: err.message });
             });
 

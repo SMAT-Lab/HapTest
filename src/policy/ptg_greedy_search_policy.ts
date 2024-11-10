@@ -28,7 +28,7 @@ import { Rank } from '../model/rank';
 import { PolicyName } from './policy';
 
 /**
- * DFS/BFS (according to search_method) strategy to explore UFG (new)
+ * DFS/BFS (according to search_method) strategy to explore PTG (new)
  */
 export class PtgGreedySearchPolicy extends PTGPolicy {
     private pageComponentMap: Map<string, Component[]>;
@@ -48,7 +48,7 @@ export class PtgGreedySearchPolicy extends PTGPolicy {
     }
 
     /**
-     * Generate an event based on current UTG.
+     * Generate an event based on current PTG.
      *
      * @returns {Event} The generated Event object.
      */

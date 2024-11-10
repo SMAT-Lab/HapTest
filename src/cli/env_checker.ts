@@ -22,12 +22,18 @@ import { FuzzOptions } from '../runner/fuzz_options';
 import { getLogger } from 'log4js';
 
 const logger = getLogger();
-const REQUIRED_HOST_TOOLS: Map<string, string> = new Map(
+const REQUIRED_HOST_TOOLS: Map<string, (string | boolean)[]> = new Map([
+    ['hdc', ['Please add hdc to your systems PATH.', true]],
     [
-        ['hdc', 'Please add hdc to PATH environment variable.'],
-        ['java', 'Please add hdc to PATH environment variable.'],
-        ['dot', 'Please download graphviz from https://graphviz.org/download/.']
-    ]);
+        'dot',
+        [
+            "Make sure the Graphviz executables are on your systems PATH, If you don't have it, you can download and install it from https://graphviz.org/download/.",
+            true,
+        ],
+    ],
+    ['java', ['Please add java to your systems PATH.', false]],
+    ['hvigorw', ['Please add hvigorw to your systems PATH.', false]],
+]);
 
 export class EnvChecker {
     private options: FuzzOptions;
@@ -52,22 +58,24 @@ export class EnvChecker {
             }
         }
 
+        if (!this.checkRequiredHostTools(this.options.sourceRoot !== undefined)) {
+            process.exit();
+        }
+
         if (this.options.sourceRoot) {
-            if (!this.checkProject() || !this.checkHvigorw()) {
+            if (!this.checkProject() || !this.installBjc()) {
                 process.exit();
             }
         }
-
-        if (!this.checkRequiredHostTools()) {
-            process.exit();
-        }
     }
 
-    private checkRequiredHostTools(): boolean {
+    private checkRequiredHostTools(needCompile: boolean): boolean {
         let passed = true;
-        for (const [key, msg] of REQUIRED_HOST_TOOLS) {
+        for (const [key, [msg, option]] of REQUIRED_HOST_TOOLS) {
             try {
-                which(key);
+                if (option || needCompile) {
+                    which(key);
+                }
             } catch (error) {
                 if (error instanceof FileNotFoundError) {
                     logger.error(msg);
@@ -78,31 +86,23 @@ export class EnvChecker {
         return passed;
     }
 
-    private checkHvigorw(): boolean {
-        try {
-            let hvigorFile = which('hvigorw');
-            let cmdlineHome = path.normalize(path.join(path.dirname(hvigorFile), '..'));
-            let sdk = path.join(cmdlineHome, 'sdk');
-            if (process.env.DEVECO_SDK_HOME) {
-                sdk = process.env.DEVECO_SDK_HOME;
-            }
-            if (!fs.existsSync(sdk)) {
-                logger.error('Not found sdk, please check that the command-line-tools is installed correctly.');
-                return false;
-            }
-            // install bjc to sdk
-            if (!install(sdk)) {
-                logger.error('bjc install fail.');
-                return false;
-            }
-            return true;
-        } catch (error) {
-            if (error instanceof FileNotFoundError) {
-                logger.error(`${error.message}`);
-                logger.error('Please add hvigorw to PATH environment variable.');
-            }
+    private installBjc(): boolean {
+        let hvigorFile = which('hvigorw');
+        let cmdlineHome = path.normalize(path.join(path.dirname(hvigorFile), '..'));
+        let sdk = path.join(cmdlineHome, 'sdk');
+        if (process.env.DEVECO_SDK_HOME) {
+            sdk = process.env.DEVECO_SDK_HOME;
+        }
+        if (!fs.existsSync(sdk)) {
+            logger.error('Not found sdk, please check that the command-line-tools is installed correctly.');
             return false;
         }
+        // install bjc to sdk
+        if (!install(sdk)) {
+            logger.error('bjc install fail.');
+            return false;
+        }
+        return true;
     }
 
     private checkProject(): boolean {

@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+import fs from 'fs';
 import { toFile } from '@ts-graphviz/adapter';
 import { attribute as _, Digraph, Node, Edge, toDot } from 'ts-graphviz';
 import { Event } from '../event/event';
@@ -226,22 +227,30 @@ export class PTG {
     }
 
     async dumpSvg(output: string, rootUrl: string) {
-        const dotGraph = new Digraph('UTG');
+        const dotGraph = new Digraph('PTG');
+        dotGraph.node({
+            fontname: 'Helvetica,Arial,sans-serif',
+            fontsize: 12,
+            width: 4,
+            color: '#8383cc',
+            fixedsize: true,
+        });
+        dotGraph.edge({ color: 'pink' });
         let nodes = new Map<string, Node>();
-        for (const id of this.pageContentGraph.nodes()) {
+        for (const id of this.pageStructualGraph.nodes()) {
+            let pages: Page[] = this.pageStructualGraph.getNodeAttributes(id);
             let dotNode = new Node(id, {
-                [_.color]: 'blue',
                 [_.URL]: `${rootUrl}/node/${id}`,
+                [_.image]: `${pages[0].getSnapshot()?.screenCapPath}`,
             });
             dotGraph.addNode(dotNode);
             nodes.set(id, dotNode);
         }
 
-        for (const source of this.pageContentGraph.nodes()) {
-            for (const target of this.pageContentGraph.nodes()) {
-                if (this.pageContentGraph.hasDirectedEdge(source, target)) {
+        for (const source of this.pageStructualGraph.nodes()) {
+            for (const target of this.pageStructualGraph.nodes()) {
+                if (this.pageStructualGraph.hasDirectedEdge(source, target)) {
                     const edge = new Edge([nodes.get(source)!, nodes.get(target)!], {
-                        [_.color]: 'pink',
                         [_.URL]: `${rootUrl}/edge/${source}/${target}`,
                     });
                     dotGraph.addEdge(edge);
@@ -250,6 +259,7 @@ export class PTG {
         }
 
         const dot = toDot(dotGraph);
+        fs.writeFileSync(path.join(output, 'ptg.dot'), dot);
         await toFile(dot, path.join(output, 'ptg.svg'), { format: 'svg' });
     }
 

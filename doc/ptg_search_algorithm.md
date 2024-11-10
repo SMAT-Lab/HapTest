@@ -1,6 +1,6 @@
 <pre class="pseudocode" data-line-number=true>
 \begin{algorithm}
-\caption{UtgNaiveSearchPolicy GenerateEvent}
+\caption{PtgNaiveSearchPolicy GenerateEvent}
 \begin{algorithmic}
 \PROCEDURE{GenerateEvent}{$currentState, pageMap, stateMap$}
     \STATE \CALL{UpdateState}{$currentState, pageMap, stateMap$}
@@ -12,11 +12,11 @@
         \RETURN events[0]   // 返回优先级最高的事件
     \ENDIF
 
-    \FOR{\textbf{each} $state$ \textbf{in}  \CALL{UTG.getReachableStates}{currentState}}
+    \FOR{\textbf{each} $state$ \textbf{in}  \CALL{PTG.getReachableStates}{currentState}}
         \IF{\CALL{IsExplored}{state}} 
             \CONTINUE 
         \ENDIF 
-        \STATE steps = \CALL{UTG.getNavigationSteps}{currentState, state} //  返回跳转到此状态最短路径的第1个事件
+        \STATE steps = \CALL{PTG.getNavigationSteps}{currentState, state} //  返回跳转到此状态最短路径的第1个事件
         \RETURN steps[0]
     \ENDFOR
 

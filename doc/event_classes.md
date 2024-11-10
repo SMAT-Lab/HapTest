@@ -31,11 +31,16 @@ classDiagram
   class StopHapEvent {
     #bundleName: string
   }
+
+  class GestureEvent {
+    #gestures: Gesture[]
+    #speed: number
+  }
   
   KeyEvent --|> Event
   UIEvent --|> Event
   SystemEvent --|> Event
-  ManualEvent --|> Event
+  GestureEvent --|> Event
 
   StopHapEvent --|> SystemEvent
   AbilityEvent --|> SystemEvent
@@ -45,4 +50,5 @@ classDiagram
   ScrollEvent --|> UIEvent
   SwipeEvent --|> UIEvent
   InputTextEvent --|> UIEvent
+  
 ```
