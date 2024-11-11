@@ -239,7 +239,17 @@ export class PTG {
         let nodes = new Map<string, Node>();
         for (const id of this.pageStructualGraph.nodes()) {
             let pages: Page[] = this.pageStructualGraph.getNodeAttributes(id);
+            let faultLogs: Set<string> = new Set<string>();
+            pages.map((v) =>
+                v.getSnapshot()?.faultLogs.forEach((log) => {
+                    let filename = path.basename(log);
+                    if (!filename.includes('uitest')) {
+                        faultLogs.add(filename);
+                    }
+                })
+            );
             let dotNode = new Node(id, {
+                [_.label]: `${id}\n${Array.from(faultLogs).join('\n')}`,
                 [_.URL]: `${rootUrl}/node/${id}`,
                 [_.image]: `${pages[0].getSnapshot()?.screenCapPath}`,
             });
