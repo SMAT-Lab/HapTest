@@ -14,7 +14,6 @@
  */
 
 import fs from 'fs';
-import { toFile } from '@ts-graphviz/adapter';
 import { attribute as _, Digraph, Node, Edge, toDot } from 'ts-graphviz';
 import { Event } from '../event/event';
 import { Hap } from './hap';
