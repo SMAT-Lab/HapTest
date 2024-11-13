@@ -270,7 +270,7 @@ export class PTG {
 
         const dot = toDot(dotGraph);
         fs.writeFileSync(path.join(output, 'ptg.dot'), dot);
-        await toFile(dot, path.join(output, 'ptg.svg'), { format: 'svg' });
+        // await toFile(dot, path.join(output, 'ptg.svg'), { format: 'svg' });
     }
 
     private addNode(page: Page) {
