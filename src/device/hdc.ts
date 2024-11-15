@@ -133,6 +133,7 @@ export class Hdc {
         let remote = output.substring(outPrefix.length).trim();
         let localFile = path.join(localPath, path.basename(remote));
         this.recvFile(remote, localFile);
+        this.excuteShellCommand(...['rm', remote]);
         return localFile;
     }
 
