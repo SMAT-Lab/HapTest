@@ -24,14 +24,9 @@ export class PerfPolicy extends Policy {
     async generateEvent(page: Page): Promise<Event> {
         if (this.flag === PolicyFlag.FLAG_INIT) {
             if (!page.isStop()) {
-                this.flag |= PolicyFlag.FLAG_STOP_APP;
+                this.flag = PolicyFlag.FLAG_STOP_APP;
                 return new StopHapEvent(this.hap.bundleName);
             }
-        }
-
-        if (page.isStop()) {
-            this.flag = PolicyFlag.FLAG_START_APP;
-            return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
         }
 
         if (this.flag === PolicyFlag.FLAG_START_APP) {
@@ -43,6 +38,11 @@ export class PerfPolicy extends Policy {
         if (this.flag === PolicyFlag.FLAG_STARTED) {
             this.stop();
             return new StopHapEvent(this.hap.bundleName);
+        }
+
+        if (page.isStop() && (this.flag === PolicyFlag.FLAG_INIT || this.flag === PolicyFlag.FLAG_STOP_APP)) {
+            this.flag = PolicyFlag.FLAG_START_APP;
+            return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
         }
 
         return HOME_KEY_EVENT;
