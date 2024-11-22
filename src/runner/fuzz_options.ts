@@ -23,4 +23,5 @@ export interface FuzzOptions {
     sourceRoot?: string;
     hapFile?: string;
     reportRoot?: string;
+    excludes?: string[];
 }

@@ -438,16 +438,16 @@ export class Device implements EventSimulator {
         return this.hdc.getBundleInfo(bundleName);
     }
 
-    buildHap(device: Device): Hap {
+    buildHap(sourceRoot?: string, hapFile?: string, bundleName?: string): Hap {
         // using hvigorw to build HAP
-        if (this.options.sourceRoot) {
+        if (sourceRoot) {
             execSync(`hvigorw -p buildMode=debug -p coverage-mode=full -p debugLine=true clean assembleHap`, {
                 stdio: 'inherit',
                 cwd: this.options.sourceRoot,
             });
 
-            let deviceType = device.getDeviceType();
-            let project = new HapProject(this.options.sourceRoot);
+            let deviceType = this.getDeviceType();
+            let project = new HapProject(sourceRoot);
             let module = project.getModule(deviceType);
             if (!module) {
                 logger.error(`Device->buildHap Not found ${deviceType} module.`);
@@ -456,16 +456,16 @@ export class Device implements EventSimulator {
             let hapFiles = findFiles(path.join(module.path, 'build'), ['.hap']);
             hapFiles.sort();
             if (hapFiles.length > 0) {
-                this.options.hapFile = hapFiles[0];
+                hapFile = hapFiles[0];
             }
         }
 
-        if (this.options.hapFile) {
-            return HapBuilder.buildFromHapFile(this.options.hapFile);
+        if (hapFile) {
+            return HapBuilder.buildFromHapFile(hapFile);
         }
 
-        if (this.options.bundleName) {
-            return HapBuilder.buildFromBundleName(device, this.options.bundleName);
+        if (bundleName) {
+            return HapBuilder.buildFromBundleName(this, bundleName);
         }
 
         logger.error(`Not found HAP ${this.options.hap}`);
@@ -477,5 +477,15 @@ export class Device implements EventSimulator {
      */
     aaDumpMission() {
         this.hdc.aaDumpMission();
+    }
+
+    dumpHap(hap: Hap): void {
+        this.hdc.recvFile(`/data/app/el1/bundle/public/${hap.bundleName}`, this.options.output);
+        let remote = `/data/local/tmp/${hap.bundleName}_decrypt`;
+        this.hdc.mkDir(remote);
+        const pid = this.hdc.pidof(hap.bundleName);
+        this.hdc.memdump(pid, remote, /^\/data\/storage\/el1\/bundle\/[\S]*[.hap|.hsp]$/);
+        this.hdc.recvFile(remote, `${this.options.output}/${hap.bundleName}/decrypt`);
+        this.hdc.rmDir(remote);
     }
 }

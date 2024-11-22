@@ -14,7 +14,7 @@
  */
 
 import { Device } from '../device/device';
-import { Hap } from '../model/hap';
+import { GlobMatch } from '../utils/glob_match';
 import { FuzzOptions } from './fuzz_options';
 import { RunnerManager } from './runner_manager';
 
@@ -24,18 +24,33 @@ import { RunnerManager } from './runner_manager';
 export class Fuzz {
     options: FuzzOptions;
     device: Device;
-    hap: Hap;
-    manager: RunnerManager;
 
     constructor(options: FuzzOptions) {
         this.options = options;
-        this.device = new Device(this.options);
-        this.hap = this.device.buildHap(this.device);
-        this.manager = new RunnerManager(this.device, this.hap, this.options);
+        this.device = new Device(this.options);        
     }
 
     async start() {
-        await this.device.connect(this.hap);
-        await this.manager.start();
+        if (this.options.bundleName !== 'ALL') {
+            await this.startOneBundle(this.options.bundleName);
+            return;
+        }
+        
+        let bundles = this.device.getAllBundleNames();
+        let matcher = this.options.excludes ? new GlobMatch(this.options.excludes): undefined;
+        for (const bundleName of bundles) {
+            if (matcher?.match(bundleName)) {
+                continue;
+            }
+
+            await this.startOneBundle(bundleName);
+        }
+    }
+
+    async startOneBundle(bundleName?: string): Promise<void> {
+        let hap = this.device.buildHap(this.options.sourceRoot, this.options.hapFile, bundleName);
+        let manager = new RunnerManager(this.device, hap, this.options);
+        await this.device.connect(hap);
+        await manager.start();
     }
 }

@@ -33,6 +33,7 @@ export enum PolicyName {
     DFS_GREEDY = 'greedy_dfs',
     BFS_GREEDY = 'greedy_bfs',
     RANDOM = 'random',
+    PERF_START_HAP = 'perf_start_hap'
 }
 
 export abstract class Policy {

@@ -22,6 +22,7 @@ import { ReplayPolicy } from './replay_policy';
 import { PtgGreedySearchPolicy } from './ptg_greedy_search_policy';
 import { PtgNaiveSearchPolicy } from './ptg_naive_search_policy';
 import { PtgRandomSearchPolicy } from './ptg_random_search_policy';
+import { PerfPolicy } from './perf_policy';
 
 export class PolicyBuilder {
     static buildPolicyByName(device: Device, hap: Hap, options: FuzzOptions): Policy {
@@ -35,6 +36,8 @@ export class PolicyBuilder {
             return new PtgGreedySearchPolicy(device, hap, PolicyName.DFS_GREEDY);
         } else if (options.policyName === PolicyName.RANDOM) {
             return new PtgRandomSearchPolicy(device, hap, PolicyName.RANDOM);
+        } else if (options.policyName === PolicyName.PERF_START_HAP) {
+            return new PerfPolicy(device, hap, PolicyName.PERF_START_HAP);
         } else {
             return new PtgNaiveSearchPolicy(device, hap, PolicyName.NAIVE);
         }

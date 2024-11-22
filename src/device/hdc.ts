@@ -51,6 +51,14 @@ export class Hdc {
         return output.indexOf('No such file') === 0;
     }
 
+    mkDir(remote: string): void {
+        this.excuteShellCommand(...['mkdir', '-p', remote]);
+    }
+
+    rmDir(remote: string): void {
+        this.excuteShellCommand(...['rm', '-r', remote]);
+    }
+
     getAllBundleNames(): string[] {
         let bundles: string[] = [];
         let output = this.excuteShellCommand('bm dump -a');
@@ -167,11 +175,11 @@ export class Hdc {
     }
 
     mkLocalCovDir(): void {
-        this.excuteShellCommand(...['mkdir', '-p', '/data/local/tmp/cov']);
+        this.mkDir('/data/local/tmp/cov');
     }
 
     rmLocalCovDir(): void {
-        this.excuteShellCommand(...['rm', '-r', '/data/local/tmp/cov']);
+        this.rmDir('/data/local/tmp/cov');
     }
 
     netstatInfo(): Map<number, { pid: number; program: string }> {
@@ -198,7 +206,7 @@ export class Hdc {
      * @param prefix output prefix file name
      * @param fileReg normal app match regex: /^\/data\/storage\/el1\/bundle\/[\S]*[.hap|.hsp]$/
      */
-    memdump(pid: number, prefix: string, fileReg: RegExp): void {
+    memdump(pid: number, remoteOutput: string, fileReg: RegExp): void {
         let idxMap: Map<string, number> = new Map();
         let maps = this.getProcMaps(pid, fileReg);
         for (const map of maps) {
@@ -213,9 +221,9 @@ export class Hdc {
                     '-s',
                     map.start,
                     '-n',
-                    `${prefix}_${idx}_${path.basename(map.file)}`,
+                    `${idx}_${path.basename(map.file)}`,
                     '-o',
-                    '/data/local/tmp/',
+                    remoteOutput,
                     '-f',
                     '-i',
                     `${pid}`,

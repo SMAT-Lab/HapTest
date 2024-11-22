@@ -28,13 +28,14 @@ const logger = getLogger();
     program
         .name(packageCfg.name)
         .version(packageCfg.version)
-        .option('-i --hap <file/bundleName/sourceRoot>', 'HAP bundle name or HAP file path or HAP project source root')
+        .option('-i --hap <file/bundleName/sourceRoot/ALL>', 'HAP bundle name or HAP file path or HAP project source root')
         .option('-o --output <dir>', 'output dir', 'out')
         .option('--policy <policyName>', 'policy name', 'manu')
         .option('-t --target [connectkey]', 'hdc connectkey', undefined)
         .option('-c --coverage', 'enable coverage', false)
         .option('--report [report root]', 'report root')
         .option('--debug', 'debug log level', false)
+        .option('--exclude [excludes...]', 'exclude bundle name')
         .parse();
     let options = program.opts();
     let logLevel = LOG_LEVEL.INFO;
@@ -51,10 +52,13 @@ const logger = getLogger();
         output: options.output,
         coverage: options.coverage,
         reportRoot: options.report,
+        excludes: options.exclude
     };
     let envChecker = new EnvChecker(fuzzOption);
     envChecker.check();
 
     let fuzz = new Fuzz(fuzzOption);
     await fuzz.start();
+    logger.info('stop fuzz.');
+    process.exit();
 })();
