@@ -20,7 +20,6 @@ import fs from 'fs';
 
 describe('hdc Test', async () => {
     let hdc = new Hdc();
-    hdc.memdump(25812, 'abc', /^\/data\/storage\/el1\/bundle\/[\S]*[.hap|.hsp]$/);
 
     it('test getForegroundProcess', async () => {
         const MOCK_SHELL_OUTPUT_GetForegroundProcess = fs.readFileSync(path.join(__dirname, '../resource/aa_dump.txt'), {

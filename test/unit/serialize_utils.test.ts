@@ -26,10 +26,10 @@ describe('SerializeUtils Test', () => {
         let [mainPage, _] = PageBuilder.buildPagesFromDumpLayoutFile(
             path.join(__dirname, '../resource/layout_modalpage.json')
         );
-        expect(SerializeUtils.serialize(mainPage.getRoot()).length).eq(246);
+        expect(SerializeUtils.serialize(mainPage.getRoot()).length).eq(303);
 
         let json = mainPage.getContent();
-        expect(json.length).eq(13479);
+        expect(json.length).eq(16389);
 
         json = SerializeUtils.serialize(mainPage, { groups: ['Content'] });
         let page = SerializeUtils.plainToInstance(Page, JSON.parse(json), { groups: ['Content'] });

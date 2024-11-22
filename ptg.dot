@@ -1,0 +1,21 @@
+digraph "PTG" {
+  edge [
+    color = "pink";
+  ];
+  node [
+    fontname = "Helvetica,Arial,sans-serif";
+    fontsize = 12;
+    width = 4;
+    color = "#8383cc";
+    fixedsize = true;
+  ];
+  
+  "1" -> "2"
+  "bugx" [
+    label = "X",
+    style="filled",
+    shape="box",
+    fillcolor = "red"
+  ]
+  "1" -> "bugx"
+}
