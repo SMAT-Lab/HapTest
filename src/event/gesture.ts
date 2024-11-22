@@ -101,7 +101,7 @@ export class Gesture {
     }
 
     pause(interval: number = 1.5): this {
-        if (this.steps.length == 0) {
+        if (this.steps.length === 0) {
             throw new Error(`Please call gesture.start first`);
         }
 
@@ -112,7 +112,7 @@ export class Gesture {
     }
 
     moveTo(pos: Point, interval?: number): this {
-        if (this.steps.length == 0) {
+        if (this.steps.length === 0) {
             throw new Error(`Please call gesture.start first`);
         }
         this.steps.push(new GestureStep(pos, 'move', interval));

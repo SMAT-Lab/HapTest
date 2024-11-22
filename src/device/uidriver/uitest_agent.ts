@@ -64,7 +64,7 @@ export class UitestAgent {
         let output = this.hdc.excuteShellCommand(`netstat -anp | grep ${RPC_PORT}`);
         for (let line of output.split(NEWLINE)) {
             let matches = line.match(/[\S]+/g);
-            if (matches?.length == 5) {
+            if (matches?.length === 5) {
                 return true;
             }
         }

@@ -87,7 +87,7 @@ export class Coverage {
         let covFiles = Array.from(current);
         covFiles.sort();
 
-        if (covFiles.length == 0) {
+        if (covFiles.length === 0) {
             return this.last;
         }
 

@@ -34,6 +34,7 @@ const TEXT_INPUTABLE_TYPE: Set<string> = new Set([
 ]);
 
 export class Component {
+    @Expose()
     bounds?: Point[];
     @Expose()
     checkable?: boolean;
@@ -45,6 +46,7 @@ export class Component {
     enabled?: boolean;
     @Expose()
     focused?: boolean;
+    @Expose()
     hint?: string;
     @Expose()
     id?: string;
@@ -120,7 +122,7 @@ export class Component {
 
     hasUIEvent(): boolean {
         return (
-            this.enabled == true &&
+            this.enabled === true &&
             (this.checkable || this.clickable || this.longClickable || this.scrollable || this.inputable)
         );
     }

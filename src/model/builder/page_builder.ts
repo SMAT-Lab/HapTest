@@ -69,7 +69,7 @@ export class PageBuilder {
     static buildPagesFromJson(json: string): Page[] {
         let layout: DumpLayoutNode = JSON.parse(json, (key: string, value: any) => {
             if (BOOLEAN_TYPE_KEYS.has(key)) {
-                return value == 'true';
+                return value === 'true';
             } else if (POINT_TYPE_KEYS.has(key)) {
                 let points: Point[] = [];
                 for (let point of value.split('][')) {

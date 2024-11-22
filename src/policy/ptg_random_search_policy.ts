@@ -35,7 +35,7 @@ export class PtgRandomSearchPolicy extends PTGPolicy {
     generateEventBasedOnPtg(): Event {
         this.updateState();
         let event = this.selectEvent();
-        if (event == undefined) {
+        if (event === undefined) {
             if (this.retryCount > MAX_NUM_RESTARTS) {
                 this.stop();
                 return new ExitEvent();
@@ -79,7 +79,7 @@ export class PtgRandomSearchPolicy extends PTGPolicy {
 
         // from current page translate to unexpored page Event
         for (const page of this.ptg.getReachablePages(this.currentPage!)) {
-            if (this.ptg.isPageExplored(page) || page.getBundleName() != this.hap.bundleName) {
+            if (this.ptg.isPageExplored(page) || page.getBundleName() !== this.hap.bundleName) {
                 continue;
             }
 
@@ -97,7 +97,7 @@ export class PtgRandomSearchPolicy extends PTGPolicy {
     }
 
     private arraySelect<T>(events: T[]): T | undefined {
-        if (events.length == 0) {
+        if (events.length === 0) {
             return undefined;
         }
 

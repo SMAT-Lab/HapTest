@@ -25,15 +25,15 @@ import { PtgRandomSearchPolicy } from './ptg_random_search_policy';
 
 export class PolicyBuilder {
     static buildPolicyByName(device: Device, hap: Hap, options: FuzzOptions): Policy {
-        if (options.policyName == PolicyName.MANUAL) {
+        if (options.policyName === PolicyName.MANUAL) {
             return new ManualPolicy(device, hap, PolicyName.MANUAL);
-        } else if (options.policyName == PolicyName.REPLAY) {
+        } else if (options.policyName === PolicyName.REPLAY) {
             return new ReplayPolicy(device, hap, options.policyName, options.reportRoot!);
-        } else if (options.policyName == PolicyName.BFS_GREEDY) {
+        } else if (options.policyName === PolicyName.BFS_GREEDY) {
             return new PtgGreedySearchPolicy(device, hap, PolicyName.BFS_GREEDY);
-        } else if (options.policyName == PolicyName.DFS_GREEDY) {
+        } else if (options.policyName === PolicyName.DFS_GREEDY) {
             return new PtgGreedySearchPolicy(device, hap, PolicyName.DFS_GREEDY);
-        } else if (options.policyName == PolicyName.RANDOM) {
+        } else if (options.policyName === PolicyName.RANDOM) {
             return new PtgRandomSearchPolicy(device, hap, PolicyName.RANDOM);
         } else {
             return new PtgNaiveSearchPolicy(device, hap, PolicyName.NAIVE);

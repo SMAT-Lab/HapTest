@@ -211,12 +211,12 @@ export class Device implements EventSimulator {
      */
     private closeKeyboard(pages: Page[]): boolean {
         for (const page of pages) {
-            if (page.getBundleName() != 'com.huawei.hmos.inputmethod') {
+            if (page.getBundleName() !== 'com.huawei.hmos.inputmethod') {
                 continue;
             }
 
             for (const component of page.getComponents()) {
-                if (component.id == 'hideButton') {
+                if (component.id === 'hideButton') {
                     this.sendEvent(new TouchEvent(component));
                     return true;
                 }
@@ -360,7 +360,7 @@ export class Device implements EventSimulator {
         }
 
         // set hap running state
-        if (page.getBundleName() == hap.bundleName) {
+        if (page.getBundleName() === hap.bundleName) {
             let snapshot = this.getSnapshot(true);
             page.setSnapshot(snapshot);
             return page;
@@ -368,10 +368,10 @@ export class Device implements EventSimulator {
 
         let runningState = this.getHapRunningState(hap);
         let snapshot = this.getSnapshot(false);
-        if (runningState == HapRunningState.STOP) {
+        if (runningState === HapRunningState.STOP) {
             page = STOP_PAGE;
             page.setSnapshot(snapshot);
-        } else if (runningState == HapRunningState.BACKGROUND) {
+        } else if (runningState === HapRunningState.BACKGROUND) {
             page = BACKGROUND_PAGE;
             page.setSnapshot(snapshot);
         }

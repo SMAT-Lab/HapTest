@@ -57,7 +57,7 @@ export class PtgGreedySearchPolicy extends PTGPolicy {
         // Get all possible input events
         let possibleEvent = this.getPossibleEvent();
 
-        if (possibleEvent == undefined) {
+        if (possibleEvent === undefined) {
             if (this.retryCount > MAX_NUM_RESTARTS) {
                 this.stop();
                 return new ExitEvent();
@@ -84,7 +84,7 @@ export class PtgGreedySearchPolicy extends PTGPolicy {
 
         let events: Event[] = EventBuilder.createPossibleUIEvents(components);
 
-        if (events.length == 0) {
+        if (events.length === 0) {
             return undefined;
         }
 
@@ -93,26 +93,26 @@ export class PtgGreedySearchPolicy extends PTGPolicy {
         }
 
         if (this.isNewPage) {
-            if (this.name == PolicyName.BFS_GREEDY) {
+            if (this.name === PolicyName.BFS_GREEDY) {
                 events.unshift(BACK_KEY_EVENT);
                 if (components.length > 0) {
                     let firstElement = components.splice(0, 1)[0];
                     components.push(firstElement);
                     this.selectComponentMap.set(pageString, components);
                 }
-            } else if (this.name == PolicyName.DFS_GREEDY) {
+            } else if (this.name === PolicyName.DFS_GREEDY) {
                 events.push(BACK_KEY_EVENT);
             }
         }
 
         // If there is an unexplored event, try the event first
         for (const event of events) {
-            if (event instanceof InputTextEvent && event.getComponentId() != undefined) {
+            if (event instanceof InputTextEvent && event.getComponentId() !== undefined) {
                 const componentId = event.getComponentId();
-                if (componentId != undefined && this.inputComponents.includes(componentId)) {
+                if (componentId !== undefined && this.inputComponents.includes(componentId)) {
                     continue;
                 }
-                if (componentId != undefined) {
+                if (componentId !== undefined) {
                     this.inputComponents.push(componentId);
                 }
             }

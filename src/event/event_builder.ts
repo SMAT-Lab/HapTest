@@ -27,26 +27,26 @@ import { Gesture, GestureEvent } from './gesture';
 
 export class EventBuilder {
     static createEventFromJson(json: any): Event {
-        if (json.type == 'ManualEvent') {
+        if (json.type === 'ManualEvent') {
             return EventBuilder.createEventFromJson(json.event);
         }
-        if (json.type == 'KeyEvent') {
+        if (json.type === 'KeyEvent') {
             return new KeyEvent(json.keyCode);
         }
 
-        if (json.type == 'CombinedKeyEvent') {
+        if (json.type === 'CombinedKeyEvent') {
             return new CombinedKeyEvent(json.keyCode, json.keyCode1, json.keyCode2);
         }
 
-        if (json.type == 'AbilityEvent') {
+        if (json.type === 'AbilityEvent') {
             return new AbilityEvent(json.bundleName, json.abilityName);
         }
 
-        if (json.type == 'StopHapEvent') {
+        if (json.type === 'StopHapEvent') {
             return new StopHapEvent(json.bundleName);
         }
 
-        if (json.type == 'GestureEvent') {
+        if (json.type === 'GestureEvent') {
             let gestures: Gesture[] = [];
             for (const gestureJson of json.gestures) {
                 gestures.push(SerializeUtils.plainToInstance(Gesture, gestureJson));
@@ -60,38 +60,38 @@ export class EventBuilder {
             component = SerializeUtils.plainToInstance(Component, json.component);
         }
         let point: Point = json.point;
-        if (json.type == 'TouchEvent') {
+        if (json.type === 'TouchEvent') {
             if (component) return new TouchEvent(component);
             return new TouchEvent(point);
         }
 
-        if (json.type == 'LongTouchEvent') {
+        if (json.type === 'LongTouchEvent') {
             if (component) return new LongTouchEvent(component);
             return new LongTouchEvent(point);
         }
-        if (json.type == 'ScrollEvent') {
+        if (json.type === 'ScrollEvent') {
             if (component) return new ScrollEvent(component, json.direct, json.step, json.speed);
             return new ScrollEvent(point, json.direct, json.step, json.speed);
         }
 
-        if (json.type == 'InputTextEvent') {
+        if (json.type === 'InputTextEvent') {
             if (component) return new InputTextEvent(component, json.text);
             return new InputTextEvent(point, json.text);
         }
 
-        if (json.type == 'SwipeEvent') {
+        if (json.type === 'SwipeEvent') {
             return SerializeUtils.plainToInstance(SwipeEvent, json);
         }
 
-        if (json.type == 'FlingEvent') {
+        if (json.type === 'FlingEvent') {
             return SerializeUtils.plainToInstance(FlingEvent, json);
         }
 
-        if (json.type == 'DragEvent') {
+        if (json.type === 'DragEvent') {
             return SerializeUtils.plainToInstance(DragEvent, json);
         }
 
-        if (json.type == 'ExitEvent') {
+        if (json.type === 'ExitEvent') {
             return new ExitEvent();
         }
 

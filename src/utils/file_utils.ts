@@ -28,7 +28,7 @@ export function findFiles(rootPath: string, ext: string[], files: string[] = [])
         if (fs.statSync(realFile).isDirectory()) {
             findFiles(realFile, ext, files);
         } else {
-            if ((extSet.size > 0 && extSet.has(path.extname(realFile))) || extSet.size == 0) {
+            if ((extSet.size > 0 && extSet.has(path.extname(realFile))) || extSet.size === 0) {
                 files.push(realFile);
             }
         }

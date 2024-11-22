@@ -105,16 +105,16 @@ export class ScrollEvent extends UIEvent {
         let height = this.component ? this.component.getHeight() : simulator.getHeight();
         let width = this.component ? this.component.getWidth() : simulator.getWidth();
 
-        if (this.direct == Direct.UP) {
+        if (this.direct === Direct.UP) {
             from.y += Math.round((height * 2) / 5);
             to.y -= Math.round((height * 2) / 5);
-        } else if (this.direct == Direct.DOWN) {
+        } else if (this.direct === Direct.DOWN) {
             from.y -= Math.round((height * 2) / 5);
             to.y += Math.round((height * 2) / 5);
-        } else if (this.direct == Direct.LEFT) {
+        } else if (this.direct === Direct.LEFT) {
             from.x -= Math.round((width * 2) / 5);
             to.x += Math.round((width * 2) / 5);
-        } else if (this.direct == Direct.RIGHT) {
+        } else if (this.direct === Direct.RIGHT) {
             from.x += Math.round((width * 2) / 5);
             to.x -= Math.round((width * 2) / 5);
         }

@@ -83,9 +83,9 @@ export class PTG {
         if (this.wantTransition) {
             logger.info(`ptg want transition ${oldPage.getContentSig()} -> ${newPage.getContentSig()}`);
             if (
-                this.wantTransition.from == oldPage &&
-                this.wantTransition.event == event &&
-                this.wantTransition.to.getContentSig() != newPage.getContentSig()
+                this.wantTransition.from === oldPage &&
+                this.wantTransition.event === event &&
+                this.wantTransition.to.getContentSig() !== newPage.getContentSig()
             ) {
                 logger.info(
                     `ptg drop edge ${this.wantTransition.from.getContentSig()} -> ${this.wantTransition.to.getContentSig()}`
@@ -97,8 +97,8 @@ export class PTG {
                 this.wantTransition = undefined;
             } else {
                 logger.info(
-                    `ptg not need drop ${this.wantTransition.from == oldPage}, ${this.wantTransition.event == event}, ${
-                        this.wantTransition.to.getContentSig() != newPage.getContentSig()
+                    `ptg not need drop ${this.wantTransition.from === oldPage}, ${this.wantTransition.event === event}, ${
+                        this.wantTransition.to.getContentSig() !== newPage.getContentSig()
                     }`
                 );
             }
@@ -111,7 +111,7 @@ export class PTG {
         let eventPageSig = event.eventPageSig(oldPage);
 
         // ineffective event
-        if (oldPage.getContentSig() == newPage.getContentSig()) {
+        if (oldPage.getContentSig() === newPage.getContentSig()) {
             this.ineffectiveEvent.add(eventPageSig);
             return;
         }
@@ -141,7 +141,7 @@ export class PTG {
             if (attr.has(eventStr)) {
                 attr.delete(eventStr);
             }
-            if (attr.size == 0) {
+            if (attr.size === 0) {
                 this.pageContentGraph.dropEdge(oldPage.getStructualSig(), newPage.getStructualSig());
             }
         }
@@ -151,7 +151,7 @@ export class PTG {
             if (attr.has(eventStr)) {
                 attr.delete(eventStr);
             }
-            if (attr.size == 0) {
+            if (attr.size === 0) {
                 this.pageStructualGraph.dropEdge(oldPage.getStructualSig(), newPage.getStructualSig());
             }
         }
@@ -273,11 +273,11 @@ export class PTG {
     }
 
     private addNode(page: Page) {
-        if (this.firstPage == undefined) {
+        if (this.firstPage === undefined) {
             this.firstPage = page;
         }
 
-        if (this.stopPage == undefined && page.isStop()) {
+        if (this.stopPage === undefined && page.isStop()) {
             this.stopPage = page;
         }
 

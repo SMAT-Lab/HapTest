@@ -45,7 +45,7 @@ export abstract class PTGPolicy extends Policy {
         this.currentPage = page;
         this.updatePtg();
 
-        if (this.flag == PolicyFlag.FLAG_INIT) {
+        if (this.flag === PolicyFlag.FLAG_INIT) {
             if (!this.currentPage.isStop()) {
                 this.flag |= PolicyFlag.FLAG_STOP_APP;
                 return new StopHapEvent(this.hap.bundleName);

@@ -37,7 +37,7 @@ export class PtgNaiveSearchPolicy extends PTGPolicy {
     generateEventBasedOnPtg(): Event {
         this.updateState();
         let event = this.selectEvent();
-        if (event == undefined) {
+        if (event === undefined) {
             if (this.retryCount > MAX_NUM_RESTARTS) {
                 this.stop();
                 return new ExitEvent();
@@ -85,13 +85,13 @@ export class PtgNaiveSearchPolicy extends PTGPolicy {
 
         // from current page translate to unexpored page Event
         for (const page of this.ptg.getReachablePages(this.currentPage!)) {
-            if (this.ptg.isPageExplored(page) || page.getBundleName() != this.hap.bundleName) {
+            if (this.ptg.isPageExplored(page) || page.getBundleName() !== this.hap.bundleName) {
                 continue;
             }
 
             let steps = this.ptg.getNavigationSteps(this.currentPage!, page);
             if (steps && steps.length > 0) {
-                if (steps.length == 1) {
+                if (steps.length === 1) {
                     this.ptg.setWantTransition({ from: this.currentPage!, event: steps[0][1], to: page });
                 } else {
                     this.ptg.setWantTransition({ from: this.currentPage!, event: steps[0][1], to: steps[1][0] });
@@ -116,7 +116,7 @@ export class PtgNaiveSearchPolicy extends PTGPolicy {
     }
 
     private arraySelect<T>(components: T[]): T | undefined {
-        if (components.length == 0) {
+        if (components.length === 0) {
             return undefined;
         }
 

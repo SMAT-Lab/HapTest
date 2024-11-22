@@ -66,7 +66,7 @@ export function RpcApiCall(method?: string, api?: string) {
             }
 
             let thisFrontEnd = this as FrontEnd;
-            if (propertyKey == 'create') {
+            if (propertyKey === 'create') {
                 let response = await thisFrontEnd.doRpc(method, {
                     api: api,
                     this: null,
@@ -79,7 +79,7 @@ export function RpcApiCall(method?: string, api?: string) {
                 return;
             }
 
-            if (propertyKey == 'free') {
+            if (propertyKey === 'free') {
                 let response = await thisFrontEnd.doRpc(method, {
                     api: `BackendObjectsCleaner`,
                     this: null,

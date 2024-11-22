@@ -31,7 +31,7 @@ export class ViewTree {
     }
 
     getComponents(): Component[] {
-        if (this.components.length == 0) {
+        if (this.components.length === 0) {
             this.walk(this.root);
         }
 

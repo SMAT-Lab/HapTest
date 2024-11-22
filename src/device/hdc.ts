@@ -48,7 +48,7 @@ export class Hdc {
 
     hasFile(remote: string): boolean {
         let output = this.excuteShellCommand(`ls ${remote}`);
-        return output.indexOf('No such file') == 0;
+        return output.indexOf('No such file') === 0;
     }
 
     getAllBundleNames(): string[] {
@@ -65,7 +65,7 @@ export class Hdc {
 
     getBundleInfo(bundleName: string): any | undefined {
         let output = this.excuteShellCommand('bm dump -n', bundleName);
-        if (output.length == 0) {
+        if (output.length === 0) {
             return;
         }
         let lines = output.split(NEWLINE);
@@ -82,7 +82,7 @@ export class Hdc {
         let output = this.excute('fport', 'ls').stdout;
         for (let line of output.split(NEWLINE)) {
             let matches = line.match(/[\S]+/g);
-            if (matches && matches.length == 4) {
+            if (matches && matches.length === 4) {
                 fports.add([matches[0], matches[1], matches[2], matches[3]]);
             }
         }
@@ -180,7 +180,7 @@ export class Hdc {
         for (let line of output.split(NEWLINE)) {
             if (line.startsWith('tcp') || line.startsWith('udp')) {
                 let matches = line.match(/[\S]+/g);
-                if (matches?.length == 7) {
+                if (matches?.length === 7) {
                     info.set(Number(matches[3].split(':')[1]), {
                         pid: Number(matches[6].split('/')[0]),
                         program: matches[6].split('/')[1],
@@ -190,6 +190,69 @@ export class Hdc {
         }
 
         return info;
+    }
+
+    /**
+     *
+     * @param pid process pid
+     * @param prefix output prefix file name
+     * @param fileReg normal app match regex: /^\/data\/storage\/el1\/bundle\/[\S]*[.hap|.hsp]$/
+     */
+    memdump(pid: number, prefix: string, fileReg: RegExp): void {
+        let idxMap: Map<string, number> = new Map();
+        let maps = this.getProcMaps(pid, fileReg);
+        for (const map of maps) {
+            let idx = 0;
+            if (idxMap.has(map.file)) {
+                idx = idxMap.get(map.file)! + 1;
+            }
+            idxMap.set(map.file, idx);
+            let out = this.excuteShellCommand(
+                ...[
+                    '/data/local/tmp/memdumper',
+                    '-s',
+                    map.start,
+                    '-n',
+                    `${prefix}_${idx}_${path.basename(map.file)}`,
+                    '-o',
+                    '/data/local/tmp/',
+                    '-f',
+                    '-i',
+                    `${pid}`,
+                    '-k',
+                ]
+            );
+            if (out.indexOf('failed') !== -1) {
+                logger.error(`memdump ${map.file} error.`);
+            }
+        }
+    }
+
+    getProcMaps(pid: number, fileReg?: RegExp): { start: string; end: string; file: string }[] {
+        let maps: { start: string; end: string; file: string }[] = [];
+        let cmd = `cat /proc/${pid}/maps`;
+
+        let output = this.excuteShellCommand(cmd);
+        for (let line of output.split(NEWLINE)) {
+            let matches = line.match(/[\S]+/g);
+            if (matches?.length === 6) {
+                let file: string = matches[5];
+                if (fileReg && !file.match(fileReg)) {
+                    continue;
+                }
+
+                let addr = matches[0].split('-');
+                if (
+                    maps.length === 0 ||
+                    !(`0x${addr[0]}` === maps[maps.length - 1].end && file === maps[maps.length - 1].file)
+                ) {
+                    maps.push({ start: `0x${addr[0]}`, end: `0x${addr[1]}`, file: file });
+                } else {
+                    maps[maps.length - 1].end = `0x${addr[1]}`;
+                }
+            }
+        }
+        return maps;
     }
 
     startBftp(hap: Hap): { pid: number; port: number } {
@@ -244,7 +307,7 @@ export class Hdc {
         );
         for (let line of output.split(NEWLINE)) {
             let matches = line.match(/[\S]+/g);
-            if (matches?.length == 9) {
+            if (matches?.length === 9) {
                 files.push([matches[8], matches[0].startsWith('d')]);
             }
         }
@@ -265,7 +328,7 @@ export class Hdc {
         let output = this.excuteShellCommand('ps -A');
         for (let line of output.split(NEWLINE)) {
             let matches = line.match(/[\S]+/g);
-            if (matches?.length == 4 && matches[3] == name) {
+            if (matches?.length === 4 && matches[3] === name) {
                 this.excuteShellCommand(...['kill', '-9', matches[0]]);
             }
         }
@@ -284,7 +347,7 @@ export class Hdc {
         logger.debug(`hdc excute: ${JSON.stringify(args)}`);
         let result = spawnSync('hdc', args, { encoding: 'utf-8', shell: true });
         logger.debug(`hdc result: ${JSON.stringify(result)}`);
-        if (result.stdout.trim() == '[Fail]ExecuteCommand need connect-key? please confirm a device by help info') {
+        if (result.stdout.trim() === '[Fail]ExecuteCommand need connect-key? please confirm a device by help info') {
             throw new Error(`hdc ${result.stdout}`);
         }
         return result;

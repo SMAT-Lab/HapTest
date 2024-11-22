@@ -55,13 +55,13 @@ export async function buildPointerMetrix(rpc: HypiumRpc, gestures: Gesture[], sp
 function calcGestureSteps(gesture: Gesture, speed: number): number {
     let totalSteps = 0;
     gesture.getSteps().forEach((step, index, steps) => {
-        if (step.type == 'start') {
+        if (step.type === 'start') {
             if (step.interval) {
                 totalSteps += 2;
             } else {
                 totalSteps += 1;
             }
-        } else if (step.type == 'move') {
+        } else if (step.type === 'move') {
             let last = steps[index - 1];
             let distance = Math.sqrt((step.pos.x - last.pos.x) ** 2 + (step.pos.y - last.pos.y) ** 2);
             let timeMs = step.interval;
@@ -69,7 +69,7 @@ function calcGestureSteps(gesture: Gesture, speed: number): number {
                 timeMs = Math.floor(distance / speed * 1000);
             }
             totalSteps += calculateSteps(distance, timeMs, gesture.getSamplingTime());
-        } else if (step.type == 'pause') {
+        } else if (step.type === 'pause') {
             totalSteps += Math.floor(step.interval! / gesture.getSamplingTime()) + 1;
         }
     });
@@ -82,11 +82,11 @@ async function generateGesturePoint(gesture: Gesture, pointerMatrix: PointerMatr
     let steps = gesture.getSteps();
     for (let i = 0; i < steps.length; i++) {
         let step = steps[i];
-        if (step.type == 'start') {
+        if (step.type === 'start') {
             if (step.interval) {
                 await pointerMatrix.setPointInterval(fingerIdx, curPoint, step.pos, step.interval);
                 curPoint++;
-                if (steps.length == 1) {
+                if (steps.length === 1) {
                     await pointerMatrix.setPoint(fingerIdx, curPoint, step.pos);
                     curPoint++;
                 } else {
@@ -97,7 +97,7 @@ async function generateGesturePoint(gesture: Gesture, pointerMatrix: PointerMatr
                 await pointerMatrix.setPoint(fingerIdx, curPoint, step.pos);
                 curPoint++;
             }
-        } else if (step.type == 'move') {
+        } else if (step.type === 'move') {
             let last = steps[i - 1];
             let distance = Math.sqrt((step.pos.x - last.pos.x) ** 2 + (step.pos.y - last.pos.y) ** 2);
             let timeMs = step.interval;
@@ -128,7 +128,7 @@ async function generateGesturePoint(gesture: Gesture, pointerMatrix: PointerMatr
                     curPoint++;
                 }
             }
-        } else if (step.type == 'pause') {
+        } else if (step.type === 'pause') {
             let points = Math.floor(step.interval! / gesture.getSamplingTime());
             for (let i = 0; i < points; i++) {
                 await pointerMatrix.setPointInterval(fingerIdx, curPoint, step.pos, points);

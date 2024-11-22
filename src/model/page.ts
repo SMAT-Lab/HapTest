@@ -128,11 +128,11 @@ export class Page {
     }
 
     isStop(): boolean {
-        return this.getContentSig() == STOP_PAGE.getContentSig();
+        return this.getContentSig() === STOP_PAGE.getContentSig();
     }
 
     isBackground(): boolean {
-        return this.getContentSig() == BACKGROUND_PAGE.getContentSig();
+        return this.getContentSig() === BACKGROUND_PAGE.getContentSig();
     }
 
     isForeground(): boolean {

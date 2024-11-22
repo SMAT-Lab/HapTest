@@ -50,7 +50,7 @@ export class SceneDetect {
         let sig = page.getStructualSig();
         if (!this.matchedPages.has(sig)) {
             let events = this.match(page);
-            if (events.length == 0) {
+            if (events.length === 0) {
                 return undefined;
             }
             this.matchedPages.set(sig, events);
@@ -85,7 +85,7 @@ export class SceneDetect {
                 events.push(EventBuilder.createEventFromJson(event) as UIEvent);
             }
 
-            if (events.length != value.events.length) {
+            if (events.length !== value.events.length) {
                 // not match clear
                 events = [];
             } else {

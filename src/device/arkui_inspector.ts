@@ -48,7 +48,9 @@ export class ArkUIInspector {
             component.bounds = points;
         }
         component.type = node.$type;
-        component.debugLine = node.$debugLine;
+        if (node.$debugLine) {
+            component.debugLine = JSON.parse(node.$debugLine);
+        }
         component.name = node.state?.viewInfo.componentName;
         component.parent = parent;
 
@@ -66,11 +68,11 @@ export class ArkUIInspector {
         let fportls = this.hdc.fportLs();
         fportls.forEach((value) => {
             if (sn) {
-                if (value[0] == sn && value[2].indexOf(`@${bundleName}`) > 0 && value[3] == '[Forward]') {
+                if (value[0] === sn && value[2].indexOf(`@${bundleName}`) > 0 && value[3] === '[Forward]') {
                     this.hdc.fportRm(value[1], value[2]);
                 }
             } else {
-                if (value[2].indexOf(`@${bundleName}`) > 0 && value[3] == '[Forward]') {
+                if (value[2].indexOf(`@${bundleName}`) > 0 && value[3] === '[Forward]') {
                     this.hdc.fportRm(value[1], value[2]);
                 }
             }
@@ -79,7 +81,7 @@ export class ArkUIInspector {
         let port = await hostUnusedPort();
         return new Promise((resolve, reject) => {
             let pid = this.hdc.pidof(bundleName);
-            if (pid == 0) {
+            if (pid === 0) {
                 resolve({ err: 'bundle not running.' });
                 return;
             }
@@ -99,14 +101,14 @@ export class ArkUIInspector {
 
             wss.on('message', (data: WebSocket.RawData) => {
                 let object = JSON.parse(data.toString('utf-8'));
-                if (object.type == 'root') {
+                if (object.type === 'root') {
                     let component = this.buildComponent(object.content);
                     response.layout = new ViewTree(component);
-                } else if (object.type == 'snapShot') {
+                } else if (object.type === 'snapShot') {
                     response.screen = Buffer.from(object.pixelMapBase64, 'base64');
                 }
 
-                if (++idx == 2) {
+                if (++idx === 2) {
                     wss.close();
                 }
             });

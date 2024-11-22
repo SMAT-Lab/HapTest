@@ -35,7 +35,7 @@ export class ReplayPolicy extends Policy {
     }
 
     async generateEvent(page: Page): Promise<Event> {
-        if (this.currentStep == this.steps.length) {
+        if (this.currentStep === this.steps.length) {
             this.stop();
             return new ExitEvent();
         }

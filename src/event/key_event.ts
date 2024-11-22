@@ -46,7 +46,7 @@ export class CombinedKeyEvent extends KeyEvent {
     }
 
     async send(simulator: EventSimulator): Promise<void>  {
-        if (this.keyCode2 == undefined) {
+        if (this.keyCode2 === undefined) {
             await simulator.inputKey(this.keyCode, this.keyCode1, undefined);
         } else {
             await simulator.inputKey(this.keyCode, this.keyCode1, this.keyCode2);

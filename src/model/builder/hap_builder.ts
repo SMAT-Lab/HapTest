@@ -56,7 +56,7 @@ export class HapBuilder {
         hap.reqPermissions = bundleInfo.reqPermissions;
         for (let module of bundleInfo.hapModuleInfos) {
             for (let ability of module.abilityInfos) {
-                if (ability.name.endsWith(module.mainAbility) && module.name == hap.entryModuleName) {
+                if (ability.name.endsWith(module.mainAbility) && module.name === hap.entryModuleName) {
                     hap.mainAbility = ability.name;
                 }
                 if (ability.visible) {
