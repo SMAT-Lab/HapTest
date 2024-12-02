@@ -57,7 +57,7 @@ export class ClientSocket {
                 content = content.toString();
             }
             if (content) {
-                chunks.push(content);
+                chunks.push(content as string);
             }
             try {
                 JSON.parse(chunks.join(''));
