@@ -172,15 +172,16 @@ export class PerfReport {
         for (const sampleInfo of this.sampleInfos) {
             let event = sampleInfo.eventName;
             for (const process of sampleInfo.processes) {
-                if (process.name !== processName && !process.name.startsWith(`${processName}:`)) {
+                if (!process.name.startsWith(processName)) {
                     continue;
                 }
 
                 let data: PerfStatData = { name: process.name, instructions: 0, cycles: 0 };
-                if (resultMaps.has(process.name)) {
-                    data = resultMaps.get(process.name)!;
+                let key = `${process.name}_${process.pid}`;
+                if (resultMaps.has(key)) {
+                    data = resultMaps.get(key)!;
                 } else {
-                    resultMaps.set(process.name, data);
+                    resultMaps.set(key, data);
                 }
 
                 if (CYCLES_EVENT.has(event)) {
@@ -200,7 +201,7 @@ export class PerfReport {
         for (const sampleInfo of this.sampleInfos) {
             let event = sampleInfo.eventName;
             for (const process of sampleInfo.processes) {
-                if (process.name !== processName && !process.name.startsWith(`${processName}:`)) {
+                if (!process.name.startsWith(processName)) {
                     continue;
                 }
 
