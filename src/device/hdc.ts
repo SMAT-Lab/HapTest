@@ -22,12 +22,22 @@ import { getLogger } from 'log4js';
 const logger = getLogger();
 
 export const NEWLINE = /\r\n|\n/;
+const MEMDUMPER = '/data/local/tmp/memdumper';
 
 export class Hdc {
     private connectkey: string | undefined;
 
     constructor(connectkey: string | undefined = undefined) {
         this.connectkey = connectkey;
+        this.initDeviceEnv();
+    }
+
+    private initDeviceEnv(): void {
+        if (!this.hasFile(MEMDUMPER)) {
+            let memdumpFile = path.join(__dirname, '..', '..', 'res/memdumper/memdumper');
+            this.sendFile(memdumpFile, MEMDUMPER);
+            this.excuteShellCommand(`chmod +x ${MEMDUMPER}`);
+        }
     }
 
     sendFile(local: string, remote: string): number {
@@ -217,7 +227,7 @@ export class Hdc {
             idxMap.set(map.file, idx);
             let out = this.excuteShellCommand(
                 ...[
-                    '/data/local/tmp/memdumper',
+                    MEMDUMPER,
                     '-s',
                     map.start,
                     '-n',
