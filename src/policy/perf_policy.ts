@@ -13,14 +13,15 @@
  * limitations under the License.
  */
 
-import { Event } from "../event/event";
-import { BACK_KEY_EVENT, HOME_KEY_EVENT } from "../event/key_event";
-import { AbilityEvent, StopHapEvent } from "../event/system_event";
-import { Page } from "../model/page";
-import { Policy, PolicyFlag } from "./policy";
+import path from 'path';
+import fs from 'fs';
+import { Event } from '../event/event';
+import { BACK_KEY_EVENT, HOME_KEY_EVENT } from '../event/key_event';
+import { AbilityEvent, StopHapEvent } from '../event/system_event';
+import { Page } from '../model/page';
+import { Policy, PolicyFlag } from './policy';
 
 export class PerfPolicy extends Policy {
-
     async generateEvent(page: Page): Promise<Event> {
         if (this.flag === PolicyFlag.FLAG_INIT) {
             if (!page.isStop()) {
@@ -42,9 +43,25 @@ export class PerfPolicy extends Policy {
 
         if (page.isStop() && (this.flag === PolicyFlag.FLAG_INIT || this.flag === PolicyFlag.FLAG_STOP_APP)) {
             this.flag = PolicyFlag.FLAG_START_APP;
+            this.device
+                .getHdc()
+                .hiperfRecord()
+                .then((perfdata) => {
+                    this.writePerfData(perfdata);
+                });
             return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
         }
 
         return HOME_KEY_EVENT;
+    }
+
+    private writePerfData(perfData: string[]) {
+        let perfDir = path.join(this.device.getOutput(), 'perf');
+        if (!fs.existsSync(perfDir)) {
+            fs.mkdirSync(perfDir);
+        }
+        for (const file of perfData) {
+            this.device.getHdc().recvFile(file, path.join(this.device.getOutput(), 'perf', path.basename(file)));
+        }
     }
 }

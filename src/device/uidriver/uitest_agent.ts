@@ -41,7 +41,7 @@ export class UitestAgent {
         }
 
         this.installAgentSo();
-        this.hdc.excuteShellCommand('/system/bin/uitest start-daemon singleness &');
+        this.hdc.excuteShellCommandSync('/system/bin/uitest start-daemon singleness &');
         this.hostPort = await hostUnusedPort();
         this.hdc.fportRm(`tcp:${this.hostPort}`, `tcp:${RPC_PORT}`);
         this.hdc.fport(`tcp:${this.hostPort}`, `tcp:${RPC_PORT}`);
@@ -53,7 +53,7 @@ export class UitestAgent {
             return;
         }
         let hostAgentFile = path.join(__dirname, '..', '..', '..', 'res/uitest/uitest_agent_v1.0.8.so');
-        let archInfo = this.hdc.excuteShellCommand('file /system/bin/uitest');
+        let archInfo = this.hdc.excuteShellCommandSync('file /system/bin/uitest');
         if (archInfo.indexOf('x86_64') > 0) {
             hostAgentFile = path.join(__dirname, '..', '..', '..', 'res/uitest/uitest_agent_v1.0.8.x86_64_so');
         }
@@ -61,7 +61,7 @@ export class UitestAgent {
     }
 
     private isRunning(): boolean {
-        let output = this.hdc.excuteShellCommand(`netstat -anp | grep ${RPC_PORT}`);
+        let output = this.hdc.excuteShellCommandSync(`netstat -anp | grep ${RPC_PORT}`);
         for (let line of output.split(NEWLINE)) {
             let matches = line.match(/[\S]+/g);
             if (matches?.length === 5) {

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { spawnSync, SpawnSyncReturns } from 'child_process';
+import { spawn, spawnSync, SpawnSyncReturns } from 'child_process';
 import path from 'path';
 import { convertStr2RunningState, Hap, HapRunningState } from '../model/hap';
 import { HdcCmdError } from '../error/error';
@@ -36,12 +36,12 @@ export class Hdc {
         if (!this.hasFile(MEMDUMPER)) {
             let memdumpFile = path.join(__dirname, '..', '..', 'res/memdumper/memdumper');
             this.sendFile(memdumpFile, MEMDUMPER);
-            this.excuteShellCommand(`chmod +x ${MEMDUMPER}`);
+            this.excuteShellCommandSync(`chmod +x ${MEMDUMPER}`);
         }
     }
 
     sendFile(local: string, remote: string): number {
-        let output = this.excute('file', 'send', local, remote);
+        let output = this.excuteSync('file', 'send', local, remote);
         if (!output.status) {
             return 0;
         }
@@ -49,7 +49,7 @@ export class Hdc {
     }
 
     recvFile(remote: string, local: string): number {
-        let output = this.excute('file', 'recv', remote, local);
+        let output = this.excuteSync('file', 'recv', remote, local);
         if (!output.status) {
             return 0;
         }
@@ -57,21 +57,21 @@ export class Hdc {
     }
 
     hasFile(remote: string): boolean {
-        let output = this.excuteShellCommand(`ls ${remote}`);
+        let output = this.excuteShellCommandSync(`ls ${remote}`);
         return output.indexOf('No such file') === 0;
     }
 
     mkDir(remote: string): void {
-        this.excuteShellCommand(...['mkdir', '-p', remote]);
+        this.excuteShellCommandSync(...['mkdir', '-p', remote]);
     }
 
     rmDir(remote: string): void {
-        this.excuteShellCommand(...['rm', '-r', remote]);
+        this.excuteShellCommandSync(...['rm', '-r', remote]);
     }
 
     getAllBundleNames(): string[] {
         let bundles: string[] = [];
-        let output = this.excuteShellCommand('bm dump -a');
+        let output = this.excuteShellCommandSync('bm dump -a');
         let matches = output.match(/\t[\S]+/g);
         if (matches) {
             for (let bundle of matches) {
@@ -82,7 +82,7 @@ export class Hdc {
     }
 
     getBundleInfo(bundleName: string): any | undefined {
-        let output = this.excuteShellCommand('bm dump -n', bundleName);
+        let output = this.excuteShellCommandSync('bm dump -n', bundleName);
         if (output.length === 0) {
             return;
         }
@@ -97,7 +97,7 @@ export class Hdc {
 
     fportLs(): Set<string[]> {
         let fports = new Set<string[]>();
-        let output = this.excute('fport', 'ls').stdout;
+        let output = this.excuteSync('fport', 'ls').stdout;
         for (let line of output.split(NEWLINE)) {
             let matches = line.match(/[\S]+/g);
             if (matches && matches.length === 4) {
@@ -108,42 +108,42 @@ export class Hdc {
     }
 
     fportRm(localNode: string, remoteNode: string): void {
-        this.excute('fport', 'rm', localNode, remoteNode);
+        this.excuteSync('fport', 'rm', localNode, remoteNode);
     }
 
     fport(localNode: string, remoteNode: string): void {
-        this.excute('fport', localNode, remoteNode);
+        this.excuteSync('fport', localNode, remoteNode);
     }
 
     pidof(bundleName: string): number {
-        let output = this.excuteShellCommand('pidof', bundleName);
+        let output = this.excuteShellCommandSync('pidof', bundleName);
         let lines = output.split(NEWLINE);
         return Number(lines[0]);
     }
 
     getDeviceUdid(): string {
-        let output = this.excuteShellCommand('bm get -u');
+        let output = this.excuteShellCommandSync('bm get -u');
         let lines = output.split(NEWLINE);
         return lines[1];
     }
 
     getDeviceType(): string {
-        let output = this.excuteShellCommand('param get const.product.devicetype');
+        let output = this.excuteShellCommandSync('param get const.product.devicetype');
         return output.trim();
     }
 
     startAblity(bundleName: string, abilityName: string): boolean {
-        this.excuteShellCommand(...['aa', 'start', '-b', bundleName, '-a', abilityName]);
+        this.excuteShellCommandSync(...['aa', 'start', '-b', bundleName, '-a', abilityName]);
         return true;
     }
 
     forceStop(bundleName: string) {
-        this.excuteShellCommand(...['aa', 'force-stop', bundleName]);
+        this.excuteShellCommandSync(...['aa', 'force-stop', bundleName]);
     }
 
     capScreen(localPath: string): string {
         const outPrefix = 'ScreenCap saved to ';
-        let output = this.excuteShellCommand(...['uitest', 'screenCap']);
+        let output = this.excuteShellCommandSync(...['uitest', 'screenCap']);
         if (!output.startsWith(outPrefix)) {
             logger.error(`Hdc->capScreen parse shell output fail. ${output}`);
             throw new HdcCmdError(`ScreenCap fail. ${output}`);
@@ -151,21 +151,21 @@ export class Hdc {
         let remote = output.substring(outPrefix.length).trim();
         let localFile = path.join(localPath, path.basename(remote));
         this.recvFile(remote, localFile);
-        this.excuteShellCommand(...['rm', remote]);
+        this.excuteShellCommandSync(...['rm', remote]);
         return localFile;
     }
 
     wakeupScreen(): void {
-        this.excuteShellCommand(...['power-shell', 'wakeup']);
+        this.excuteShellCommandSync(...['power-shell', 'wakeup']);
     }
 
     installHap(hap: string): void {
-        this.excute(...['install', '-r', hap]);
+        this.excuteSync(...['install', '-r', hap]);
     }
 
     getRunningProcess(): Map<string, HapRunningState> {
         let process: Map<string, HapRunningState> = new Map();
-        let output = this.excuteShellCommand(...['aa', 'dump', '-a']);
+        let output = this.excuteShellCommandSync(...['aa', 'dump', '-a']);
         let bundleName = '';
         for (let line of output.split(NEWLINE)) {
             let matches = line.match(/process name \[([a-zA-Z.0-9:]+)\]/);
@@ -181,7 +181,7 @@ export class Hdc {
     }
 
     aaDumpMission(): void {
-        this.excuteShellCommand(...['aa', 'dump', '-c', '-l']);
+        this.excuteShellCommandSync(...['aa', 'dump', '-c', '-l']);
     }
 
     mkLocalCovDir(): void {
@@ -194,7 +194,7 @@ export class Hdc {
 
     netstatInfo(): Map<number, { pid: number; program: string }> {
         let info: Map<number, { pid: number; program: string }> = new Map();
-        let output = this.excuteShellCommand(...['netstat', '-antulp']);
+        let output = this.excuteShellCommandSync(...['netstat', '-antulp']);
         for (let line of output.split(NEWLINE)) {
             if (line.startsWith('tcp') || line.startsWith('udp')) {
                 let matches = line.match(/[\S]+/g);
@@ -225,7 +225,7 @@ export class Hdc {
                 idx = idxMap.get(map.file)! + 1;
             }
             idxMap.set(map.file, idx);
-            let out = this.excuteShellCommand(
+            let out = this.excuteShellCommandSync(
                 ...[
                     MEMDUMPER,
                     '-s',
@@ -250,7 +250,7 @@ export class Hdc {
         let maps: { start: string; end: string; file: string }[] = [];
         let cmd = `cat /proc/${pid}/maps`;
 
-        let output = this.excuteShellCommand(cmd);
+        let output = this.excuteShellCommandSync(cmd);
         for (let line of output.split(NEWLINE)) {
             let matches = line.match(/[\S]+/g);
             if (matches?.length === 6) {
@@ -281,7 +281,7 @@ export class Hdc {
                 break;
             }
         }
-        this.excuteShellCommand(
+        this.excuteShellCommandSync(
             ...[
                 'aa',
                 'process',
@@ -302,14 +302,14 @@ export class Hdc {
     }
 
     stopBftp(hap: Hap, pid: number): void {
-        this.excuteShellCommand(
+        this.excuteShellCommandSync(
             ...['aa', 'process', '-b', hap.bundleName, '-a', hap.mainAbility, '-p', `"kill -9 ${pid}"`]
         );
     }
 
     listSandboxFile(port: number, direct: string): [string, boolean][] {
         let files: [string, boolean][] = [];
-        let output = this.excuteShellCommand(
+        let output = this.excuteShellCommandSync(
             ...[
                 'ftpget',
                 '-p',
@@ -338,25 +338,37 @@ export class Hdc {
         let ftpGetCmd = [...ftpCmd, '-g', local, `/data/storage/el2/base/${sandboxFile}`];
         let ftpRmCmd = [...ftpCmd, '-d', `/data/storage/el2/base/${sandboxFile}`];
 
-        this.excuteShellCommand(...ftpGetCmd);
-        this.excuteShellCommand(...ftpRmCmd);
+        this.excuteShellCommandSync(...ftpGetCmd);
+        this.excuteShellCommandSync(...ftpRmCmd);
     }
 
     kill(name: string): void {
-        let output = this.excuteShellCommand('ps -A');
+        let output = this.excuteShellCommandSync('ps -A');
         for (let line of output.split(NEWLINE)) {
             let matches = line.match(/[\S]+/g);
             if (matches?.length === 4 && matches[3] === name) {
-                this.excuteShellCommand(...['kill', '-9', matches[0]]);
+                this.excuteShellCommandSync(...['kill', '-9', matches[0]]);
             }
         }
     }
 
-    excuteShellCommand(...args: string[]): string {
-        return this.excute('shell', ...args).stdout;
+    async hiperfRecord(): Promise<string[]> {
+        let name = `perf_${new Date().getTime()}`;
+        let perfDataName = `/data/local/tmp/${name}.data`;
+        await this.excuteShellCommand(
+            `hiperf record -o ${perfDataName} -d 3 --pipe_input 137 --pipe_output 180 -f 100 --call-stack dwarf --cpu-limit 100 -a -e hw-instructions,hw-cpu-cycles`
+        );
+        let perfJsonName = `/data/local/tmp/${name}.json`;
+        this.excuteShellCommandSync(`hiperf report -i ${perfDataName} --json -o ${perfJsonName}`);
+
+        return [perfDataName, perfJsonName];
     }
 
-    excute(command: string, ...params: string[]): SpawnSyncReturns<string> {
+    excuteShellCommandSync(...args: string[]): string {
+        return this.excuteSync('shell', ...args).stdout;
+    }
+
+    excuteSync(command: string, ...params: string[]): SpawnSyncReturns<string> {
         let args: string[] = [];
         if (this.connectkey) {
             args.push(...['-t', this.connectkey]);
@@ -369,5 +381,40 @@ export class Hdc {
             throw new Error(`hdc ${result.stdout}`);
         }
         return result;
+    }
+
+    async excuteShellCommand(...args: string[]): Promise<string> {
+        return this.excute('shell', ...args);
+    }
+
+    async excute(command: string, ...params: string[]): Promise<string> {
+        return new Promise((resolve) => {
+            let args: string[] = [];
+            if (this.connectkey) {
+                args.push(...['-t', this.connectkey]);
+            }
+            args.push(...[command, ...params]);
+            logger.debug(`hdc excute: ${JSON.stringify(args)}`);
+            let hdcProcess = spawn('hdc', args, { shell: true });
+
+            hdcProcess.stdout.on('data', (data) => {
+                logger.debug(`hdc result: ${data.toString()}`);
+                if (data.toString() === '[Fail]ExecuteCommand need connect-key? please confirm a device by help info') {
+                    throw new Error(`hdc ${data.toString()}`);
+                }
+                resolve(data.toString());
+            });
+
+            hdcProcess.stderr.on('data', (data) => {
+                logger.debug(`hdc stderr: ${data.toString()}`);
+                resolve(data.toString());
+            });
+
+            hdcProcess.on('close', (code) => {
+                if (code !== 0) {
+                    logger.debug(`hdc process exited with code ${code}`);
+                }
+            });
+        });
     }
 }

@@ -89,7 +89,7 @@ export class UIRecord {
     }
 
     private readUiRecord(): Event | undefined {
-        let output = this.hdc.excuteShellCommand(...['uitest', 'uiRecord', 'read']);
+        let output = this.hdc.excuteShellCommandSync(...['uitest', 'uiRecord', 'read']);
         let line = output.split(NEWLINE)[0];
         logger.debug(line);
         let event = this.parseEvent(line);

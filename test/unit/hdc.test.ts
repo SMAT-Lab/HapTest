@@ -25,7 +25,7 @@ describe('hdc Test', async () => {
         const MOCK_SHELL_OUTPUT_GetForegroundProcess = fs.readFileSync(path.join(__dirname, '../resource/aa_dump.txt'), {
             encoding: 'utf-8',
         });
-        hdc.excuteShellCommand = vi.fn().mockReturnValueOnce(MOCK_SHELL_OUTPUT_GetForegroundProcess);
+        hdc.excuteShellCommandSync = vi.fn().mockReturnValueOnce(MOCK_SHELL_OUTPUT_GetForegroundProcess);
         let process = hdc.getRunningProcess();
         expect(process.has('com.huawei.hmsapp.himovie')).eq(true);
     });
@@ -34,7 +34,7 @@ describe('hdc Test', async () => {
         const MOCK_SHELL_OUTPUT_Netstat = fs.readFileSync(path.join(__dirname, '../resource/netstat.txt'), {
             encoding: 'utf-8',
         });
-        hdc.excuteShellCommand = vi.fn().mockReturnValue(MOCK_SHELL_OUTPUT_Netstat);
+        hdc.excuteShellCommandSync = vi.fn().mockReturnValue(MOCK_SHELL_OUTPUT_Netstat);
         let info = hdc.netstatInfo();
         expect(info.has(60000)).eq(true);
     });
@@ -44,7 +44,7 @@ describe('hdc Test', async () => {
             encoding: 'utf-8',
         });
 
-        hdc.excuteShellCommand = vi.fn().mockReturnValue(MOCK_SHELL_OUTPUT_PROCMAPS);
+        hdc.excuteShellCommandSync = vi.fn().mockReturnValue(MOCK_SHELL_OUTPUT_PROCMAPS);
         let maps = hdc.getProcMaps(1000, /^\/system\/app\/[\S]*[.hap|.hsp]$/);
         expect(maps.length).eq(1);
     });
