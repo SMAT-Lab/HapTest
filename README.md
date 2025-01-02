@@ -52,6 +52,11 @@ haptest -i com.huawei.hmos.photos -o out
 haptest -i {Hap project root } --policy greedy_dfs -o out
 ```
 
+### 4. Run Hap & dump mem
+```
+haptest --policy perf_start_hap -i ALL --exclude com.huawei.* com.ohos.* -o out
+```
+
 ## Contribution
 
 1.  Fork the repository

@@ -481,10 +481,16 @@ export class Device implements EventSimulator {
 
     dumpHap(hap: Hap): void {
         this.hdc.recvFile(`/data/app/el1/bundle/public/${hap.bundleName}`, this.options.output);
+        const pid = this.hdc.pidof(hap.bundleName);
+        let files = new Set(this.hdc.getProcMaps(pid, /[\S]*\.h[as]{1}p$/).map((value) => value.file));
+        for (const file of files) {
+            this.hdc.recvFile(file, path.join(this.options.output, hap.bundleName));
+        }
+
         let remote = `/data/local/tmp/${hap.bundleName}_decrypt`;
         this.hdc.mkDir(remote);
-        const pid = this.hdc.pidof(hap.bundleName);
-        this.hdc.memdump(pid, remote, /^\/data\/storage\/el1\/bundle\/[\S]*[.hap|.hsp]$/);
+        
+        this.hdc.memdump(pid, remote, /[\S]*\.h[as]{1}p$/);
         this.hdc.recvFile(remote, `${this.options.output}/${hap.bundleName}/decrypt`);
         this.hdc.rmDir(remote);
     }
