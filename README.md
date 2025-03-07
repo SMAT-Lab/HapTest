@@ -22,8 +22,17 @@ npm pack
 ## Instructions
 
 ### 1. Usage 
+To run HapTest, use one of the following methods:
+
+Using npx (Recommended):
 ```
-haptest [options]
+npx haptest [options]
+```
+
+Or using Node.js:
+```
+node bin/haptest [options]
+```
 
 Options:
   -V, --version                          output the version number
@@ -33,7 +42,6 @@ Options:
   -t --target [connectkey]               hdc connectkey
   -c --coverage                          enable coverage (default: false)
   -h, --help                             display help for command
-```
 
 ### 2. Using DevEco simulator to run HAP  
 
