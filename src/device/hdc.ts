@@ -231,7 +231,7 @@ export class Hdc {
                     '-s',
                     map.start,
                     '-n',
-                    `${idx}_${path.basename(map.file)}`,
+                    `${idx}_${path.basename(map.file)}.abc`,
                     '-o',
                     remoteOutput,
                     '-f',
@@ -356,7 +356,7 @@ export class Hdc {
         let name = `perf_${new Date().getTime()}`;
         let perfDataName = `/data/local/tmp/${name}.data`;
         await this.excuteShellCommand(
-            `hiperf record -o ${perfDataName} -d 3 --pipe_input 137 --pipe_output 180 -f 100 --call-stack dwarf --cpu-limit 100 -a -e hw-instructions,hw-cpu-cycles`
+            `hiperf record -o ${perfDataName} -d 3 --pipe_input 137 --pipe_output 180 -f 1000 --call-stack dwarf --kernel-callchain --enable-debuginfo-symbolic --clockid boottime --cpu-limit 100 -a -e raw-instruction-retired`
         );
         let perfJsonName = `/data/local/tmp/${name}.json`;
         this.excuteShellCommandSync(`hiperf report -i ${perfDataName} --json -o ${perfJsonName}`);

@@ -24,7 +24,9 @@ import { Policy, PolicyFlag } from './policy';
 export class PerfPolicy extends Policy {
     async generateEvent(page: Page): Promise<Event> {
         if (this.flag === PolicyFlag.FLAG_INIT) {
-            if (!page.isStop()) {
+            if (this.hap.bundleName === 'com.ohos.sceneboard') {
+                this.flag = PolicyFlag.FLAG_START_APP;
+            } else if (!page.isStop()) {
                 this.flag = PolicyFlag.FLAG_STOP_APP;
                 return new StopHapEvent(this.hap.bundleName);
             }

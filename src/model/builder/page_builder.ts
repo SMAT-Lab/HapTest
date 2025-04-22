@@ -83,6 +83,10 @@ export class PageBuilder {
             return value;
         });
 
+        if (layout === null) {
+            return [];
+        }
+
         let pages: Page[] = [];
         for (let child of layout.children) {
             pages.push(
@@ -97,7 +101,7 @@ export class PageBuilder {
 
         return pages;
     }
-    
+
     static buildPagesFromDumpLayoutFile(layoutFile: string): Page[] {
         return this.buildPagesFromJson(fs.readFileSync(layoutFile, 'utf-8'));
     }

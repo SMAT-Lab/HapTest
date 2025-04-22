@@ -28,7 +28,7 @@ const REQUIRED_HOST_TOOLS: Map<string, (string | boolean)[]> = new Map([
         'dot',
         [
             "Make sure the Graphviz executables are on your systems PATH, If you don't have it, you can download and install it from https://graphviz.org/download/.",
-            true,
+            false,
         ],
     ],
     ['java', ['Please add java to your systems PATH.', false]],
@@ -73,13 +73,13 @@ export class EnvChecker {
         let passed = true;
         for (const [key, [msg, option]] of REQUIRED_HOST_TOOLS) {
             try {
-                if (option || needCompile) {
-                    which(key);
-                }
+                which(key);
             } catch (error) {
                 if (error instanceof FileNotFoundError) {
                     logger.error(msg);
-                    passed = false;
+                    if (option || needCompile) {
+                        passed = false;
+                    }
                 }
             }
         }

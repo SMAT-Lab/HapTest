@@ -267,9 +267,12 @@ export class PTG {
             }
         }
 
-        const dot = toDot(dotGraph);
-        fs.writeFileSync(path.join(output, 'ptg.dot'), dot);
-        // await toFile(dot, path.join(output, 'ptg.svg'), { format: 'svg' });
+        try {
+            const dot = toDot(dotGraph);
+            fs.writeFileSync(path.join(output, 'ptg.dot'), dot);
+        } catch(error) {
+            
+        }
     }
 
     private addNode(page: Page) {
