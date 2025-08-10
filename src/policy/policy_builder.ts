@@ -23,8 +23,13 @@ import { PtgGreedySearchPolicy } from './ptg_greedy_search_policy';
 import { PtgNaiveSearchPolicy } from './ptg_naive_search_policy';
 import { PtgRandomSearchPolicy } from './ptg_random_search_policy';
 import { PerfPolicy } from './perf_policy';
+import { LLMGuidedPolicy } from './llm_guided_policy';
+import { PTG } from '../model/ptg';
 
 export class PolicyBuilder {
+    static buildLLMPolicy(device: Device, hap: Hap, options: FuzzOptions, ptg: PTG): LLMGuidedPolicy {
+        return new LLMGuidedPolicy(device, hap, PolicyName.LLM_GUIDED, ptg);
+    }
     static buildPolicyByName(device: Device, hap: Hap, options: FuzzOptions): Policy {
         if (options.policyName === PolicyName.MANUAL) {
             return new ManualPolicy(device, hap, PolicyName.MANUAL);

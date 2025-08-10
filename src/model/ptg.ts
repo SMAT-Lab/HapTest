@@ -47,6 +47,7 @@ export class PTG {
     private effectiveEvent: Set<string>;
     private exploredPage: Set<string>;
     private reachedPage: Set<string>;
+    private exploredAbility: Set<string>; //xmq
     private firstPage?: Page;
     private stopEvent: StopHapEvent;
     private stopPage?: Page;
@@ -61,7 +62,7 @@ export class PTG {
         this.ineffectiveEvent = new Set();
         this.effectiveEvent = new Set();
         this.exploredPage = new Set();
-
+        this.exploredAbility = new Set();
         this.reachedPage = new Set();
         this.stopEvent = new StopHapEvent(this.hap.bundleName);
     }
@@ -175,6 +176,14 @@ export class PTG {
 
         this.exploredPage.add(page.getContentSig());
         return true;
+    }
+
+    isAbilityExplored(abilityName: string): boolean {
+        if (this.exploredAbility.has(abilityName)){
+            return true;
+        }
+        this.exploredAbility.add(abilityName);
+        return false;
     }
 
     isPageReached(page: Page): boolean {
@@ -295,5 +304,9 @@ export class PTG {
             this.pageStructualGraph.getNodeAttributes(page.getStructualSig()).push(page);
         }
         // reached ability
+    }
+
+    getExploredAbilities(): string[] {
+        return Array.from(this.exploredAbility);
     }
 }

@@ -37,6 +37,10 @@ export abstract class UIEvent extends Event {
         }
     }
 
+    getEventType(): string {
+        return this.type;
+    }
+
     setComponent(component: Component) {
         this.component = component;
     }
@@ -51,6 +55,7 @@ export abstract class UIEvent extends Event {
         }
         return undefined;
     }
+
 }
 
 export class TouchEvent extends UIEvent {
@@ -141,6 +146,10 @@ export class InputTextEvent extends UIEvent {
 
     getText(): string {
         return this.text;
+    }
+
+    setText(text: string): void {
+        this.text = text;
     }
 }
 
