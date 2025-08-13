@@ -36,6 +36,8 @@ const logger = getLogger();
         .option('--report [report root]', 'report root')
         .option('--debug', 'debug log level', false)
         .option('--exclude [excludes...]', 'exclude bundle name')
+        .option('--llm', 'start llm policy', false)
+        .option('--simK <number>', '', '8')
         .parse();
     let options = program.opts();
     let logLevel = LOG_LEVEL.INFO;
@@ -52,7 +54,9 @@ const logger = getLogger();
         output: options.output,
         coverage: options.coverage,
         reportRoot: options.report,
-        excludes: options.exclude
+        excludes: options.exclude,
+        llm: options.llm,
+        simK: options.simK
     };
     let envChecker = new EnvChecker(fuzzOption);
     envChecker.check();

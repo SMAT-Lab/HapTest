@@ -21,8 +21,13 @@ import { Policy } from '../policy/policy';
 import { PolicyBuilder } from '../policy/policy_builder';
 import { EventAction } from './event_action';
 import { FuzzOptions } from './fuzz_options';
+import { UITarpitDetector} from '../utils/ui_tarpit_detector'
+import { PTGPolicy } from '../policy/ptg_policy';
+import { WaitEvent } from '../event/wait_event';
+import { LLMGuidedPolicy } from '../policy/llm_guided_policy';
 
 const EVENT_INTERVAL = 1000;
+const MAX_TRY_COUNT = 10; 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export class RunnerManager {
@@ -31,6 +36,8 @@ export class RunnerManager {
     protected options: FuzzOptions;
     protected policy: Policy;
     protected enabled: boolean;
+    protected llmPolicy: LLMGuidedPolicy | undefined;
+    protected detector: UITarpitDetector | undefined;
 
     constructor(device: Device, hap: Hap, options: FuzzOptions) {
         this.device = device;
@@ -38,12 +45,65 @@ export class RunnerManager {
         this.options = options;
         this.enabled = true;
         this.policy = PolicyBuilder.buildPolicyByName(device, hap, options);
+    
+        // New logic: If the --llm option is true, create the LLM policy
+        // and enable UI tarpit detection
+        const llmEnabled = this.options.llm;
+
+        if (!llmEnabled) {
+            return; // LLM option is not enabled, return directly
+        }
+    
+         // If the LLM option is enabled, ensure the policy is based on PTGPolicy
+        if (!(this.policy instanceof PTGPolicy)) {
+            throw new Error("Current policy is not based on PTGPolicy");
+        }
+    
+        const ptg = (this.policy as PTGPolicy).getPTG();
+    
+        this.llmPolicy = PolicyBuilder.buildLLMPolicy(device, hap, options, ptg);
+        this.detector = new UITarpitDetector(this.options.simK);
     }
 
     async start() {
+        if ( this.options.llm){
+           await this.startWithLLM();
+            return;
+        }
+
         let page = await this.device.getCurrentPage(this.hap);
-        while (this.enabled && this.policy.enabled) {
+        while (this.enabled && this.policy.enabled) {     
             let event = await this.policy.generateEvent(page);
+            page = await this.addEvent(page, event);
+        }
+    }
+
+    async startWithLLM() {
+        let page = await this.device.getCurrentPage(this.hap);
+        let lastPage = page;
+        let event : Event;    
+        let isTarpit = false;
+        while (this.enabled && this.policy.enabled) {
+
+            isTarpit = await this.detector!.detectedUITarpit(lastPage.getSnapshot()?.screenCapPath, page.getSnapshot()?.screenCapPath)
+            
+            if(isTarpit && this.detector!.getSimCount() < MAX_TRY_COUNT){
+                event = await this.llmPolicy!.generateEvent(page);
+            }else if(isTarpit && this.detector!.getSimCount() >= MAX_TRY_COUNT){
+                event = await this.llmPolicy!.getBackEvent();
+                this.detector!.resetSimCount();
+
+            }
+            else{
+                event = await this.policy.generateEvent(page);
+                this.llmPolicy!.clearActionHistory();
+            }  
+
+            if (event instanceof WaitEvent) {
+                await new Promise(r => setTimeout(r, 1500)); // wait for 1.5s
+                continue;
+            }
+            lastPage = page;
             page = await this.addEvent(page, event);
         }
     }

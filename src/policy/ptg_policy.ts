@@ -23,7 +23,7 @@ import { Policy, PolicyFlag, PolicyName } from './policy';
 import { SceneDetect } from './scene_detect';
 import { PTG } from '../model/ptg';
 
-export const MAX_NUM_RESTARTS = 5;
+export const MAX_NUM_RESTARTS = 10;
 export abstract class PTGPolicy extends Policy {
     protected retryCount: number;
     protected randomInput: boolean;
@@ -88,6 +88,10 @@ export abstract class PTGPolicy extends Policy {
             this.ptg.addTransitionToStop(this.currentPage);
             this.ptg.dumpSvg(this.device.getOutput(), 'http://localhost:3001');
         }
+    }
+
+    getPTG(): PTG {
+        return this.ptg;
     }
 
     abstract generateEventBasedOnPtg(): Event;

@@ -8,3 +8,4 @@ package-lock.json
 *.tgz
 out/
 out[0-9]*/
+haps/

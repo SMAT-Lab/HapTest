@@ -33,10 +33,12 @@ export enum PolicyName {
     DFS_GREEDY = 'greedy_dfs',
     BFS_GREEDY = 'greedy_bfs',
     RANDOM = 'random',
-    PERF_START_HAP = 'perf_start_hap'
+    PERF_START_HAP = 'perf_start_hap',
+    LLM_GUIDED = 'llm_guided',
 }
 
 export abstract class Policy {
+
     protected device: Device;
     protected hap: Hap;
     protected _enabled: boolean;
