@@ -69,7 +69,7 @@ export class Device implements EventSimulator {
         // install hap
         this.installHap(hap);
         if (this.options.coverage) {
-            this.coverage = new Coverage(this, hap);
+            this.coverage = new Coverage(this, hap, this.options.sourceRoot!);
             this.coverage.startBftp();
         }
 
