@@ -493,5 +493,6 @@ export class Device implements EventSimulator {
         this.hdc.memdump(pid, remote, /[\S]*\.h[as]{1}p$/);
         this.hdc.recvFile(remote, `${this.options.output}/${hap.bundleName}/decrypt`);
         this.hdc.rmDir(remote);
+        fs.renameSync(path.join(this.options.output, hap.bundleName), path.join(this.options.output, `${hap.bundleName}@${hap.versionName}`))
     }
 }

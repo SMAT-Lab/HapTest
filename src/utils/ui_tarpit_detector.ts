@@ -1,6 +1,6 @@
-import { getLogger } from "log4js";
-import { UIEvent } from "../event/ui_event";
-import { imageHash } from "image-hash";
+import { getLogger } from 'log4js';
+import { UIEvent } from '../event/ui_event';
+import { imageHash } from 'image-hash';
 
 const logger = getLogger();
 
@@ -14,9 +14,7 @@ class Tarpit {
         public visitedTimes: number = 0,
         public actions: any[] = [], // Actions taken in this tarpit
         public readonly name: string = `tarpit_${id}`
-    ) { 
-
-    }
+    ) {}
 
     getTarpitName(): string {
         return this.name;
@@ -38,7 +36,7 @@ class Tarpit {
         return this.actions;
     }
 
-    clearTarpitActions():void {
+    clearTarpitActions(): void {
         this.actions = [];
     }
 }
@@ -49,12 +47,11 @@ export class UITarpitDetector {
     private tarpitList: Tarpit[] = [];
     private targetTarpit: Tarpit | null = null;
 
-
     constructor(simK: number) {
         this.simK = simK;
     }
 
-    getSimCount(): number{
+    getSimCount(): number {
         return this.simCount;
     }
 
@@ -88,8 +85,8 @@ export class UITarpitDetector {
         return this.simCount >= this.simK;
     }
 
-    stuckInTarpit():boolean{
-        return this.simCount>this.simK;
+    stuckInTarpit(): boolean {
+        return this.simCount > this.simK;
     }
 
     printUiTarpits(): void {
@@ -113,10 +110,7 @@ export class UITarpitDetector {
     }
 
     async addNewTarpit(screenshotPath: string): Promise<void> {
-        this.targetTarpit = new Tarpit(
-            this.tarpitList.length,
-            screenshotPath
-        );
+        this.targetTarpit = new Tarpit(this.tarpitList.length, screenshotPath);
 
         this.targetTarpit.addVisitedTimes();
         this.tarpitList.push(this.targetTarpit);
@@ -131,20 +125,19 @@ export class UITarpitDetector {
     // Calculate the dhash of an image
     dhash(imagePath: string, hashSize: number = 8): Promise<string> {
         return new Promise((resolve, reject) => {
-          imageHash(imagePath, hashSize, 'dhash', (error: Error | null, data: string) => {
-            if (error) reject(error);
-            else resolve(data);
-          });
+            imageHash(imagePath, hashSize, 'dhash', (error: Error | null, data: string) => {
+                if (error) reject(error);
+                else resolve(data);
+            });
         });
-      }
-      
+    }
 
     // Calculate the Hamming distance between two hash strings (character level)
     private hammingDistance(hash1: string, hash2: string): number {
         let dist = 0;
         const len = Math.min(hash1.length, hash2.length);
         for (let i = 0; i < len; i++) {
-        if (hash1[i] !== hash2[i]) dist++;
+            if (hash1[i] !== hash2[i]) dist++;
         }
         dist += Math.abs(hash1.length - hash2.length);
         return dist;
@@ -163,5 +156,4 @@ export class UITarpitDetector {
             return 0;
         }
     }
-
 }

@@ -44,8 +44,6 @@ const logger = getLogger();
     if (options.debug) {
         logLevel = LOG_LEVEL.DEBUG;
     }
-    HapTestLogger.configure('haptest.log', logLevel);
-    logger.info(`haptest start by args ${JSON.stringify(options)}.`);
 
     let fuzzOption: FuzzOptions = {
         connectkey: options.target,
@@ -58,6 +56,10 @@ const logger = getLogger();
         llm: options.llm,
         simK: options.simK
     };
+    
+    HapTestLogger.configure(path.join(options.output, 'haptest.log'), logLevel);
+    logger.info(`haptest start by args ${JSON.stringify(options)}.`);
+
     let envChecker = new EnvChecker(fuzzOption);
     envChecker.check();
 
