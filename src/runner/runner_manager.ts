@@ -46,15 +46,15 @@ export class RunnerManager {
         this.enabled = true;
         this.policy = PolicyBuilder.buildPolicyByName(device, hap, options);
     
-        // New logic: If the --llm option is true, create the LLM policy
-        // and enable UI tarpit detection
+        // 新增逻辑：如果 --llm 选项为 true，则创建 LLM 策略
+        // 并开启UI陷阱检测
         const llmEnabled = this.options.llm;
 
         if (!llmEnabled) {
-            return; // LLM option is not enabled, return directly
+            return; // LLM 选项没开，直接返回
         }
     
-         // If the LLM option is enabled, ensure the policy is based on PTGPolicy
+        // LLM 选项开启，确保策略基于 PTGPolicy
         if (!(this.policy instanceof PTGPolicy)) {
             throw new Error("Current policy is not based on PTGPolicy");
         }
@@ -74,6 +74,10 @@ export class RunnerManager {
         let page = await this.device.getCurrentPage(this.hap);
         while (this.enabled && this.policy.enabled) {     
             let event = await this.policy.generateEvent(page);
+            if (event instanceof WaitEvent) {
+                await new Promise(r => setTimeout(r, 1500)); // 等待异步完成
+                continue;
+            }
             page = await this.addEvent(page, event);
         }
     }
@@ -100,7 +104,7 @@ export class RunnerManager {
             }  
 
             if (event instanceof WaitEvent) {
-                await new Promise(r => setTimeout(r, 1500)); // wait for 1.5s
+                await new Promise(r => setTimeout(r, 1500)); // 等待异步完成
                 continue;
             }
             lastPage = page;

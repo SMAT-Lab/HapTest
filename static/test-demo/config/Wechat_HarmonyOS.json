@@ -1,0 +1,16 @@
+{
+    "targetProjectName": "Wechat_HarmonyOS",
+    "targetProjectDirectory": "./projects/Wechat_HarmonyOS",
+    "sdks": [
+        {
+            "name": "etsSdk",
+            "path": "ets",
+            "moduleName": ""
+        }
+    ],
+
+    "options": {
+        "enableLeadingComments": true
+    }
+}
+

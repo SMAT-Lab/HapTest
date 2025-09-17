@@ -151,4 +151,29 @@ export class EventBuilder {
             this.randomText.push(RandomUtils.genRandomString(len));
         }
     }
+
+    static createEventFromNode(node: any): Event |undefined{
+        let eventType = node.call_back_method;
+        console.info(`解析事件类型: ${eventType}`);
+        console.info(`解析节点: ${JSON.stringify(node)}`);
+        let component = SerializeUtils.deserialize(Component, node);
+        console.info(`解析组件: ${JSON.stringify(component)}`);
+        if(eventType.includes("onClick")){
+            eventType = "onClick";  
+            console.info(`标准化事件类型为: ${eventType}`);
+        } else if(eventType.includes("onTouch")){
+            eventType = "onTouch";
+        }
+        switch (eventType) {
+            case 'onClick': 
+            case 'onTouch':  
+                console.info(`组件 bounds: ${JSON.stringify(component.bounds)}, type: ${typeof component.bounds}`);
+                let point = component.getCenterPoint();
+                console.info(`生成 TouchEvent，坐标: (${point.x}, ${point.y})`);
+                return new TouchEvent(point);
+            default:
+                // throw new Error(`Unsupported event type: ${eventType}`);
+                return undefined;
+        }
+    }
 }
