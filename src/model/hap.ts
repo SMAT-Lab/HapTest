@@ -16,6 +16,7 @@
 export class Hap {
     private _bundleName: string;
     private _versionCode: number;
+    private _versionName: string;
     private _entryModuleName: string;
     private _mainAbility: string;
     private _ablities: string[];
@@ -26,6 +27,7 @@ export class Hap {
         this._ablities = [];
         this._bundleName = '';
         this._versionCode = 0;
+        this._versionName = '';
         this._entryModuleName = '';
         this._mainAbility = '';
         this._hapFile = '';
@@ -46,6 +48,14 @@ export class Hap {
 
     public set versionCode(versionCode: number) {
         this._versionCode = versionCode;
+    }
+
+    public get versionName(): string {
+        return this._versionName;
+    }
+
+    public set versionName(_versionName: string) {
+        this._versionName = _versionName;
     }
 
     public get mainAbility(): string {

@@ -31,10 +31,12 @@ export class Coverage {
     hap: Hap;
     last?: CoverageReport;
     private device: Device;
+    sourceRoot: string;
 
-    constructor(device: Device, hap: Hap) {
+    constructor(device: Device, hap: Hap, sourceRoot: string) {
         this.device = device;
         this.hap = hap;
+        this.sourceRoot = sourceRoot;
     }
 
     startBftp(): void {
@@ -109,7 +111,7 @@ export class Coverage {
     }
 
     parseCovFile(cov: string): CoverageReport {
-        let report = new Report(cov);
+        let report = new Report(cov, this.sourceRoot);
         report.writeReport(path.join(this.device.getOutput(), 'cov-report'));
         return report.generateReport();
     }

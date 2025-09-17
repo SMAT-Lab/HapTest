@@ -69,7 +69,7 @@ export class Device implements EventSimulator {
         // install hap
         this.installHap(hap);
         if (this.options.coverage) {
-            this.coverage = new Coverage(this, hap);
+            this.coverage = new Coverage(this, hap, this.options.sourceRoot!);
             this.coverage.startBftp();
         }
 
@@ -493,5 +493,6 @@ export class Device implements EventSimulator {
         this.hdc.memdump(pid, remote, /[\S]*\.h[as]{1}p$/);
         this.hdc.recvFile(remote, `${this.options.output}/${hap.bundleName}/decrypt`);
         this.hdc.rmDir(remote);
+        fs.renameSync(path.join(this.options.output, hap.bundleName), path.join(this.options.output, `${hap.bundleName}@${hap.versionName}`))
     }
 }

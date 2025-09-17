@@ -35,6 +35,7 @@ export class HapBuilder {
             hap.hapFile = hapFile;
             hap.bundleName = info.summary.app.bundleName;
             hap.versionCode = info.summary.app.version.code;
+            hap.versionName = info.summary.app.version.name;
             return hap;
         } catch (err) {
             logger.error(`HapBuilder->buildFromHapFile HAP ${hapFile} not found 'pack.info'.`);
@@ -53,6 +54,7 @@ export class HapBuilder {
         hap.bundleName = bundleInfo.applicationInfo.bundleName;
         hap.entryModuleName = bundleInfo.entryModuleName;
         hap.versionCode = bundleInfo.versionCode;
+        hap.versionName = bundleInfo.versionName;
         hap.reqPermissions = bundleInfo.reqPermissions;
         for (let module of bundleInfo.hapModuleInfos) {
             for (let ability of module.abilityInfos) {
