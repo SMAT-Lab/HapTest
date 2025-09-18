@@ -25,6 +25,7 @@ import { PtgRandomSearchPolicy } from './ptg_random_search_policy';
 import { PerfPolicy } from './perf_policy';
 import { LLMGuidedPolicy } from './llm_guided_policy';
 import { PTG } from '../model/ptg';
+import { StaticGuidedPolicy } from './static_guided_policy';
 
 export class PolicyBuilder {
     static buildLLMPolicy(device: Device, hap: Hap, options: FuzzOptions, ptg: PTG): LLMGuidedPolicy {
@@ -43,7 +44,11 @@ export class PolicyBuilder {
             return new PtgRandomSearchPolicy(device, hap, PolicyName.RANDOM);
         } else if (options.policyName === PolicyName.PERF_START_HAP) {
             return new PerfPolicy(device, hap, PolicyName.PERF_START_HAP);
-        } else {
+        }  else if (options.policyName === PolicyName.STATIC_GUIDED) {
+            // 静态引导策略实际上是基于PTG的，因此这里复用PTG的类
+            return new StaticGuidedPolicy(device, hap, PolicyName.STATIC_GUIDED, options.staticConfig!);
+        }
+        else {
             return new PtgNaiveSearchPolicy(device, hap, PolicyName.NAIVE);
         }
     }

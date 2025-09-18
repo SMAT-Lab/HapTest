@@ -35,10 +35,10 @@ export enum PolicyName {
     RANDOM = 'random',
     PERF_START_HAP = 'perf_start_hap',
     LLM_GUIDED = 'llm_guided',
+    STATIC_GUIDED = 'static_guided',
 }
 
 export abstract class Policy {
-
     protected device: Device;
     protected hap: Hap;
     protected _enabled: boolean;

@@ -38,6 +38,7 @@ const logger = getLogger();
         .option('--exclude [excludes...]', 'exclude bundle name')
         .option('--llm', 'start llm policy', false)
         .option('--simK <number>', '', '8')
+        .option('--staticConfig <file>', '静态引导策略配置文件路径')
         .parse();
     let options = program.opts();
     let logLevel = LOG_LEVEL.INFO;
@@ -54,7 +55,8 @@ const logger = getLogger();
         reportRoot: options.report,
         excludes: options.exclude,
         llm: options.llm,
-        simK: options.simK
+        simK: options.simK,
+        staticConfig: options.staticConfig,
     };
     
     HapTestLogger.configure(path.join(options.output, 'haptest.log'), logLevel);

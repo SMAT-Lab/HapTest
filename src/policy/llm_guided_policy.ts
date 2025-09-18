@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import { Device } from "../device/device";
 import { Event } from "../event/event";
 import { EventBuilder } from "../event/event_builder";
@@ -23,13 +25,10 @@ export class LLMGuidedPolicy extends PTGPolicy {
     private text: string;
     private actionList:string[];
 
-    // GPT configuration
-    private static readonly GPT_CONFIG = {
-        baseURL: 'https://api.chatanywhere.tech/v1',
-        apiKey: 'sk-t6Dn1cwNdxVCkNE8jSPYqna47G0SY0yuDC5ajQeP9OkNo97f'
-    };
+    // GPT 配置
+    private static GPT_CONFIG: { baseURL: string; apiKey: string };
 
-    private openai = new OpenAI(LLMGuidedPolicy.GPT_CONFIG);
+    private openai: OpenAI;
 
     constructor(device: Device, hap: Hap, name: PolicyName, ptg: PTG) {
         super(device, hap, name, true);
@@ -41,27 +40,47 @@ export class LLMGuidedPolicy extends PTGPolicy {
         this.ptg = ptg;
 
         this.taskPrompt = new String("You are an expert in App GUI testing. Please guide the testing tool to enhance the coverage of functional scenarios in testing the App based on your extensive App testing experience. "); // initial task prompt
+
+        // 加载 GPT 配置
+        LLMGuidedPolicy.GPT_CONFIG = this.loadConfig();
+
+        // 初始化 OpenAI 客户端
+        this.openai = new OpenAI(LLMGuidedPolicy.GPT_CONFIG);
     }
 
-    // Add a buffer to the class to store asynchronously fetched events
+    
+    private loadConfig(): { baseURL: string; apiKey: string } {
+        const configPath = path.resolve(__dirname, '../../config.json'); // 配置文件路径
+        try {
+            const configData = fs.readFileSync(configPath, 'utf-8');
+            const config = JSON.parse(configData);
+            return config.GPT_CONFIG;
+        } catch (error) {
+            this.logger.error(`加载配置文件失败: ${error}`);
+            throw new Error("无法加载 GPT 配置，请检查配置文件是否存在且格式正确。");
+        }
+    }
+
+    // 给类添加一个缓冲区来保存异步获取的事件
     private pendingEvent: Event | null = null;
     private eventFetching: boolean = false;
 
     generateEventBasedOnPtg(): Event {
         this.updateState();
 
-        // If an event has already been fetched asynchronously, return it directly
+        // 如果已经异步拿到一个事件了，就直接返回它
         if (this.pendingEvent) {
             const event = this.pendingEvent;
             this.pendingEvent = null;
+            this.eventFetching = false;
             return event;
         }
      
         if(!this.eventFetching){
-            this.logger.info("Start asynchronous call to selectEventFromLLM");
-            // Start asynchronous logic (only once)
+            this.logger.info("开始异步调用 selectEventFromLLM");
+            // 启动异步逻辑（只启动一次）
             this.eventFetching = true;
-             // Start asynchronous logic to fetch events and cache them in pendingEvent
+            // 启动异步逻辑获取事件，缓存到 pendingEvent
             this.selectEventFromLLM().then(event => {
                 if (event === undefined) {
                     if (this.retryCount > MAX_NUM_RESTARTS) {
@@ -74,14 +93,13 @@ export class LLMGuidedPolicy extends PTGPolicy {
                 } else {
                     this.retryCount = 0;
                     this.pendingEvent = event;
-                    this.logger.info("selectEventFromLLM successfully returned");
+                    this.logger.info("selectEventFromLLM 成功返回");
                 }
             }).catch(err => {
                 this.logger.error(`selectEventFromLLM failed: ${err}`);
                 this.pendingEvent = EventBuilder.createRandomTouchEvent(this.device);
             }).finally(() => {
                 this.logger.info("selectEventFromLLM finally");
-                this.eventFetching = false;
             });
         }   
 

@@ -24,6 +24,8 @@ export interface FuzzOptions {
     hapFile?: string;
     reportRoot?: string;
     excludes?: string[];
+    // xmq: add cli option
     llm?: boolean; 
     simK: number;
+    staticConfig?: string; // 新增静态配置选项
 }

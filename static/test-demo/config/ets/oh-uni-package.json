@@ -1,0 +1,10 @@
+{
+  "apiVersion": "15",
+  "displayName": "Ets",
+  "meta": {
+    "metaVersion": "3.0.0"
+  },
+  "path": "ets",
+  "releaseType": "Release",
+  "version": "5.0.3.135"
+}

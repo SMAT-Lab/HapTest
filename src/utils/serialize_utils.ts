@@ -32,4 +32,27 @@ export class SerializeUtils {
 
         return plainToInstance(cls, plain, options);
     } 
+
+    // 新增反序列化方法
+    static deserialize<T, V>(cls: ClassConstructor<T>, plain: V, options?: ClassTransformOptions): T {
+        let defaultOptions: ClassTransformOptions = { enableCircularCheck: true, excludeExtraneousValues: true };
+        defaultOptions.groups = options?.groups;
+    
+        // 反序列化为类实例
+        const instance = plainToInstance(cls, plain, defaultOptions);
+    
+        // 如果实例有 bounds 字段，且是字符串，则转换为 Point[] 数组
+        if (typeof instance === 'object' && instance !== null && 'bounds' in instance && typeof (instance as any).bounds === 'string') {
+            const boundsString = (instance as any).bounds;
+            const regex = /\[(\d+),(\d+)\]/g;
+            const points: { x: number; y: number }[] = [];
+            let match;
+            while ((match = regex.exec(boundsString)) !== null) {
+                points.push({ x: parseInt(match[1], 10), y: parseInt(match[2], 10) });
+            }
+            (instance as any).bounds = points; // 转换后的 Point[] 数组
+        }
+    
+        return instance;
+    }
 }
