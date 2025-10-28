@@ -23,6 +23,7 @@ new Vue({
       treeData: [],
       hoveredNode: null,
       selectedNode: null,
+      nodeIndex: Object.create(null),
       xpathLite: '//',
       mouseClickCoordinatesPercent: null,
 
@@ -174,6 +175,10 @@ new Vue({
 
           this.hoveredNode = null;
           this.selectedNode = null;
+          this.nodeIndex = this.createNodeIndex(this.jsonHierarchy);
+          if (this.$refs.treeRef && this.$refs.treeRef.setCurrentKey) {
+            this.$refs.treeRef.setCurrentKey(null);
+          }
           this.xpathLite = '//';
 
           this.renderHierarchy();
@@ -194,6 +199,22 @@ new Vue({
         { key: 'updatedAt', value: this.updatedAt || '-' },
         { key: 'displaySize', value: `(${this.displaySize[0]}, ${this.displaySize[1]})` },
       ];
+    },
+    createNodeIndex(root) {
+      const index = Object.create(null);
+      const traverse = (node) => {
+        if (!node || !node._id) {
+          return;
+        }
+        index[node._id] = node;
+        if (Array.isArray(node.children)) {
+          node.children.forEach(traverse);
+        }
+      };
+      if (root) {
+        traverse(root);
+      }
+      return index;
     },
     loadCachedScreenshot() {
       const cachedScreenshot = getFromLocalStorage('cachedScreenshot', null);
@@ -245,21 +266,28 @@ new Vue({
           const scaledWidth = width * scale;
           const scaledHeight = height * scale;
 
+          ctx.save();
+
           if (this.selectedNode && node._id === this.selectedNode._id) {
-            ctx.setLineDash([4, 4]);
+            ctx.setLineDash([]);
             ctx.strokeStyle = '#409EFF';
-            ctx.lineWidth = 1.2;
+            ctx.lineWidth = 2;
+            ctx.fillStyle = 'rgba(64, 158, 255, 0.18)';
+            ctx.fillRect(scaledX, scaledY, scaledWidth, scaledHeight);
           } else if (this.hoveredNode && node._id === this.hoveredNode._id) {
-            ctx.setLineDash([2, 4]);
+            ctx.setLineDash([]);
             ctx.strokeStyle = '#67C23A';
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 1.5;
+            ctx.fillStyle = 'rgba(103, 194, 58, 0.18)';
+            ctx.fillRect(scaledX, scaledY, scaledWidth, scaledHeight);
           } else {
             ctx.setLineDash([2, 6]);
-            ctx.strokeStyle = '#F56C6C';
-            ctx.lineWidth = 0.8;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.lineWidth = 0.7;
           }
 
           ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight);
+          ctx.restore();
         }
 
         if (node.children) {
@@ -319,8 +347,9 @@ new Vue({
       const mouseY = event.clientY - rect.top;
       const { scale, offsetX, offsetY } = this.screenshotTransform;
       const hoveredNode = this.findSmallestNode(this.jsonHierarchy, mouseX, mouseY, scale, offsetX, offsetY);
-      if (hoveredNode !== this.hoveredNode) {
-        this.hoveredNode = hoveredNode;
+      const canonicalHovered = hoveredNode ? ((this.nodeIndex && this.nodeIndex[hoveredNode._id]) || hoveredNode) : null;
+      if (canonicalHovered !== this.hoveredNode) {
+        this.hoveredNode = canonicalHovered;
         this.renderHierarchy();
       }
     },
@@ -340,7 +369,7 @@ new Vue({
 
       const selectedNode = this.findSmallestNode(this.jsonHierarchy, mouseX, mouseY, scale, offsetX, offsetY);
       if (selectedNode) {
-        await this.handleSelectNode(selectedNode);
+        await this.handleSelectNode(selectedNode, { source: 'canvas' });
       }
     },
     onMouseLeave() {
@@ -350,13 +379,21 @@ new Vue({
       }
     },
     async handleTreeNodeClick(node) {
-      await this.handleSelectNode(node);
+      await this.handleSelectNode(node, { source: 'tree' });
     },
-    async handleSelectNode(node) {
-      this.selectedNode = node;
+    async handleSelectNode(node, options = {}) {
+      if (!node || !node._id) {
+        return;
+      }
+      const { source = 'external' } = options;
+      const canonicalNode = (this.nodeIndex && this.nodeIndex[node._id]) || node;
+      this.selectedNode = canonicalNode;
+      this.hoveredNode = null;
+      const shouldScrollTree = source !== 'tree';
+      this.syncTreeSelection(canonicalNode._id, { ensureVisible: shouldScrollTree });
       try {
-        await this.fetchXpathLite(node._id);
-        if (this.selectedNode && this.selectedNode._id === node._id) {
+        await this.fetchXpathLite(canonicalNode._id);
+        if (this.selectedNode && this.selectedNode._id === canonicalNode._id) {
           this.selectedNode.xpath = this.xpathLite;
         }
       } catch (err) {
@@ -406,6 +443,39 @@ new Vue({
     },
     leaveDivider() {
       this.isDividerHovered = false;
+    },
+    syncTreeSelection(nodeId, options = {}) {
+      const { ensureVisible = true } = options;
+      const tree = this.$refs.treeRef;
+      if (!tree || typeof tree.setCurrentKey !== 'function') {
+        return;
+      }
+      if (nodeId === undefined || nodeId === null) {
+        tree.setCurrentKey(null);
+        return;
+      }
+      const currentKey = typeof tree.getCurrentKey === 'function' ? tree.getCurrentKey() : null;
+      if (currentKey !== nodeId) {
+        tree.setCurrentKey(nodeId);
+      }
+      if (ensureVisible) {
+        this.$nextTick(() => {
+          const wrapper = this.$el.querySelector('.hierarchy-tree-wrapper');
+          if (!wrapper) {
+            return;
+          }
+          const target =
+            wrapper.querySelector('.el-tree-node.is-current > .el-tree-node__content') ||
+            wrapper.querySelector('.el-tree-node.is-current');
+          if (target && typeof target.scrollIntoView === 'function') {
+            try {
+              target.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+            } catch (err) {
+              target.scrollIntoView();
+            }
+          }
+        });
+      }
     }
   }
 });
