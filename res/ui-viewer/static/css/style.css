@@ -1,0 +1,214 @@
+body, html {
+    height: 100%;
+    margin: 0;
+}
+.el-button {
+    background-color: #3679E3  !important;
+    border-color: #3679E3  !important;
+    color: white !important;
+}
+.el-button:hover {
+    background-color: #3966C3  !important;
+    border-color: #3966C3  !important;
+    color: white !important;
+}
+
+.el-select .el-input__inner:focus {
+    border-color: #3966C3 !important;
+}
+.el-select .el-input__inner::placeholder {
+    color: #a5a2a2;
+}
+.el-select-dropdown,
+.el-select .el-input__inner,
+.el-select-dropdown .el-select-dropdown__item {
+  background-color: #212933 !important;
+  color: #FDFDFD !important;
+  border-color: #212933 !important;
+}
+
+.custom-input .el-input__inner {
+    border-color: #2D3744;
+}
+.custom-input .el-input__inner::placeholder {
+    color: #a5a2a2;
+}
+.custom-input .el-input__inner:focus,
+.custom-input .el-input__inner:hover {
+    border-color: #3966C3;
+}
+
+
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+.header {
+    height: 65px;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    background-color: #222222;
+    border-bottom: #333844 1px solid;
+    color: #fff;
+}
+.main {
+    display: flex;
+    width: 100%;
+    height: calc(100% - 65px);
+}
+
+.left, .center, .right {
+    display: flex;
+    flex-direction: column;
+}
+.left {
+    width: 25%;
+    background-color: #212933;
+    border-right: #333844 1px solid;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+#screenshotCanvas, #hierarchyCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+.center {
+    width: 30%;
+    background-color: #212933;
+}
+
+.right {
+    width: 45%;
+    padding-right: 12px;
+    background-color: #212933;
+    min-width: 0;
+}
+
+.divider {
+    width: 1.5px;
+    background-color: #333844;
+    cursor: ew-resize;
+    height: 100%;
+    transition: background-color 0.3s;
+}
+.divider-hover, .divider-dragging {
+    background-color: #3679E3;
+    width: 3px;
+}
+
+.region-title {
+    font-weight: bold;
+    margin-left: 15px;
+    margin-bottom: 10px;
+}
+
+.custom-table {
+    width: 100%;
+    border-bottom: none !important;
+    overflow: auto;
+}
+
+.hierarchy-tree-wrapper {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.custom-tree {
+    display: inline-block;
+    min-width: 100%;
+    white-space: nowrap;
+    padding-bottom: 8px;
+}
+
+.custom-tree .el-tree-node__content {
+    display: inline-flex;
+    align-items: center;
+    width: auto;
+}
+
+.custom-tree .el-tree-node__label {
+    overflow: visible !important;
+    text-overflow: unset !important;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.custom-table .el-table__row {
+    margin-bottom: 0;
+}
+  
+.custom-table .el-table__cell {
+    padding: 5px;
+    border-right: 1px solid #333844;
+    border-bottom: 1px solid #333844;
+}
+
+.custom-table .el-table__body-wrapper {
+    border-bottom: none !important;
+}
+
+.custom-table .el-table__row:last-child .el-table__cell {
+    border-bottom: none !important;
+}
+
+.custom-table .el-table__header-wrapper,
+.custom-table .el-table__body-wrapper {
+    width: 100% !important;
+}
+
+.custom-table .el-table__header,
+.custom-table .el-table__body {
+    width: 100% !important;
+}
+  
+.attr-button {
+    font-size: 12px;
+    padding: 2px 3px;
+    margin-left: 5px;
+}
+
+code {
+    background-color: #2D3740;
+    padding: 3px 5px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.custom-link {
+    color: #BBBBBB;
+    text-decoration: none !important; 
+}
+.custom-link:hover {
+    color: white;
+    text-decoration: underline;
+  }
+
+.loading {
+    position: relative;
+    width: 30px;
+    height: 30px;
+    border: 2px solid #000;
+    border-top-color: rgba(0, 0, 0, 0.2);
+    border-right-color: rgba(0, 0, 0, 0.2);
+    border-bottom-color: rgba(0, 0, 0, 0.2);
+    border-radius: 100%;
+
+    animation: circle infinite 0.75s linear;
+}
+
+@keyframes circle {
+    0% {
+        transform: rotate(0);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}

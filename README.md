@@ -78,6 +78,21 @@ haptest --policy perf_start_hap -i ALL --exclude com.huawei.* com.ohos.* -o out
 haptest -i com.example.demo --policy static_guided --staticConfig config.json --llm --simk 3 -o out
 ```
 
+### 6. Inspect UI hierarchy with the web viewer
+1. Ensure your HarmonyOS device or emulator is reachable through `hdc`.
+2. Start the UI viewer service (all arguments are optional unless you need to force a specific target):
+   ```
+   haptest ui-viewer -p 7789 -o out/ui-viewer
+   ```
+   - `--bundle`: optional bundle name to lock the session to a specific app; omit to auto-detect the foreground bundle.
+   - `--target`: optional connect key when multiple devices are attached; the service auto-detects when omitted.
+   - `-p`: HTTP port for the local Express server (default `7789`).
+   - `-o`: output directory for session artifacts.
+3. Browse to `http://localhost:7789/ui-viewer`.
+4. Click **Connect Device** to let the backend auto-detect the connected device. Once connected, click **Fetch Current Page** to capture the latest screenshot and hierarchy for the active foreground app.
+5. Explore the hierarchy tree, inspect widget metadata, or copy XPath snippets as needed. Use **Fetch Current Page** again any time you want to refresh the view.
+6. Press `Ctrl+C` in the terminal to stop the service when finished.
+
 ## Contribution
 
 1.  Fork the repository
