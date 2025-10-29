@@ -5,6 +5,14 @@ const PLATFORM_PATH = 'harmony';
 async function checkResponse(response) {
     if (!response.ok) {
         const text = await response.text();
+        try {
+            const payload = JSON.parse(text);
+            if (payload && payload.message) {
+                throw new Error(payload.message);
+            }
+        } catch (_ignored) {
+            // ignore JSON parse errors, fall back to raw text
+        }
         const message = text || `Server error: ${response.status}`;
         throw new Error(message);
     }
@@ -16,19 +24,26 @@ export async function getVersion() {
     return checkResponse(response);
 }
 
-export async function listDevices(platform) {
-    const response = await fetch(`${API_HOST}${platform}/serials`);
+export async function listDevices() {
+    const response = await fetch(`${API_HOST}${PLATFORM_PATH}/devices`);
     return checkResponse(response);
 }
 
-export async function connectDevice(bundleName) {
-    const payload = bundleName ? JSON.stringify({ bundleName }) : '{}';
+export async function connectDevice(connectKey, bundleName) {
+    const payload = {};
+    if (bundleName) {
+        payload.bundleName = bundleName;
+    }
+    if (connectKey) {
+        payload.connectKey = connectKey;
+    }
+    const body = Object.keys(payload).length ? JSON.stringify(payload) : '{}';
     const response = await fetch(`${API_HOST}${PLATFORM_PATH}/connect`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: payload,
+        body,
     });
     return checkResponse(response);
 }

@@ -1,5 +1,5 @@
 import { saveToLocalStorage, getFromLocalStorage, copyToClipboard } from './utils.js';
-import { getVersion, connectDevice, fetchScreenshot, fetchHierarchy, fetchXpathLite } from './api.js';
+import { getVersion, connectDevice as connectDeviceApi, fetchScreenshot, fetchHierarchy, fetchXpathLite, listDevices } from './api.js';
 
 new Vue({
   el: '#app',
@@ -7,6 +7,9 @@ new Vue({
     return {
       version: '',
       deviceAlias: '',
+      devices: [],
+      selectedDevice: getFromLocalStorage('selectedDevice', ''),
+      isLoadingDevices: false,
       isConnected: false,
       isConnecting: false,
       isDumping: false,
@@ -85,22 +88,150 @@ new Vue({
       if (this.$refs.treeRef) {
         this.$refs.treeRef.filter(val);
       }
+    },
+    selectedDevice(val) {
+      saveToLocalStorage('selectedDevice', val || '');
+      if (this.isConnected && val !== this.deviceAlias) {
+        this.isConnected = false;
+        this.deviceAlias = '';
+      }
+      this.packageName = '';
+      this.activityName = '';
+      this.pagePath = '';
+      this.updatedAt = '';
+      this.displaySize = [0, 0];
+      this.jsonHierarchy = null;
+      this.treeData = [];
+      this.selectedNode = null;
+      this.hoveredNode = null;
+      this.xpathLite = '//';
+      this.nodeIndex = Object.create(null);
+      this.mouseClickCoordinatesPercent = null;
+      this.screenshotTransform = { scale: 1, offsetX: 0, offsetY: 0 };
+      saveToLocalStorage('cachedScreenshot', '');
+      this.renderHierarchy();
+      if (this.$refs.treeRef && typeof this.$refs.treeRef.setCurrentKey === 'function') {
+        this.$refs.treeRef.setCurrentKey(null);
+      }
+      if (this.$el) {
+        const screenshotCanvas = this.$el.querySelector('#screenshotCanvas');
+        if (screenshotCanvas) {
+          const ctx = screenshotCanvas.getContext('2d');
+          if (ctx) {
+            ctx.clearRect(0, 0, screenshotCanvas.width, screenshotCanvas.height);
+          }
+        }
+      }
     }
   },
   created() {
     this.fetchVersion();
+    this.loadDevices();
   },
   mounted() {
     this.loadCachedScreenshot();
-    const canvas = this.$el.querySelector('#hierarchyCanvas');
-    canvas.addEventListener('mousemove', this.onMouseMove);
-    canvas.addEventListener('click', this.onMouseClick);
-    canvas.addEventListener('mouseleave', this.onMouseLeave);
+    const canvas = this.$el ? this.$el.querySelector('#hierarchyCanvas') : null;
+    if (canvas) {
+      this._onHierarchyMouseMove = this.onMouseMove.bind(this);
+      this._onHierarchyMouseClick = this.onMouseClick.bind(this);
+      this._onHierarchyMouseLeave = this.onMouseLeave.bind(this);
+
+      canvas.addEventListener('mousemove', this._onHierarchyMouseMove);
+      canvas.addEventListener('click', this._onHierarchyMouseClick);
+      canvas.addEventListener('mouseleave', this._onHierarchyMouseLeave);
+    }
+
+    this._onDocumentDrag = this.onDrag.bind(this);
+    this._onDocumentMouseUp = this.stopDrag.bind(this);
 
     this.setupCanvasResolution('#screenshotCanvas');
     this.setupCanvasResolution('#hierarchyCanvas');
   },
+  beforeDestroy() {
+    const canvas = this.$el ? this.$el.querySelector('#hierarchyCanvas') : null;
+    if (canvas) {
+      if (this._onHierarchyMouseMove) {
+        canvas.removeEventListener('mousemove', this._onHierarchyMouseMove);
+      }
+      if (this._onHierarchyMouseClick) {
+        canvas.removeEventListener('click', this._onHierarchyMouseClick);
+      }
+      if (this._onHierarchyMouseLeave) {
+        canvas.removeEventListener('mouseleave', this._onHierarchyMouseLeave);
+      }
+    }
+    if (this._onDocumentDrag) {
+      document.removeEventListener('mousemove', this._onDocumentDrag);
+    }
+    if (this._onDocumentMouseUp) {
+      document.removeEventListener('mouseup', this._onDocumentMouseUp);
+    }
+  },
   methods: {
+    async loadDevices(options = {}) {
+      if (this.isLoadingDevices) {
+        return;
+      }
+      const silent = options.silent === true;
+      this.isLoadingDevices = true;
+      try {
+        const response = await listDevices();
+        if (response.success) {
+          const devices = Array.isArray(response.data) ? response.data : [];
+          this.devices = devices;
+          if (!this.selectedDevice && devices.length === 1) {
+            this.selectedDevice = devices[0].serial;
+          } else if (this.selectedDevice) {
+            const exists = devices.some((item) => item && item.serial === this.selectedDevice);
+            if (!exists) {
+              this.selectedDevice = devices.length === 1 ? devices[0].serial : '';
+            }
+          }
+          if (!silent && devices.length === 0) {
+            this.$message({
+              showClose: true,
+              message: 'No connected devices detected. Please connect a device with "hdc" and refresh.',
+              type: 'warning'
+            });
+          }
+        } else {
+          throw new Error(response.message || 'Failed to list devices');
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (!silent) {
+          this.$message({ showClose: true, message: `Error: ${message}`, type: 'error' });
+        } else {
+          console.error(err);
+        }
+      } finally {
+        this.isLoadingDevices = false;
+      }
+    },
+    formatDeviceOption(device) {
+      if (!device) {
+        return '';
+      }
+      if (typeof device === 'string') {
+        return device;
+      }
+      const parts = [];
+      if (device.transport) {
+        parts.push(device.transport);
+      }
+      if (device.state) {
+        parts.push(device.state);
+      }
+      if (device.host && device.host !== 'localhost') {
+        parts.push(device.host);
+      }
+      return parts.length ? `${device.serial} (${parts.join(', ')})` : device.serial;
+    },
+    onDeviceDropdownVisible(visible) {
+      if (visible) {
+        this.loadDevices();
+      }
+    },
     async fetchVersion() {
       try {
         const response = await getVersion();
@@ -109,22 +240,43 @@ new Vue({
         console.error(err);
       }
     },
-    async connectDevice() {
+    async connectDevice(options = {}) {
+      const { silent = false } = options;
       if (this.isConnecting) {
+        return;
+      }
+      if (!this.selectedDevice) {
+        if (!silent) {
+          this.$message({ showClose: true, message: 'Please select a device first', type: 'warning' });
+        }
         return;
       }
       this.isConnecting = true;
       try {
-        const response = await connectDevice();
+        await this.loadDevices({ silent: true });
+        const available = this.devices.some((item) => item && item.serial === this.selectedDevice);
+        if (!available) {
+          throw new Error('Selected device is no longer available. Please refresh the list and select again.');
+        }
+        const response = await connectDeviceApi(this.selectedDevice);
         if (response.success) {
           this.isConnected = true;
-          this.deviceAlias = response.data?.alias || 'local-device';
-          this.$message({ showClose: true, message: 'Device connected', type: 'success' });
+          const alias = response.data && response.data.alias ? response.data.alias : this.selectedDevice;
+          this.deviceAlias = alias;
+          await this.screenshotAndDumpHierarchy();
+          if (!silent) {
+            this.$message({ showClose: true, message: 'Device connected', type: 'success' });
+          }
         } else {
           throw new Error(response.message || 'Connect failed');
         }
       } catch (err) {
-        this.$message({ showClose: true, message: `Error: ${err.message}`, type: 'error' });
+        const message = err instanceof Error ? err.message : String(err);
+        if (!silent) {
+          this.$message({ showClose: true, message: `Error: ${message}`, type: 'error' });
+        } else {
+          console.error(err);
+        }
       } finally {
         this.isConnecting = false;
       }
@@ -248,7 +400,13 @@ new Vue({
       };
     },
     renderHierarchy() {
+      if (!this.$el) {
+        return;
+      }
       const canvas = this.$el.querySelector('#hierarchyCanvas');
+      if (!canvas) {
+        return;
+      }
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -426,8 +584,12 @@ new Vue({
     },
     startDrag() {
       this.isDragging = true;
-      document.addEventListener('mousemove', this.onDrag);
-      document.addEventListener('mouseup', this.stopDrag);
+      if (this._onDocumentDrag) {
+        document.addEventListener('mousemove', this._onDocumentDrag);
+      }
+      if (this._onDocumentMouseUp) {
+        document.addEventListener('mouseup', this._onDocumentMouseUp);
+      }
     },
     onDrag(event) {
       const leftWidth = this.$el.querySelector('.left').offsetWidth;
@@ -435,8 +597,12 @@ new Vue({
     },
     stopDrag() {
       this.isDragging = false;
-      document.removeEventListener('mousemove', this.onDrag);
-      document.removeEventListener('mouseup', this.stopDrag);
+      if (this._onDocumentDrag) {
+        document.removeEventListener('mousemove', this._onDocumentDrag);
+      }
+      if (this._onDocumentMouseUp) {
+        document.removeEventListener('mouseup', this._onDocumentMouseUp);
+      }
     },
     hoverDivider() {
       this.isDividerHovered = true;
