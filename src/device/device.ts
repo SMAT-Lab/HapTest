@@ -18,6 +18,8 @@ import { Event } from '../event/event';
 import { KeyCode } from '../model/key_code';
 import { Hap, HapRunningState } from '../model/hap';
 import { BACKGROUND_PAGE, Page, STOP_PAGE } from '../model/page';
+import { Component } from '../model/component';
+import { ViewTree } from '../model/viewtree';
 import { Point } from '../model/point';
 import { Hdc } from './hdc';
 import path from 'path';
@@ -184,11 +186,17 @@ export class Device implements EventSimulator {
      */
     async dumpViewTree(): Promise<Page> {
         let retryCnt = 5;
+        let attempt = 0;
         while (retryCnt-- >= 0) {
+            attempt += 1;
             let layout = await this.driver!.dumpLayout();
-            let pages = PageBuilder.buildPagesFromJson(JSON.stringify(layout));
+            let pages = PageBuilder.buildPagesFromLayout(layout);
+            logger.debug(
+                `dumpViewTree attempt=${attempt} layoutType=${layout ? typeof layout : 'undefined'} pages=${pages.length}`
+            );
             // if exist keyboard then close and dump again.
             if (this.closeKeyboard(pages)) {
+                logger.info('Keyboard detected during dumpViewTree, sending hide event and retrying.');
                 // for sleep
                 this.hdc.getDeviceUdid();
                 continue;
@@ -201,7 +209,8 @@ export class Device implements EventSimulator {
                 return pages[0];
             }
         }
-        throw new Error('Device->dumpViewTree fail.');
+        logger.warn('Device->dumpViewTree returned empty layout after retries. Returning fallback page.');
+        return this.createFallbackPage();
     }
 
     /**
@@ -316,14 +325,14 @@ export class Device implements EventSimulator {
      */
     async inputKey(key0: KeyCode, key1?: KeyCode, key2?: KeyCode) {
         if (!key1) {
-            await this.driver?.triggerKey(key0);
+            await this.driverCtx?.driver?.triggerKey(key0);
         } else {
-            await this.driver?.triggerCombineKeys(key0, key1, key2);
+            await this.driverCtx?.driver?.triggerCombineKeys(key0, key1, key2);
         }
     }
 
     async injectGesture(gestures: Gesture[], speed: number) {
-        await this.driver?.injectGesture(gestures, speed);
+        await this.driverCtx?.driver?.injectGesture(gestures, speed);
     }
 
     /**
@@ -404,6 +413,41 @@ export class Device implements EventSimulator {
             diffLogs,
             this.coverage ? this.coverage.getCoverageFile(onForeground) : undefined
         );
+    }
+
+    private createFallbackPage(): Page {
+        const root = new Component();
+        root.type = 'Empty';
+        const tree = new ViewTree(root);
+        return new Page(tree, '', '', '');
+    }
+
+    private async teardownDriver(): Promise<void> {
+        if (!this.driverCtx) {
+            return;
+        }
+
+        const ctx = this.driverCtx;
+        this.driverCtx = undefined;
+        this.displaySize = undefined;
+
+        try {
+            await ctx.driver.free();
+        } catch {
+            // ignore driver cleanup errors
+        }
+
+        try {
+            await ctx.rpc.close();
+        } catch {
+            // ignore rpc cleanup errors
+        }
+
+        try {
+            await ctx.agent.stop();
+        } catch {
+            // ignore agent cleanup errors
+        }
     }
 
     /**
