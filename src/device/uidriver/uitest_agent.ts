@@ -47,6 +47,18 @@ export class UitestAgent {
         this.hdc.fport(`tcp:${this.hostPort}`, `tcp:${RPC_PORT}`);
     }
 
+    async stop() {
+        if (this.hostPort === -1) {
+            return;
+        }
+        try {
+            this.hdc.fportRm(`tcp:${this.hostPort}`, `tcp:${RPC_PORT}`);
+        } catch (err) {
+            // ignore
+        }
+        this.hostPort = -1;
+    }
+
     private installAgentSo(): void { 
         let deviceAgentFile = '/data/local/tmp/agent.so';
         if (this.hdc.hasFile(deviceAgentFile)) {

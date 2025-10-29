@@ -31,12 +31,14 @@ export class HypiumRpc {
         this.socket.setTimeout(this.timeout);
         await this.socket.connect(port, address);
         this.socket.setTimeout(0);
+        this.connected = true;
         return this.connected;
     }
 
     async close() {
         if (this.connected) {
             await this.socket.close();
+            this.connected = false;
         }
     }
 

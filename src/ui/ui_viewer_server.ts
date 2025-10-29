@@ -18,6 +18,7 @@ import path from 'path';
 import express, { Request, Response } from 'express';
 import { getLogger } from 'log4js';
 import { Device } from '../device/device';
+import { Hdc, HdcTargetInfo } from '../device/hdc';
 import { Hap } from '../model/hap';
 import { FuzzOptions } from '../runner/fuzz_options';
 import { LOG_LEVEL } from '../utils/logger';
@@ -26,6 +27,196 @@ import { Snapshot } from '../model/snapshot';
 import { Page } from '../model/page';
 
 const logger = getLogger('haptest-ui-viewer');
+const DEVICE_CLEANUP_INTERVAL = 60 * 1000;
+
+interface CachedDeviceEntry {
+    key: string;
+    device: Device;
+    lastUsed: number;
+    refCount: number;
+    connectPromise: Promise<void> | null;
+    ready: boolean;
+}
+
+class DevicePool {
+    private static entries: Map<string, CachedDeviceEntry> = new Map();
+    private static cleanupTimer: NodeJS.Timeout | null = null;
+    private static lastReleaseTimestamps: Map<string, number> = new Map();
+    private static readonly MIN_RECONNECT_DELAY_MS = 750;
+    private static readonly DEVICE_INACTIVE_TTL = 60 * 1000;
+
+    private static makeKey(connectKey: string | undefined, outputDir: string): string {
+        return `${connectKey ?? 'auto'}|${outputDir}`;
+    }
+
+    static async acquire(options: FuzzOptions, bundleName?: string): Promise<{ key: string; device: Device }> {
+        const key = this.makeKey(options.connectkey as string | undefined, options.output);
+        logger.info(
+            `[DevicePool] acquire requested | key=${key} | connectKey=${options.connectkey ?? 'auto'} | output=${options.output}`
+        );
+        let entry = this.entries.get(key);
+        const now = Date.now();
+        const lastRelease = this.lastReleaseTimestamps.get(key);
+        if (lastRelease) {
+            const elapsed = now - lastRelease;
+            if (elapsed < this.MIN_RECONNECT_DELAY_MS) {
+                const delay = this.MIN_RECONNECT_DELAY_MS - elapsed;
+                logger.info(`[DevicePool] reconnection delay ${delay}ms enforced for key=${key}`);
+                await sleep(delay);
+            }
+        }
+
+        if (!entry) {
+            const device = new Device(options);
+            logger.info(`[DevicePool] creating new device entry for key=${key}`);
+            entry = {
+                key,
+                device,
+                lastUsed: Date.now(),
+                refCount: 0,
+                connectPromise: null,
+                ready: false,
+            };
+            this.entries.set(key, entry);
+            entry.connectPromise = (async () => {
+                try {
+                    const initialHap = new Hap();
+                    initialHap.bundleName = bundleName ?? '';
+                    logger.info(`[DevicePool] connecting device key=${key} with bundle=${initialHap.bundleName || 'auto'}`);
+                    await device.connect(initialHap);
+                    entry.ready = true;
+                    logger.info(`[DevicePool] device key=${key} connected`);
+                } catch (err) {
+                    this.entries.delete(key);
+                    logger.error(`[DevicePool] device key=${key} failed to connect: ${String(err)}`);
+                    throw err;
+                } finally {
+                    entry.connectPromise = null;
+                    entry.lastUsed = Date.now();
+                }
+            })();
+        } else {
+            logger.info(
+                `[DevicePool] reusing cached device key=${key} (refCount=${entry.refCount}, ready=${entry.ready})`
+            );
+        }
+
+        entry.refCount += 1;
+        logger.info(`[DevicePool] device key=${key} refCount incremented to ${entry.refCount}`);
+        this.startCleanupLoop();
+
+        if (entry.connectPromise) {
+            try {
+                await entry.connectPromise;
+            } catch (err) {
+                entry.refCount = Math.max(0, entry.refCount - 1);
+                logger.error(`[DevicePool] connect promise failed for key=${key}: ${String(err)}`);
+                throw err;
+            }
+        }
+
+        entry.lastUsed = Date.now();
+        return { key, device: entry.device };
+    }
+
+    static async release(
+        key: string | undefined,
+        reason: string = 'release',
+        options: { force?: boolean } = {}
+    ): Promise<void> {
+        if (!key) {
+            return;
+        }
+        const entry = this.entries.get(key);
+        if (!entry) {
+            logger.warn(`[DevicePool] release requested for missing key=${key}`);
+            return;
+        }
+        if (entry.refCount > 0) {
+            entry.refCount -= 1;
+        }
+        entry.lastUsed = Date.now();
+        logger.info(
+            `[DevicePool] release key=${key} | reason=${reason} | refCount=${entry.refCount} | force=${Boolean(
+                options.force
+            )}`
+        );
+        if (entry.connectPromise) {
+            try {
+                await entry.connectPromise;
+            } catch (err) {
+                logger.warn(`[DevicePool] connect promise rejection during release key=${key}: ${String(err)}`);
+            }
+        }
+        if (entry.refCount <= 0) {
+            this.lastReleaseTimestamps.set(key, entry.lastUsed);
+            if (options.force) {
+                await this.disposeEntry(key, entry, reason);
+                return;
+            }
+        }
+        this.startCleanupLoop();
+    }
+
+    static touch(key: string | undefined): void {
+        if (!key) {
+            return;
+        }
+        const entry = this.entries.get(key);
+        if (entry) {
+            entry.lastUsed = Date.now();
+        }
+    }
+
+    private static startCleanupLoop(): void {
+        if (this.cleanupTimer) {
+            return;
+        }
+        this.cleanupTimer = setInterval(() => {
+            this.runCleanup().catch((err) => {
+                logger.warn(`DevicePool cleanup failed: ${String(err)}`);
+            });
+        }, DEVICE_CLEANUP_INTERVAL);
+    }
+
+    private static async runCleanup(): Promise<void> {
+        const now = Date.now();
+        for (const [key, entry] of this.entries.entries()) {
+            if (
+                entry.refCount === 0 &&
+                entry.ready &&
+                !entry.connectPromise &&
+                now - entry.lastUsed > this.DEVICE_INACTIVE_TTL
+            ) {
+                await this.disposeEntry(key, entry, 'cleanup');
+            }
+        }
+
+        if (this.entries.size === 0 && this.cleanupTimer) {
+            clearInterval(this.cleanupTimer);
+            this.cleanupTimer = null;
+        }
+    }
+
+    private static async disposeEntry(key: string, entry: CachedDeviceEntry, reason: string): Promise<void> {
+        if (!this.entries.has(key)) {
+            logger.debug(`[DevicePool] disposeEntry key=${key} already removed`);
+        }
+        this.entries.delete(key);
+        try {
+            logger.info(`[DevicePool] disposing device key=${key} | reason=${reason}`);
+            const disconnect = (entry.device as unknown as { disconnect?: () => Promise<void> | void }).disconnect;
+            if (typeof disconnect === 'function') {
+                await disconnect.call(entry.device);
+                logger.info(`[DevicePool] device key=${key} disconnected`);
+            } else {
+                logger.debug(`[DevicePool] device key=${key} has no disconnect method, skipping teardown`);
+            }
+        } catch (err) {
+            logger.warn(`[DevicePool] failed to disconnect device key=${key} | reason=${reason} | error=${String(err)}`);
+        }
+    }
+}
 
 interface ApiResponse<T> {
     success: boolean;
@@ -55,23 +246,50 @@ interface HierarchyResponse {
 const success = <T>(data: T): ApiResponse<T> => ({ success: true, data, message: null });
 const failure = (message: string): ApiResponse<null> => ({ success: false, data: null, message });
 
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 class UIViewerSession {
     private requestedBundleName?: string;
     private connectKey?: string;
     private readonly outputDir: string;
     private device?: Device;
+    private deviceCacheKey?: string;
     private hap?: Hap;
     private lastPage?: Page;
     private lastSnapshot?: Snapshot;
     private lastScreenshotBase64?: string;
     private hierarchy?: HierarchyTree;
     private refreshing: Promise<void> | null;
+    private connectPromise: Promise<void> | null;
 
     constructor(bundleName: string | undefined, connectKey: string | undefined, outputDir: string) {
         this.requestedBundleName = bundleName?.trim() || undefined;
-        this.connectKey = connectKey;
+        this.connectKey = connectKey?.trim() || undefined;
         this.outputDir = outputDir;
         this.refreshing = null;
+        this.connectPromise = null;
+    }
+
+    private describeSession(): string {
+        return `connectKey=${this.connectKey ?? 'auto'}, bundle=${this.requestedBundleName ?? 'auto'}, output=${this.outputDir}`;
+    }
+
+    private logInfo(message: string): void {
+        logger.info(`[UIViewerSession] ${message} | ${this.describeSession()}`);
+    }
+
+    private logDebug(message: string): void {
+        logger.debug(`[UIViewerSession] ${message} | ${this.describeSession()}`);
+    }
+
+    private logWarn(message: string, err?: unknown): void {
+        if (err) {
+            logger.warn(`[UIViewerSession] ${message} | ${this.describeSession()} | error=${String(err)}`);
+        } else {
+            logger.warn(`[UIViewerSession] ${message} | ${this.describeSession()}`);
+        }
     }
 
     private invalidateCache(): void {
@@ -79,6 +297,23 @@ class UIViewerSession {
         this.lastSnapshot = undefined;
         this.lastScreenshotBase64 = undefined;
         this.hierarchy = undefined;
+        this.refreshing = null;
+    }
+
+    private async drainRefresh(): Promise<void> {
+        const pending = this.refreshing;
+        if (!pending) {
+            return;
+        }
+        try {
+            await pending;
+        } catch {
+            // ignore refresh failure
+        } finally {
+            if (this.refreshing === pending) {
+                this.refreshing = null;
+            }
+        }
     }
 
     updateBundleName(bundleName?: string) {
@@ -89,6 +324,7 @@ class UIViewerSession {
                 if (this.hap) {
                     this.hap.bundleName = '';
                 }
+                this.logInfo('Cleared bundle name');
                 this.invalidateCache();
             }
             return;
@@ -99,10 +335,93 @@ class UIViewerSession {
         }
 
         this.requestedBundleName = normalized;
+        this.logInfo(`Updated bundle name to ${normalized}`);
         if (this.hap) {
             this.hap.bundleName = normalized;
         }
         this.invalidateCache();
+    }
+
+    private async updateConnectKey(connectKey?: string): Promise<void> {
+        const normalized = connectKey ? connectKey.trim() : undefined;
+        if (normalized === this.connectKey) {
+            return;
+        }
+        this.logInfo(`Updating connect key to ${normalized ?? 'auto'}`);
+        if (this.connectPromise) {
+            try {
+                await this.connectPromise;
+            } catch {
+                // ignore errors from previous connection attempt
+            }
+        }
+        await this.drainRefresh();
+        await this.disposeDevice('connect-key-change');
+        this.connectKey = normalized;
+    }
+
+    private async disposeDevice(reason: string = 'session-dispose'): Promise<void> {
+        await this.drainRefresh();
+        if (this.deviceCacheKey) {
+            this.logDebug(`Disposing device cache with key=${this.deviceCacheKey} reason=${reason}`);
+            const force = reason === 'session-dispose' || reason === 'acquire-failed';
+            await DevicePool.release(this.deviceCacheKey, reason, { force });
+        }
+        this.device = undefined;
+        this.hap = undefined;
+        this.deviceCacheKey = undefined;
+        this.invalidateCache();
+    }
+
+    private ensureConnectKeyResolved(): void {
+        if (this.connectKey && this.connectKey.length > 0) {
+            return;
+        }
+        let targets: HdcTargetInfo[];
+        try {
+            targets = Hdc.listTargets();
+        } catch (err) {
+            throw this.normalizeConnectionError(err);
+        }
+        const connected = targets.filter((item) => item.state.toLowerCase() === 'connected');
+        if (connected.length === 0) {
+            throw new Error(
+                'No connected devices detected. Please ensure HDC is installed and a device is connected (run "hdc list targets -v").'
+            );
+        }
+        if (connected.length > 1) {
+            throw new Error('Multiple connected devices detected. Please select a target device before connecting.');
+        }
+        this.connectKey = connected[0].serial;
+    }
+
+    private normalizeConnectionError(err: unknown): Error {
+        const message = err instanceof Error ? err.message : String(err);
+        const lower = message.toLowerCase();
+        if (
+            lower.includes('enoent') ||
+            lower.includes('not recognized') ||
+            lower.includes('command not found') ||
+            lower.includes('hdc: not found')
+        ) {
+            return new Error('Unable to execute "hdc". Please install HDC and ensure it is available in your PATH.');
+        }
+        if (lower.includes('need connect-key') || lower.includes('please confirm a device')) {
+            return new Error('Multiple devices detected. Please select a target device before connecting.');
+        }
+        return err instanceof Error ? err : new Error(message);
+    }
+
+    getConnectKey(): string | undefined {
+        return this.connectKey;
+    }
+
+    async listDevices(): Promise<HdcTargetInfo[]> {
+        try {
+            return Hdc.listTargets();
+        } catch (err) {
+            throw this.normalizeConnectionError(err);
+        }
     }
 
     getTargetAlias(): string {
@@ -136,30 +455,60 @@ class UIViewerSession {
 
     private async ensureConnected(): Promise<void> {
         if (this.device && this.hap) {
+            DevicePool.touch(this.deviceCacheKey);
+            this.logDebug('Device already connected, reusing existing session');
             return;
         }
 
-        const fuzzOptions = this.buildFuzzOptions();
-        this.device = new Device(fuzzOptions);
-        this.hap = new Hap();
-        this.hap.bundleName = this.requestedBundleName ?? '';
-        await this.device.connect(this.hap);
+        if (this.connectPromise) {
+            await this.connectPromise;
+            return;
+        }
+
+        this.connectPromise = (async () => {
+            try {
+                this.ensureConnectKeyResolved();
+                const fuzzOptions = this.buildFuzzOptions();
+                this.logInfo(`Acquiring device from pool`);
+                const { key, device } = await DevicePool.acquire(fuzzOptions, this.requestedBundleName);
+                this.deviceCacheKey = key;
+                this.device = device;
+                this.hap = new Hap();
+                this.hap.bundleName = this.requestedBundleName ?? '';
+                DevicePool.touch(this.deviceCacheKey);
+                this.logInfo(`Device acquired with cacheKey=${key}`);
+            } catch (err) {
+                this.logWarn('Failed to acquire device', err);
+                await this.disposeDevice('acquire-failed');
+                throw this.normalizeConnectionError(err);
+            } finally {
+                this.connectPromise = null;
+            }
+        })();
+
+        await this.connectPromise;
     }
 
-    async ensureDeviceConnected(bundleName?: string): Promise<void> {
+    async ensureDeviceConnected(bundleName?: string, connectKey?: string): Promise<void> {
         if (bundleName !== undefined) {
             this.updateBundleName(bundleName);
         }
+        if (connectKey !== undefined) {
+            await this.updateConnectKey(connectKey);
+        }
+        this.logInfo('ensureDeviceConnected invoked');
         await this.ensureConnected();
     }
 
     private async innerRefresh(): Promise<void> {
         await this.ensureConnected();
+        DevicePool.touch(this.deviceCacheKey);
         if (!this.device || !this.hap) {
             throw new Error('device is not ready.');
         }
 
         this.hap.bundleName = this.requestedBundleName ?? '';
+        this.logInfo('Refreshing device snapshot');
         const page = await this.device.getCurrentPage(this.hap);
         const snapshot = page.getSnapshot();
         if (!snapshot) {
@@ -171,6 +520,7 @@ class UIViewerSession {
         this.lastSnapshot = snapshot;
         this.lastScreenshotBase64 = screenshotBase64;
         this.hierarchy = buildHierarchy(page.getRoot());
+        this.logInfo('Device snapshot refreshed successfully');
     }
 
     private loadScreenshot(screenCapPath: string): string {
@@ -254,15 +604,31 @@ export async function startUIViewerServer(options: UIViewerServerOptions): Promi
         res.json(success('ok'));
     });
 
-    app.get('/api/harmony/serials', (_req: Request, res: Response) => {
-        res.json(success([session.getTargetAlias()]));
+    app.get('/api/harmony/devices', async (_req: Request, res: Response) => {
+        try {
+            const devices = await session.listDevices();
+            res.json(success(devices));
+        } catch (err) {
+            logger.error('Failed to list harmony devices.', err);
+            res.status(500).json(failure(err instanceof Error ? err.message : String(err)));
+        }
+    });
+
+    app.get('/api/harmony/serials', async (_req: Request, res: Response) => {
+        try {
+            const devices = await session.listDevices();
+            res.json(success(devices.map((item) => item.serial)));
+        } catch (err) {
+            logger.error('Failed to list harmony serials.', err);
+            res.status(500).json(failure(err instanceof Error ? err.message : String(err)));
+        }
     });
 
     const connectHandler = async (req: Request, res: Response) => {
         try {
-            const { bundleName } = req.body ?? {};
-            await session.ensureDeviceConnected(bundleName);
-            res.json(success({ alias: session.getTargetAlias() }));
+            const { bundleName, connectKey } = req.body ?? {};
+            await session.ensureDeviceConnected(bundleName, connectKey);
+            res.json(success({ alias: session.getTargetAlias(), connectKey: session.getConnectKey() }));
         } catch (err) {
             logger.error('Failed to connect device.', err);
             res.status(500).json(failure(err instanceof Error ? err.message : String(err)));

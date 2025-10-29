@@ -24,6 +24,14 @@ const logger = getLogger();
 export const NEWLINE = /\r\n|\n/;
 const MEMDUMPER = '/data/local/tmp/memdumper';
 
+export interface HdcTargetInfo {
+    serial: string;
+    transport: string;
+    state: string;
+    host: string;
+    type: string;
+}
+
 export class Hdc {
     private connectkey: string | undefined;
 
@@ -416,5 +424,47 @@ export class Hdc {
                 }
             });
         });
+    }
+
+    static listTargets(): HdcTargetInfo[] {
+        const result = spawnSync('hdc', ['list', 'targets', '-v'], { encoding: 'utf-8', shell: true });
+        if (result.error) {
+            throw new Error(`Failed to execute hdc: ${result.error.message}`);
+        }
+
+        const stderr = (result.stderr || '').trim();
+        const stdout = (result.stdout || '').trim();
+        if (!stdout && stderr) {
+            throw new Error(stderr);
+        }
+
+        const entries: HdcTargetInfo[] = [];
+        const lines = stdout.split(NEWLINE);
+        for (const rawLine of lines) {
+            const line = rawLine.trim();
+            if (!line) {
+                continue;
+            }
+            const lower = line.toLowerCase();
+            if (lower.startsWith('list targets') || lower.startsWith('total')) {
+                continue;
+            }
+            if (line.startsWith('[Fail]')) {
+                throw new Error(line);
+            }
+            const tokens = line.split(/\s+/).filter((token) => token.length > 0);
+            if (tokens.length < 3) {
+                continue;
+            }
+            const [serial, transport = '', state = '', host = '', type = ''] = tokens;
+            entries.push({
+                serial,
+                transport,
+                state,
+                host,
+                type,
+            });
+        }
+        return entries;
     }
 }

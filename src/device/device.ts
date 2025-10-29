@@ -36,7 +36,7 @@ import moment from 'moment';
 import { ArkUIInspector } from './arkui_inspector';
 import { TouchEvent } from '../event/ui_event';
 import { ArkUiDriver } from './uidriver/arkui_driver';
-import { buildDriverImpl } from './uidriver/build';
+import { buildDriverImpl, DriverContext } from './uidriver/build';
 import { Gesture } from '../event/gesture';
 import { PageBuilder } from '../model/builder/page_builder';
 const logger = getLogger();
@@ -51,7 +51,7 @@ export class Device implements EventSimulator {
     private options: FuzzOptions;
     private arkuiInspector: ArkUIInspector;
     private lastFaultlogs: Set<string>;
-    private driver?: ArkUiDriver;
+    private driverCtx?: DriverContext;
 
     constructor(options: FuzzOptions) {
         this.options = options;
@@ -68,6 +68,7 @@ export class Device implements EventSimulator {
     }
 
     async connect(hap: Hap) {
+        await this.teardownDriver();
         // install hap
         this.installHap(hap);
         if (this.options.coverage) {
@@ -75,12 +76,24 @@ export class Device implements EventSimulator {
             this.coverage.startBftp();
         }
 
-        this.driver = await buildDriverImpl(this);
-        this.displaySize = await this.driver.getDisplaySize();
+        this.driverCtx = await buildDriverImpl(this);
+        this.displaySize = await this.driverCtx.driver.getDisplaySize();
     }
 
     getDriver(): ArkUiDriver {
-        return this.driver!;
+        return this.driverCtx!.driver;
+    }
+
+    async disconnect(): Promise<void> {
+        await this.teardownDriver();
+        if (this.options.coverage && this.coverage) {
+            try {
+                this.coverage.stopBftp();
+            } catch {
+                // ignore
+            }
+        }
+        this.coverage = undefined;
     }
 
     /**
@@ -189,7 +202,7 @@ export class Device implements EventSimulator {
         let attempt = 0;
         while (retryCnt-- >= 0) {
             attempt += 1;
-            let layout = await this.driver!.dumpLayout();
+            let layout = await this.driverCtx!.driver.dumpLayout();
             let pages = PageBuilder.buildPagesFromLayout(layout);
             logger.debug(
                 `dumpViewTree attempt=${attempt} layoutType=${layout ? typeof layout : 'undefined'} pages=${pages.length}`
@@ -258,7 +271,7 @@ export class Device implements EventSimulator {
      * @param point
      */
     async click(point: Point): Promise<void> {
-        await this.driver?.click(point.x, point.y);
+        await this.driverCtx?.driver?.click(point.x, point.y);
     }
 
     /**
@@ -266,7 +279,7 @@ export class Device implements EventSimulator {
      * @param point
      */
     async doubleClick(point: Point): Promise<void> {
-        await this.driver?.doubleClick(point.x, point.y);
+        await this.driverCtx?.driver?.doubleClick(point.x, point.y);
     }
 
     /**
@@ -274,7 +287,7 @@ export class Device implements EventSimulator {
      * @param point
      */
     async longClick(point: Point): Promise<void> {
-        await this.driver?.longClick(point.x, point.y);
+        await this.driverCtx?.driver?.longClick(point.x, point.y);
     }
 
     /**
@@ -283,7 +296,7 @@ export class Device implements EventSimulator {
      * @param text
      */
     async inputText(point: Point, text: string): Promise<void> {
-        await this.driver?.inputText(point, text);
+        await this.driverCtx?.driver?.inputText(point, text);
     }
 
     /**
@@ -294,7 +307,7 @@ export class Device implements EventSimulator {
      * @param step swipe step size
      */
     async fling(from: Point, to: Point, step: number = 50, speed: number = 600): Promise<void> {
-        await this.driver?.fling(from, to, step, speed);
+        await this.driverCtx?.driver?.fling(from, to, step, speed);
     }
 
     /**
@@ -304,7 +317,7 @@ export class Device implements EventSimulator {
      * @param speed value range [200-40000]
      */
     async swipe(from: Point, to: Point, speed: number = 600) {
-        await this.driver?.swipe(from.x, from.y, to.x, to.y, speed);
+        await this.driverCtx?.driver?.swipe(from.x, from.y, to.x, to.y, speed);
     }
 
     /**
@@ -314,7 +327,7 @@ export class Device implements EventSimulator {
      * @param speed value range [200-40000]
      */
     async drag(from: Point, to: Point, speed: number = 600) {
-        await this.driver?.drag(from.x, from.y, to.x, to.y, speed);
+        await this.driverCtx?.driver?.drag(from.x, from.y, to.x, to.y, speed);
     }
 
     /**
