@@ -19,7 +19,9 @@ import * as path from 'path';
 import fs from 'fs';
 
 describe('hdc Test', async () => {
-    let hdc = new Hdc();
+    const initSpy = vi.spyOn(Hdc.prototype as any, 'initDeviceEnv').mockImplementation(() => {});
+    const hdc = new Hdc();
+    initSpy.mockRestore();
 
     it('test getForegroundProcess', async () => {
         const MOCK_SHELL_OUTPUT_GetForegroundProcess = fs.readFileSync(path.join(__dirname, '../resource/aa_dump.txt'), {

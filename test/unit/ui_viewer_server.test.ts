@@ -191,6 +191,7 @@ const createMockResponse = () => {
 };
 
 let startUIViewerServer: typeof import('../../src/ui/ui_viewer_server').startUIViewerServer;
+let hdcModule: typeof import('../../src/device/hdc');
 let tempOutputDir: string;
 let pageSequence = 0;
 
@@ -206,6 +207,7 @@ const resetMocks = async () => {
     vi.clearAllMocks();
     vi.resetModules();
     startUIViewerServer = (await import('../../src/ui/ui_viewer_server')).startUIViewerServer;
+    hdcModule = await import('../../src/device/hdc');
 };
 
 const createMockPage = (dir: string, overrides: Partial<{ abilityName: string; bundleName: string; pagePath: string }> = {}) => {
@@ -271,6 +273,11 @@ describe('startUIViewerServer', () => {
         };
 
         currentPageFactory = ({ bundleName }) => createMockPage(tempOutputDir, { bundleName });
+        const listTargetsSpy = vi
+            .spyOn(hdcModule.Hdc, 'listTargets')
+            .mockReturnValue([
+                { serial: options.connectKey, transport: 'usb', state: 'device', host: 'localhost', type: 'phone' },
+            ]);
 
         await startUIViewerServer(options);
 
@@ -287,14 +294,19 @@ describe('startUIViewerServer', () => {
         expect(versionRes.json).toHaveBeenCalledWith(successResult(options.version));
 
         const serialsRes = createMockResponse();
-        getRouteHandler('get', '/api/harmony/serials')({}, serialsRes);
-        expect(serialsRes.json).toHaveBeenCalledWith(successResult([options.connectKey]));
+        await getRouteHandler('get', '/api/harmony/serials')({}, serialsRes);
+        const serialsPayload = serialsRes.json.mock.calls[0][0];
+        expect(serialsPayload.success).toBe(true);
+        expect(Array.isArray(serialsPayload.data)).toBe(true);
+        expect(serialsPayload.data).toContain(options.connectKey);
 
         const connectRes = createMockResponse();
         await getRouteHandler('post', '/api/harmony/connect')({ body: {} }, connectRes);
         expect(deviceConstructor).toHaveBeenCalledTimes(1);
         expect(connectedHaps).toHaveLength(1);
-        expect(connectRes.json).toHaveBeenCalledWith(successResult({ alias: 'device-123' }));
+        expect(connectRes.json).toHaveBeenCalledWith(
+            successResult({ alias: 'device-123', connectKey: 'device-123' })
+        );
 
         const screenshotRes = createMockResponse();
         await getRouteHandler('get', '/api/harmony/screenshot')({}, screenshotRes);
@@ -328,6 +340,8 @@ describe('startUIViewerServer', () => {
         );
         expect(generateXPathLiteMock).toHaveBeenCalledWith('root', mockHierarchyTree);
         expect(xpathRes.json).toHaveBeenCalledWith(successResult('//MockNode[2]'));
+
+        listTargetsSpy.mockRestore();
 
         const missingNodeRes = createMockResponse();
         await getRouteHandler('post', '/api/harmony/hierarchy/xpathLite')({ body: {} }, missingNodeRes);
