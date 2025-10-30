@@ -19,10 +19,17 @@ import * as path from 'path';
 import fs from 'fs';
 
 describe('hdc Test', async () => {
-    const initSpy = vi.spyOn(Hdc.prototype as any, 'initDeviceEnv').mockImplementation(() => {});
-    const hdc = new Hdc();
-    initSpy.mockRestore();
+    let initSpy: ReturnType<typeof vi.spyOn>;
+    let hdc: Hdc;
 
+    beforeEach(() => {
+        initSpy = vi.spyOn(Hdc.prototype as any, 'initDeviceEnv').mockImplementation(() => {});
+        hdc = new Hdc();
+    });
+
+    afterEach(() => {
+        initSpy.mockRestore();
+    });
     it('test getForegroundProcess', async () => {
         const MOCK_SHELL_OUTPUT_GetForegroundProcess = fs.readFileSync(path.join(__dirname, '../resource/aa_dump.txt'), {
             encoding: 'utf-8',
