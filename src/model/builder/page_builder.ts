@@ -198,7 +198,7 @@ export class PageBuilder {
                 return;
             }
             if (!Array.isArray(node.children)) {
-                node.children = Array.isArray(node.children) ? node.children : [];
+                node.children = [];
             }
             const sources = metaSources.filter(Boolean);
             result.push({ node: node as DumpLayoutNode, metaSources: sources });
