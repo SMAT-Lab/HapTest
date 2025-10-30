@@ -77,12 +77,10 @@ async function runUIViewerCommand(options: any, version: string): Promise<void> 
     }
 
     HapTestLogger.configure(path.join(outputDir, 'haptest.log'), logLevel);
-    const bundleLabel = options.bundle ? options.bundle : 'auto-detect';
     const targetLabel = options.target ?? 'auto';
-    logger.info(`haptest ui-viewer start with bundle=${bundleLabel}, target=${targetLabel}, port=${port}`);
+    logger.info(`haptest ui-viewer start with target=${targetLabel}, port=${port}`);
 
     await startUIViewerServer({
-        bundleName: options.bundle,
         connectKey: options.target,
         outputDir,
         port,
@@ -99,7 +97,6 @@ async function runUIViewerCommand(options: any, version: string): Promise<void> 
     program
         .command('ui-viewer')
         .description('Start the HapTest UI viewer web service')
-        .option('-b, --bundle <bundleName>', 'bundle name to inspect (optional)')
         .option('-t, --target [connectkey]', 'hdc connectkey')
         .option('-p, --port <port>', 'http port', '7789')
         .option('-o, --output <dir>', 'output dir', 'out/ui-viewer')

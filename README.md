@@ -82,9 +82,8 @@ haptest -i com.example.demo --policy static_guided --staticConfig config.json --
 1. Ensure your HarmonyOS device or emulator is reachable through `hdc`.
 2. Start the UI viewer service (all arguments are optional unless you need to force a specific target):
    ```
-   haptest ui-viewer -p 7789 -o out/ui-viewer
+   haptest ui-viewer
    ```
-   - `--bundle`: optional bundle name to lock the session to a specific app; omit to auto-detect the foreground bundle.
    - `--target`: optional connect key when multiple devices are attached; the service auto-detects when omitted.
    - `-p`: HTTP port for the local Express server (default `7789`).
    - `-o`: output directory for session artifacts.
