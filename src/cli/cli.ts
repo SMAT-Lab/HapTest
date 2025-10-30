@@ -122,7 +122,7 @@ async function runUIViewerCommand(options: any, version: string): Promise<void> 
         .option('--exclude [excludes...]', 'exclude bundle name')
         .option('--llm', 'start llm policy', false)
         .option('--simK <number>', '', '8')
-        .option('--staticConfig <file>', '��̬�������������ļ�·��')
+        .option('--staticConfig <file>', 'Path to static configuration file')
         .action(async (cmdOptions) => {
             try {
                 await runFuzzCommand(cmdOptions);
