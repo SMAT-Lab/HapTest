@@ -18,6 +18,8 @@ import { Event } from '../event/event';
 import { KeyCode } from '../model/key_code';
 import { Hap, HapRunningState } from '../model/hap';
 import { BACKGROUND_PAGE, Page, STOP_PAGE } from '../model/page';
+import { Component } from '../model/component';
+import { ViewTree } from '../model/viewtree';
 import { Point } from '../model/point';
 import { Hdc } from './hdc';
 import path from 'path';
@@ -34,7 +36,7 @@ import moment from 'moment';
 import { ArkUIInspector } from './arkui_inspector';
 import { TouchEvent } from '../event/ui_event';
 import { ArkUiDriver } from './uidriver/arkui_driver';
-import { buildDriverImpl } from './uidriver/build';
+import { buildDriverImpl, DriverContext } from './uidriver/build';
 import { Gesture } from '../event/gesture';
 import { PageBuilder } from '../model/builder/page_builder';
 const logger = getLogger();
@@ -49,7 +51,7 @@ export class Device implements EventSimulator {
     private options: FuzzOptions;
     private arkuiInspector: ArkUIInspector;
     private lastFaultlogs: Set<string>;
-    private driver?: ArkUiDriver;
+    private driverCtx?: DriverContext;
 
     constructor(options: FuzzOptions) {
         this.options = options;
@@ -66,6 +68,7 @@ export class Device implements EventSimulator {
     }
 
     async connect(hap: Hap) {
+        await this.teardownDriver();
         // install hap
         this.installHap(hap);
         if (this.options.coverage) {
@@ -73,12 +76,24 @@ export class Device implements EventSimulator {
             this.coverage.startBftp();
         }
 
-        this.driver = await buildDriverImpl(this);
-        this.displaySize = await this.driver.getDisplaySize();
+        this.driverCtx = await buildDriverImpl(this);
+        this.displaySize = await this.driverCtx.driver.getDisplaySize();
     }
 
     getDriver(): ArkUiDriver {
-        return this.driver!;
+        return this.driverCtx!.driver;
+    }
+
+    async disconnect(): Promise<void> {
+        await this.teardownDriver();
+        if (this.options.coverage && this.coverage) {
+            try {
+                this.coverage.stopBftp();
+            } catch {
+                // ignore
+            }
+        }
+        this.coverage = undefined;
     }
 
     /**
@@ -184,11 +199,17 @@ export class Device implements EventSimulator {
      */
     async dumpViewTree(): Promise<Page> {
         let retryCnt = 5;
+        let attempt = 0;
         while (retryCnt-- >= 0) {
-            let layout = await this.driver!.dumpLayout();
-            let pages = PageBuilder.buildPagesFromJson(JSON.stringify(layout));
+            attempt += 1;
+            let layout = await this.driverCtx!.driver.dumpLayout();
+            let pages = PageBuilder.buildPagesFromLayout(layout);
+            logger.debug(
+                `dumpViewTree attempt=${attempt} layoutType=${layout ? typeof layout : 'undefined'} pages=${pages.length}`
+            );
             // if exist keyboard then close and dump again.
             if (this.closeKeyboard(pages)) {
+                logger.info('Keyboard detected during dumpViewTree, sending hide event and retrying.');
                 // for sleep
                 this.hdc.getDeviceUdid();
                 continue;
@@ -201,7 +222,8 @@ export class Device implements EventSimulator {
                 return pages[0];
             }
         }
-        throw new Error('Device->dumpViewTree fail.');
+        logger.warn('Device->dumpViewTree returned empty layout after retries. Returning fallback page.');
+        return this.createFallbackPage();
     }
 
     /**
@@ -249,7 +271,7 @@ export class Device implements EventSimulator {
      * @param point
      */
     async click(point: Point): Promise<void> {
-        await this.driver?.click(point.x, point.y);
+        await this.driverCtx?.driver?.click(point.x, point.y);
     }
 
     /**
@@ -257,7 +279,7 @@ export class Device implements EventSimulator {
      * @param point
      */
     async doubleClick(point: Point): Promise<void> {
-        await this.driver?.doubleClick(point.x, point.y);
+        await this.driverCtx?.driver?.doubleClick(point.x, point.y);
     }
 
     /**
@@ -265,7 +287,7 @@ export class Device implements EventSimulator {
      * @param point
      */
     async longClick(point: Point): Promise<void> {
-        await this.driver?.longClick(point.x, point.y);
+        await this.driverCtx?.driver?.longClick(point.x, point.y);
     }
 
     /**
@@ -274,7 +296,7 @@ export class Device implements EventSimulator {
      * @param text
      */
     async inputText(point: Point, text: string): Promise<void> {
-        await this.driver?.inputText(point, text);
+        await this.driverCtx?.driver?.inputText(point, text);
     }
 
     /**
@@ -285,7 +307,7 @@ export class Device implements EventSimulator {
      * @param step swipe step size
      */
     async fling(from: Point, to: Point, step: number = 50, speed: number = 600): Promise<void> {
-        await this.driver?.fling(from, to, step, speed);
+        await this.driverCtx?.driver?.fling(from, to, step, speed);
     }
 
     /**
@@ -295,7 +317,7 @@ export class Device implements EventSimulator {
      * @param speed value range [200-40000]
      */
     async swipe(from: Point, to: Point, speed: number = 600) {
-        await this.driver?.swipe(from.x, from.y, to.x, to.y, speed);
+        await this.driverCtx?.driver?.swipe(from.x, from.y, to.x, to.y, speed);
     }
 
     /**
@@ -305,7 +327,7 @@ export class Device implements EventSimulator {
      * @param speed value range [200-40000]
      */
     async drag(from: Point, to: Point, speed: number = 600) {
-        await this.driver?.drag(from.x, from.y, to.x, to.y, speed);
+        await this.driverCtx?.driver?.drag(from.x, from.y, to.x, to.y, speed);
     }
 
     /**
@@ -316,14 +338,14 @@ export class Device implements EventSimulator {
      */
     async inputKey(key0: KeyCode, key1?: KeyCode, key2?: KeyCode) {
         if (!key1) {
-            await this.driver?.triggerKey(key0);
+            await this.driverCtx?.driver?.triggerKey(key0);
         } else {
-            await this.driver?.triggerCombineKeys(key0, key1, key2);
+            await this.driverCtx?.driver?.triggerCombineKeys(key0, key1, key2);
         }
     }
 
     async injectGesture(gestures: Gesture[], speed: number) {
-        await this.driver?.injectGesture(gestures, speed);
+        await this.driverCtx?.driver?.injectGesture(gestures, speed);
     }
 
     /**
@@ -354,13 +376,17 @@ export class Device implements EventSimulator {
      */
     async getCurrentPage(hap: Hap): Promise<Page> {
         let page = await this.dumpViewTree();
+        const pageBundleName = page.getBundleName();
+        if (!hap.bundleName) {
+            hap.bundleName = pageBundleName;
+        }
         if (this.options.sourceRoot) {
             let inspector = await this.dumpInspector(hap.bundleName);
             page.mergeInspector(inspector.layout);
         }
 
         // set hap running state
-        if (page.getBundleName() === hap.bundleName) {
+        if (pageBundleName === hap.bundleName) {
             let snapshot = this.getSnapshot(true);
             page.setSnapshot(snapshot);
             return page;
@@ -400,6 +426,41 @@ export class Device implements EventSimulator {
             diffLogs,
             this.coverage ? this.coverage.getCoverageFile(onForeground) : undefined
         );
+    }
+
+    private createFallbackPage(): Page {
+        const root = new Component();
+        root.type = 'Empty';
+        const tree = new ViewTree(root);
+        return new Page(tree, '', '', '');
+    }
+
+    private async teardownDriver(): Promise<void> {
+        if (!this.driverCtx) {
+            return;
+        }
+
+        const ctx = this.driverCtx;
+        this.driverCtx = undefined;
+        this.displaySize = undefined;
+
+        try {
+            await ctx.driver.free();
+        } catch {
+            // ignore driver cleanup errors
+        }
+
+        try {
+            await ctx.rpc.close();
+        } catch {
+            // ignore rpc cleanup errors
+        }
+
+        try {
+            await ctx.agent.stop();
+        } catch {
+            // ignore agent cleanup errors
+        }
     }
 
     /**

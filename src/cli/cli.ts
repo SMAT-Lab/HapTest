@@ -13,21 +13,105 @@
  * limitations under the License.
  */
 
-import { program } from 'commander';
-import { Fuzz } from '../runner/fuzz';
-import path from 'path';
 import fs from 'fs';
-import { HapTestLogger, LOG_LEVEL } from '../utils/logger';
+import path from 'path';
+import { program } from 'commander';
+import { getLogger } from 'log4js';
+import { Fuzz } from '../runner/fuzz';
 import { FuzzOptions } from '../runner/fuzz_options';
 import { EnvChecker } from './env_checker';
-import { getLogger } from 'log4js';
+import { HapTestLogger, LOG_LEVEL } from '../utils/logger';
+import { startUIViewerServer } from '../ui/ui_viewer_server';
+
 const logger = getLogger();
 
+interface BaseOptions {
+    debug?: boolean;
+}
+
+const parsePackageConfig = () => {
+    return JSON.parse(fs.readFileSync(path.join(__dirname, '../../package.json'), { encoding: 'utf-8' }));
+};
+
+function resolveLogLevel(opts: BaseOptions): LOG_LEVEL {
+    return opts.debug ? LOG_LEVEL.DEBUG : LOG_LEVEL.INFO;
+}
+
+async function runFuzzCommand(options: any): Promise<void> {
+    const outputDir = path.resolve(options.output ?? 'out');
+    const logLevel = resolveLogLevel(options);
+
+    HapTestLogger.configure(path.join(outputDir, 'haptest.log'), logLevel);
+    logger.info(`haptest start by args ${JSON.stringify(options)}.`);
+
+    const fuzzOption: FuzzOptions = {
+        connectkey: options.target,
+        hap: options.hap,
+        policyName: options.policy,
+        output: outputDir,
+        coverage: options.coverage,
+        reportRoot: options.report,
+        excludes: options.exclude,
+        llm: options.llm,
+        simK: options.simK,
+        staticConfig: options.staticConfig,
+    };
+
+    const envChecker = new EnvChecker(fuzzOption);
+    envChecker.check();
+
+    const fuzz = new Fuzz(fuzzOption);
+    await fuzz.start();
+    logger.info('stop fuzz.');
+    process.exit();
+}
+
+async function runUIViewerCommand(options: any, version: string): Promise<void> {
+    const outputDir = path.resolve(options.output ?? 'out');
+    fs.mkdirSync(outputDir, { recursive: true });
+
+    const logLevel = resolveLogLevel(options);
+    const port = Number(options.port);
+    if (Number.isNaN(port) || port <= 0) {
+        throw new Error(`Invalid port: ${options.port}`);
+    }
+
+    HapTestLogger.configure(path.join(outputDir, 'haptest.log'), logLevel);
+    const targetLabel = options.target ?? 'auto';
+    logger.info(`haptest ui-viewer start with target=${targetLabel}, port=${port}`);
+
+    await startUIViewerServer({
+        connectKey: options.target,
+        outputDir,
+        port,
+        logLevel,
+        version,
+    });
+}
+
 (async function (): Promise<void> {
-    let packageCfg = JSON.parse(fs.readFileSync(path.join(__dirname, '../../package.json'), { encoding: 'utf-8' }));
+    const packageCfg = parsePackageConfig();
+
+    program.name(packageCfg.name).version(packageCfg.version);
+
     program
-        .name(packageCfg.name)
-        .version(packageCfg.version)
+        .command('ui-viewer')
+        .description('Start the HapTest UI viewer web service')
+        .option('-t, --target [connectkey]', 'hdc connectkey')
+        .option('-p, --port <port>', 'http port', '7789')
+        .option('-o, --output <dir>', 'output dir', 'out/ui-viewer')
+        .option('--debug', 'debug log level', false)
+        .action(async (cmdOptions) => {
+            try {
+                await runUIViewerCommand(cmdOptions, packageCfg.version);
+            } catch (err) {
+                logger.error('Failed to start ui-viewer command.', err);
+                process.exit(1);
+            }
+        });
+
+    program
+        .description('HapTest fuzz runner')
         .option('-i --hap <file/bundleName/sourceRoot/ALL>', 'HAP bundle name or HAP file path or HAP project source root')
         .option('-o --output <dir>', 'output dir', 'out')
         .option('--policy <policyName>', 'policy name', 'manu')
@@ -38,35 +122,15 @@ const logger = getLogger();
         .option('--exclude [excludes...]', 'exclude bundle name')
         .option('--llm', 'start llm policy', false)
         .option('--simK <number>', '', '8')
-        .option('--staticConfig <file>', '静态引导策略配置文件路径')
-        .parse();
-    let options = program.opts();
-    let logLevel = LOG_LEVEL.INFO;
-    if (options.debug) {
-        logLevel = LOG_LEVEL.DEBUG;
-    }
+        .option('--staticConfig <file>', 'Path to static configuration file')
+        .action(async (cmdOptions) => {
+            try {
+                await runFuzzCommand(cmdOptions);
+            } catch (err) {
+                logger.error('haptest fuzz command failed.', err);
+                process.exit(1);
+            }
+        });
 
-    let fuzzOption: FuzzOptions = {
-        connectkey: options.target,
-        hap: options.hap,
-        policyName: options.policy,
-        output: options.output,
-        coverage: options.coverage,
-        reportRoot: options.report,
-        excludes: options.exclude,
-        llm: options.llm,
-        simK: options.simK,
-        staticConfig: options.staticConfig,
-    };
-    
-    HapTestLogger.configure(path.join(options.output, 'haptest.log'), logLevel);
-    logger.info(`haptest start by args ${JSON.stringify(options)}.`);
-
-    let envChecker = new EnvChecker(fuzzOption);
-    envChecker.check();
-
-    let fuzz = new Fuzz(fuzzOption);
-    await fuzz.start();
-    logger.info('stop fuzz.');
-    process.exit();
+    await program.parseAsync(process.argv);
 })();

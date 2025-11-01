@@ -20,18 +20,22 @@ import { HypiumRpc } from './hypium_rpc';
 import { PointerMatrix } from './pointer_matrix';
 import { UitestAgent } from './uitest_agent';
 
-export async function buildDriverImpl(device: Device): Promise<ArkUiDriver> {
-    // set uitest agent mode
+export interface DriverContext {
+    driver: ArkUiDriver;
+    rpc: HypiumRpc;
+    agent: UitestAgent;
+}
+
+export async function buildDriverImpl(device: Device): Promise<DriverContext> {
     let agent = new UitestAgent(device);
     await agent.start();
-    
-    // create rpc
+
     let rpc = new HypiumRpc();
     await rpc.connect(agent.getHostPort());
 
     let driver = new ArkUiDriver(rpc);
     await driver.create();
-    return driver;
+    return { driver, rpc, agent };
 }
 
 export async function buildPointerMetrix(rpc: HypiumRpc, gestures: Gesture[], speed: number = 2000): Promise<PointerMatrix> {

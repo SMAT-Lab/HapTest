@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HapTest UI Viewer</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-theme-dark@1.0.2/lib/index.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
+</head>
+<body>
+    <div
+        id="app"
+        v-loading="isConnecting || isDumping"
+        element-loading-spinner="el-icon-loading"
+        element-loading-background="rgba(0, 0, 0, 0.7)">
+
+        <div class="header">
+            <div style="margin-right: 20px; display: flex; flex-direction: column;">
+                <span style="font-weight: bold; font-size: 20px;">UI Viewer</span>
+                <span style="font-size: 12px; color: #9ca3af;">v{{version}}</span>
+            </div>
+
+            <el-tag size="medium" type="info" effect="dark" style="margin-right: 15px;">Platform: HarmonyOS</el-tag>
+
+            <el-select
+              v-model="selectedDevice"
+              placeholder="Select Device"
+              :loading="isLoadingDevices"
+              clearable
+              style="margin-right: 15px; width: 240px;"
+              @visible-change="onDeviceDropdownVisible">
+              <el-option
+                v-for="device in devices"
+                :key="device.serial"
+                :label="formatDeviceOption(device)"
+                :value="device.serial">
+              </el-option>
+            </el-select>
+
+            <el-button 
+              :disabled="isConnecting"
+              type="primary"
+              style="margin-right: 10px; width: 160px;"
+              @click="connectDevice">
+              <span v-if="isConnecting" class="el-icon-loading"></span>
+              <span v-else>{{ isConnected ? 'Reconnect Device' : 'Connect Device' }}</span>
+            </el-button>
+
+            <el-tag size="medium" :type="isConnected ? 'success' : 'warning'" effect="dark" style="margin-right: 15px;">
+                {{ isConnected ? ('Device: ' + (deviceAlias || 'auto')) : 'Device: Not connected' }}
+            </el-tag>
+
+            <el-button 
+              :disabled="!isConnected || isDumping"
+              style="margin-right: 10px; width: 180px;"
+              @click="screenshotAndDumpHierarchy">
+              <span v-if="isDumping" class="el-icon-loading"></span>
+              <span>Fetch Current Page</span>
+            </el-button>
+
+            <div style="flex: 1;"></div>
+            <el-link
+              class="custom-link"
+              href="https://github.com/SMAT-Lab/HapTest"
+              target="_blank"
+              :underline="false">GitHub
+            </el-link>
+        </div>
+
+        <div class="main">
+            <div class="left">
+                <canvas id="screenshotCanvas"></canvas>
+                <canvas id="hierarchyCanvas"></canvas>
+            </div>
+
+            <div class="center" :style="{ width: centerWidth + 'px' }">
+                <p class="region-title">Selected Element Info</p>
+                <el-table
+                  :data="selectedNodeDetails"
+                  style="width: 100%"
+                  class="custom-table">
+                  <el-table-column prop="key" label="Key" width="35%"></el-table-column>
+                  <el-table-column label="Value" width="65%">
+                    <template slot-scope="scope">
+                      <code style="padding: 0 5px;">{{ scope.row.value }}</code>
+                      <el-button
+                        class="el-button attr-button"
+                        @click="copyValue(scope.row.value)">Copy
+                      </el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+            </div>
+
+            <div
+              class="divider" 
+              @mousedown="startDrag" 
+              @mouseenter="hoverDivider" 
+              @mouseleave="leaveDivider"
+              :class="{ 'divider-hover': isDividerHovered, 'divider-dragging': isDragging }">
+            </div>
+
+            <div class="right">
+                <p class="region-title">UI hierarchy</p>
+                <el-input
+                  class="custom-input"
+                  placeholder="Search for ..."
+                  style="margin-left: 10px; margin-bottom: 10px;"
+                  v-model="nodeFilterText">
+                </el-input>
+                <div class="hierarchy-tree-wrapper">
+                    <el-tree
+                        class="custom-tree"
+                        ref="treeRef"
+                        :data="treeData"
+                        :props="defaultTreeProps"
+                        @node-click="handleTreeNodeClick"
+                        node-key="_id"
+                        default-expand-all
+                        :expand-on-click-node="false"
+                        :filter-node-method="filterNode">
+                    </el-tree>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script type="module" src="/static/js/index.js"></script>
+</body>
+</html>
