@@ -541,19 +541,22 @@ export class Device implements EventSimulator {
     }
 
     dumpHap(hap: Hap): void {
+        const localPath = path.join(this.options.output, hap.bundleName);
         this.hdc.recvFile(`/data/app/el1/bundle/public/${hap.bundleName}`, this.options.output);
         const pid = this.hdc.pidof(hap.bundleName);
         let files = new Set(this.hdc.getProcMaps(pid, /[\S]*\.h[as]{1}p$/).map((value) => value.file));
         for (const file of files) {
-            this.hdc.recvFile(file, path.join(this.options.output, hap.bundleName));
+            this.hdc.recvFile(file, localPath);
         }
 
         let remote = `/data/local/tmp/${hap.bundleName}_decrypt`;
         this.hdc.mkDir(remote);
         
         this.hdc.memdump(pid, remote, /[\S]*\.h[as]{1}p$/);
-        this.hdc.recvFile(remote, `${this.options.output}/${hap.bundleName}/decrypt`);
+        this.hdc.recvFile(remote, `${localPath}/decrypt`);
         this.hdc.rmDir(remote);
-        fs.renameSync(path.join(this.options.output, hap.bundleName), path.join(this.options.output, `${hap.bundleName}@${hap.versionName}`))
+        if (fs.existsSync(localPath)) {
+            fs.renameSync(localPath, path.join(this.options.output, `${hap.bundleName}@${hap.versionName}`));
+        }
     }
 }
