@@ -222,11 +222,14 @@ export class Hdc {
      *
      * @param pid process pid
      * @param prefix output prefix file name
-     * @param fileReg normal app match regex: /^\/data\/storage\/el1\/bundle\/[\S]*[.hap|.hsp]$/
+     * @param fileReg normal app match regex: /^\/data\/storage\/el1\/bundle\/.*\.(hap|hsp|so)$/
+     * @param maps optional pre-fetched maps, if provided, will skip getProcMaps call
      */
-    memdump(pid: number, remoteOutput: string, fileReg: RegExp): void {
+    memdump(pid: number, remoteOutput: string, fileReg: RegExp, maps?: { start: string; end: string; file: string }[]): void {
         let idxMap: Map<string, number> = new Map();
-        let maps = this.getProcMaps(pid, fileReg);
+        if (!maps) {
+            maps = this.getProcMaps(pid, fileReg);
+        }
         for (const map of maps) {
             let idx = 0;
             if (idxMap.has(map.file)) {
@@ -255,6 +258,11 @@ export class Hdc {
     }
 
     getProcMaps(pid: number, fileReg?: RegExp): { start: string; end: string; file: string }[] {
+        const result = this.getProcMapsWithRaw(pid, fileReg);
+        return result.maps;
+    }
+
+    getProcMapsWithRaw(pid: number, fileReg?: RegExp): { maps: { start: string; end: string; file: string }[]; rawOutput: string } {
         let maps: { start: string; end: string; file: string }[] = [];
         let cmd = `cat /proc/${pid}/maps`;
 
@@ -272,13 +280,17 @@ export class Hdc {
                     maps.length === 0 ||
                     !(`0x${addr[0]}` === maps[maps.length - 1].end && file === maps[maps.length - 1].file)
                 ) {
+                    // 当前区间与上一条不连续，如该文件已存在于结果中，则忽略后续非连续映射，避免同一文件多段地址
+                    if (maps.find((m) => m.file === file)) {
+                        continue;
+                    }
                     maps.push({ start: `0x${addr[0]}`, end: `0x${addr[1]}`, file: file });
                 } else {
                     maps[maps.length - 1].end = `0x${addr[1]}`;
                 }
             }
         }
-        return maps;
+        return { maps, rawOutput: output };
     }
 
     startBftp(hap: Hap): { pid: number; port: number } {

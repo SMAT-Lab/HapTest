@@ -542,21 +542,56 @@ export class Device implements EventSimulator {
 
     dumpHap(hap: Hap): void {
         const localPath = path.join(this.options.output, hap.bundleName);
-        this.hdc.recvFile(`/data/app/el1/bundle/public/${hap.bundleName}`, this.options.output);
+        const remoteBundleDir = `/data/app/el1/bundle/public/${hap.bundleName}`;
+        if (!fs.existsSync(localPath)) {
+            fs.mkdirSync(localPath, { recursive: true });
+        }
+        // 查询 bundle 目录下的文件，只拉取 .hap / .hsp 文件
+        let hasBundleFiles = false;
+        const bundleListOutput = this.hdc.excuteShellCommandSync(`ls ${remoteBundleDir} || true`);
+        for (const line of bundleListOutput.split(/\r?\n/)) {
+            const file = line.trim();
+            if (!file) {
+                continue;
+            }
+            if (file.endsWith('.hap') || file.endsWith('.hsp')) {
+                this.hdc.recvFile(`${remoteBundleDir}/${file}`, `${localPath}/${file}`);
+                hasBundleFiles = true;
+            }
+        }
         const pid = this.hdc.pidof(hap.bundleName);
-        let files = new Set(this.hdc.getProcMaps(pid, /[\S]*\.h[as]{1}p$/).map((value) => value.file));
-        for (const file of files) {
-            this.hdc.recvFile(file, localPath);
+        if (pid === 0) {
+            logger.error(`dumpHap pidof ${hap.bundleName} failed`);
+            return;
+        }
+        const fileReg = /[\S]*\.(hap|hsp)$/;
+        const { maps, rawOutput } = this.hdc.getProcMapsWithRaw(pid, fileReg);
+    
+        // 保存原始 maps 输出到本地文件
+        const mapsFilePath = path.join(localPath, 'proc_maps.txt');
+        fs.writeFileSync(mapsFilePath, rawOutput, 'utf-8');
+
+        // 如果 bundle 目录不存在或其中没有 hap/hsp 文件，则回退到根据 maps 拉取文件
+        if (!hasBundleFiles) {
+            let files = new Set(maps.map((value) => value.file));
+            for (const file of files) {
+                this.hdc.recvFile(file, localPath);
+            }
         }
 
         let remote = `/data/local/tmp/${hap.bundleName}_decrypt`;
         this.hdc.mkDir(remote);
         
-        this.hdc.memdump(pid, remote, /[\S]*\.h[as]{1}p$/);
+        // 使用已获取的 maps，避免重复调用 getProcMaps
+        this.hdc.memdump(pid, remote, fileReg, maps);
         this.hdc.recvFile(remote, `${localPath}/decrypt`);
         this.hdc.rmDir(remote);
         if (fs.existsSync(localPath)) {
-            fs.renameSync(localPath, path.join(this.options.output, `${hap.bundleName}@${hap.versionName}`));
+            const targetPath = path.join(this.options.output, `${hap.bundleName}@${hap.versionName}`);
+            if (fs.existsSync(targetPath)) {
+                fs.rmSync(targetPath, { recursive: true, force: true });
+            }
+            fs.renameSync(localPath, targetPath);
         }
     }
 }

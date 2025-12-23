@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { vi, describe, it, expect } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Hdc } from '../../src/device/hdc';
 import * as path from 'path';
 import fs from 'fs';
