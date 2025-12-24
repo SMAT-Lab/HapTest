@@ -132,7 +132,7 @@ export class PtgGreedySearchPolicy extends PTGPolicy {
             let countA =
                 (a.checkable ? 2 : 0) + (a.clickable ? 2 : 0) + (a.longClickable ? 2 : 0) + (a.scrollable ? 2 : 0);
             let countB =
-                (a.checkable ? 2 : 0) + (a.clickable ? 2 : 0) + (a.longClickable ? 2 : 0) + (a.scrollable ? 2 : 0);
+                (b.checkable ? 2 : 0) + (b.clickable ? 2 : 0) + (b.longClickable ? 2 : 0) + (b.scrollable ? 2 : 0);
             if (a.inputable) countA = countA + 1;
             if (b.inputable) countB = countB + 1;
 

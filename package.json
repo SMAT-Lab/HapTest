@@ -1,6 +1,6 @@
 {
   "name": "haptest",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "HapTest is an OpenHarmony application UI automated testing framework.",
   "bin": {
     "haptest": "bin/haptest"
