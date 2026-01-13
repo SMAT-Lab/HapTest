@@ -21,19 +21,21 @@ import { Event } from '../event/event';
 import { Hap } from '../model/hap';
 import { SerializeUtils } from '../utils/serialize_utils';
 import { Page } from '../model/page';
-import { getLogger } from 'log4js';
+import { HapTestLogger } from '../utils/logger';
 import { Transition } from '../model/ptg';
-const logger = getLogger();
+const logger = HapTestLogger.getLogger();
 
 export class EventAction {
     device: Device;
     hap: Hap;
+    deviceType?: string;
     transition: Transition;
     output: string;
 
-    constructor(device: Device, hap: Hap, page: Page, event: Event) {
+    constructor(device: Device, hap: Hap, page: Page, event: Event, deviceType?: string) {
         this.device = device;
         this.hap = hap;
+        this.deviceType = deviceType;
         this.transition = { from: page, event: event, to: page };
         this.output = path.join(device.getOutput(), 'events');
         if (!fs.existsSync(this.output)) {

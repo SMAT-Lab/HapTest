@@ -117,7 +117,7 @@ export class RunnerManager {
     }
 
     protected async addEvent(page: Page, event: Event): Promise<Page> {
-        let eventExcute = new EventAction(this.device, this.hap, page, event);
+        let eventExcute = new EventAction(this.device, this.hap, page, event, this.options.deviceType);
         await eventExcute.start();
         // sleep interval
         await sleep(EVENT_INTERVAL);

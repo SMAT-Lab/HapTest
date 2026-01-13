@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+*     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -208,7 +208,18 @@ export class Device implements EventSimulator {
                 `dumpViewTree attempt=${attempt} layoutType=${layout ? typeof layout : 'undefined'} pages=${pages.length}`
             );
             // if exist keyboard then close and dump again.
-            if (this.closeKeyboard(pages)) {
+            // If device type is 2in1 (from options) send Enter to confirm input and skip hide action.
+            const rawDeviceTypeOpt = this.options && this.options.deviceType ? String(this.options.deviceType) : '';
+            const deviceTypeOpt = rawDeviceTypeOpt.trim().toLowerCase();
+            logger.debug(`dumpViewTree deviceType (from options): '${rawDeviceTypeOpt}' -> '${deviceTypeOpt}'`);
+            if (deviceTypeOpt === '2in1') {
+                logger.info('2in1 设备：发送回车以确认输入，跳过收起键盘逻辑');
+                try {
+                    await this.inputKey(KeyCode.KEYCODE_ENTER);
+                } catch (err) {
+                    logger.warn('发送回车键失败', err);
+                }
+            } else if (this.closeKeyboard(pages)) {
                 logger.info('Keyboard detected during dumpViewTree, sending hide event and retrying.');
                 // for sleep
                 this.hdc.getDeviceUdid();
@@ -267,10 +278,53 @@ export class Device implements EventSimulator {
     }
 
     /**
+     * Check if a point is inside a component's bounds
+     */
+    private isPointInComponent(point: Point, component: Component): boolean {
+        if (!component.bounds || component.bounds.length < 2) {
+            return false;
+        }
+        const left = Math.min(component.bounds[0].x, component.bounds[1].x);
+        const right = Math.max(component.bounds[0].x, component.bounds[1].x);
+        const top = Math.min(component.bounds[0].y, component.bounds[1].y);
+        const bottom = Math.max(component.bounds[0].y, component.bounds[1].y);
+
+        return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
+    }
+
+    /**
+     * Check if a component is a control button that should be skipped
+     */
+    private isControlButton(component: Component): boolean {
+        const controlButtonIds = ['EnhanceMaximizeBtn', 'EnhanceMinimizeBtn', 'EnhanceCloseBtn'];
+        const id = component.id || '';
+        const key = component.key || '';
+        
+        return controlButtonIds.includes(id) || controlButtonIds.includes(key);
+    }
+
+    /**
      * Simulate a single click
      * @param point
      */
     async click(point: Point): Promise<void> {
+        const deviceType = this.getDeviceType().trim().toLowerCase();
+
+        if (deviceType === '2in1') {
+            try {
+                const page = await this.dumpViewTree();
+                const components = page.getComponents();
+                for (const comp of components) {
+                    if (this.isPointInComponent(point, comp) && this.isControlButton(comp)) {
+                        logger.info(`2in1 device: skipping click on control button ${comp.id || comp.key}`);
+                        return;
+                    }
+                }
+            } catch (err) {
+                logger.warn('Error detecting component at click point', err);
+            }
+        }
+
         await this.driverCtx?.driver?.click(point.x, point.y);
     }
 
@@ -279,6 +333,23 @@ export class Device implements EventSimulator {
      * @param point
      */
     async doubleClick(point: Point): Promise<void> {
+        const deviceType = this.getDeviceType().trim().toLowerCase();
+
+        if (deviceType === '2in1') {
+            try {
+                const page = await this.dumpViewTree();
+                const components = page.getComponents();
+                for (const comp of components) {
+                    if (this.isPointInComponent(point, comp) && this.isControlButton(comp)) {
+                        logger.info(`2in1 device: skipping double click on control button ${comp.id || comp.key}`);
+                        return;
+                    }
+                }
+            } catch (err) {
+                logger.warn('Error detecting component at double click point', err);
+            }
+        }
+
         await this.driverCtx?.driver?.doubleClick(point.x, point.y);
     }
 
@@ -287,6 +358,23 @@ export class Device implements EventSimulator {
      * @param point
      */
     async longClick(point: Point): Promise<void> {
+        const deviceType = this.getDeviceType().trim().toLowerCase();
+
+        if (deviceType === '2in1') {
+            try {
+                const page = await this.dumpViewTree();
+                const components = page.getComponents();
+                for (const comp of components) {
+                    if (this.isPointInComponent(point, comp) && this.isControlButton(comp)) {
+                        logger.info(`2in1 device: skipping long click on control button ${comp.id || comp.key}`);
+                        return;
+                    }
+                }
+            } catch (err) {
+                logger.warn('Error detecting component at long click point', err);
+            }
+        }
+
         await this.driverCtx?.driver?.longClick(point.x, point.y);
     }
 
