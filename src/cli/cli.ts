@@ -44,24 +44,32 @@ async function runFuzzCommand(options: any): Promise<void> {
     HapTestLogger.configure(path.join(outputDir, 'haptest.log'), logLevel);
     logger.info(`haptest start by args ${JSON.stringify(options)}.`);
 
-    const fuzzOption: FuzzOptions = {
-        connectkey: options.target,
-        hap: options.hap,
-        policyName: options.policy,
-        output: outputDir,
-        coverage: options.coverage,
-        reportRoot: options.report,
-        excludes: options.exclude,
-        llm: options.llm,
-        simK: options.simK,
-        staticConfig: options.staticConfig,
-    };
+    const hapList: string[] = Array.isArray(options.hap) ? options.hap : options.hap != null ? [options.hap] : [];
+    if (hapList.length === 0) {
+        logger.error('At least one -i/--hap is required.');
+        process.exit(1);
+    }
 
-    const envChecker = new EnvChecker(fuzzOption);
-    envChecker.check();
+    for (const hap of hapList) {
+        const fuzzOption: FuzzOptions = {
+            connectkey: options.target,
+            hap,
+            policyName: options.policy,
+            output: outputDir,
+            coverage: options.coverage,
+            reportRoot: options.report,
+            excludes: options.exclude,
+            llm: options.llm,
+            simK: options.simK,
+            staticConfig: options.staticConfig,
+        };
 
-    const fuzz = new Fuzz(fuzzOption);
-    await fuzz.start();
+        const envChecker = new EnvChecker(fuzzOption);
+        envChecker.check();
+
+        const fuzz = new Fuzz(fuzzOption);
+        await fuzz.start();
+    }
     logger.info('stop fuzz.');
     process.exit();
 }
@@ -112,7 +120,7 @@ async function runUIViewerCommand(options: any, version: string): Promise<void> 
 
     program
         .description('HapTest fuzz runner')
-        .option('-i --hap <file/bundleName/sourceRoot/ALL>', 'HAP bundle name or HAP file path or HAP project source root')
+        .option('-i, --hap <items...>', 'HAP bundle name or HAP file path or HAP project source root (can specify multiple)')
         .option('-o --output <dir>', 'output dir', 'out')
         .option('--policy <policyName>', 'policy name', 'manu')
         .option('-t --target [connectkey]', 'hdc connectkey', undefined)
