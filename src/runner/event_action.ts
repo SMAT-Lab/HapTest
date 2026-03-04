@@ -18,6 +18,7 @@ import fs from 'fs';
 import moment from 'moment';
 import { Device } from '../device/device';
 import { Event } from '../event/event';
+import { AbilityEvent } from '../event/system_event';
 import { Hap } from '../model/hap';
 import { SerializeUtils } from '../utils/serialize_utils';
 import { Page } from '../model/page';
@@ -50,6 +51,13 @@ export class EventAction {
 
     async stop() {
         this.transition.to = await this.device.getCurrentPage(this.hap);
+        
+        // If this was an AbilityEvent (app launch), ensure the app is in fullscreen mode
+        if (this.transition.event instanceof AbilityEvent) {
+            logger.info('AbilityEvent detected, checking and ensuring fullscreen mode');
+            await this.device.ensureFullscreen(this.hap);
+        }
+        
         logger.info(`EventAction->stop`);
         this.save();
     }
