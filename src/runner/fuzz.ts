@@ -17,6 +17,9 @@ import { Device } from '../device/device';
 import { GlobMatch } from '../utils/glob_match';
 import { FuzzOptions } from './fuzz_options';
 import { RunnerManager } from './runner_manager';
+import { HapTestLogger } from '../utils/logger';
+
+const logger = HapTestLogger.getLogger();
 
 /**
  * Fuzz test entrance
@@ -31,6 +34,15 @@ export class Fuzz {
     }
 
     async start() {
+        // 在开始执行时，先检测设备类型并保存到 options 中
+        try {
+            const deviceType = this.device.getDeviceType();
+            this.options.deviceType = deviceType;
+            logger.info(`Detected device type: ${deviceType}`);
+            console.log(`设备类型: ${deviceType}`);
+        } catch (err) {
+            logger.error('Failed to detect device type.', err);
+        }
         if (this.options.bundleName !== 'ALL') {
             await this.startOneBundle(this.options.bundleName);
             return;

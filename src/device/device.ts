@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+*     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -49,12 +49,15 @@ export class Device implements EventSimulator {
     private displaySize?: Point;
     private udid: string;
     private options: FuzzOptions;
+    private readonly is2in1Device: boolean;
     private arkuiInspector: ArkUIInspector;
     private lastFaultlogs: Set<string>;
     private driverCtx?: DriverContext;
 
     constructor(options: FuzzOptions) {
         this.options = options;
+        const rawDeviceTypeOpt = options && options.deviceType ? String(options.deviceType) : '';
+        this.is2in1Device = rawDeviceTypeOpt.trim().toLowerCase() === '2in1';
         this.hdc = new Hdc(options.connectkey);
         this.output = path.join(path.resolve(options.output), moment().format('YYYY-MM-DD-HH-mm-ss'));
         this.udid = this.hdc.getDeviceUdid();
@@ -194,6 +197,125 @@ export class Device implements EventSimulator {
     }
 
     /**
+     * Ensure the application is in fullscreen mode.
+     * If not, find and click the EnhanceMaximizeBtn to maximize the window.
+     * @param hap The HAP instance to check
+     * @returns true if already fullscreen or successfully maximized, false otherwise
+     */
+    async ensureFullscreen(hap: Hap): Promise<boolean> {
+        try {
+            // Wait a bit for the app to fully load after launch
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            
+            // Get all pages from dumpViewTree, not just the "current" one
+            // because the app window might not be the largest page yet
+            let layout = await this.driverCtx!.driver.dumpLayout();
+            let pages = PageBuilder.buildPagesFromLayout(layout);
+            
+            // Try to find the page that matches the target bundle name
+            let targetPage: Page | undefined;
+            for (const p of pages) {
+                if (p.getBundleName() === hap.bundleName && !p.isStop() && !p.isBackground()) {
+                    targetPage = p;
+                    break;
+                }
+            }
+            
+            // If not found, use the largest page (similar to dumpViewTree logic)
+            if (!targetPage && pages.length > 0) {
+                pages.sort((a: Page, b: Page) => {
+                    return b.getRoot().getHeight() - a.getRoot().getHeight();
+                });
+                targetPage = pages[0];
+            }
+            
+            if (!targetPage) {
+                logger.warn('No page found for fullscreen check');
+                return false;
+            }
+            
+            const page = targetPage;
+            
+            // Check if the app is stopped or in background
+            if (page.isStop() || page.isBackground()) {
+                logger.debug('App is stopped or in background, skipping fullscreen check');
+                return false;
+            }
+
+            const root = page.getRoot();
+            const windowWidth = root.getWidth();
+            const windowHeight = root.getHeight();
+            const screenWidth = this.getWidth();
+            const screenHeight = this.getHeight();
+
+            // Check if window size matches screen size (with small tolerance for rounding)
+            const widthMatch = Math.abs(windowWidth - screenWidth) <= 10;
+            const heightMatch = Math.abs(windowHeight - screenHeight) <= 100;
+
+            if (widthMatch && heightMatch) {
+                logger.debug('Application is already in fullscreen mode');
+                return true;
+            }
+
+            logger.info(
+                `Application is not fullscreen. Window: ${windowWidth}x${windowHeight}, Screen: ${screenWidth}x${screenHeight}. Attempting to maximize.`
+            );
+
+            // Find the EnhanceMaximizeBtn component (similar to closeKeyboard method)
+            // Debug: log page bundle name and component count
+            const pageBundleName = page.getBundleName();
+            const components = page.getComponents();
+            logger.debug(`ensureFullscreen: page bundleName=${pageBundleName}, hap bundleName=${hap.bundleName}, component count=${components.length}`);
+            
+            let maximizeBtnFound = false;
+            for (const component of components) {
+                // Debug: log components with id or key containing "Enhance" or "Maximize"
+                if (component.id && (component.id.includes('Enhance') || component.id.includes('Maximize'))) {
+                    logger.debug(`Found component with id=${component.id}, key=${component.key}, type=${component.type}`);
+                }
+                if (component.key && (component.key.includes('Enhance') || component.key.includes('Maximize'))) {
+                    logger.debug(`Found component with id=${component.id}, key=${component.key}, type=${component.type}`);
+                }
+                
+                if (component.id === 'EnhanceMaximizeBtn' || component.key === 'EnhanceMaximizeBtn') {
+                    logger.info(`Found EnhanceMaximizeBtn, id=${component.id}, key=${component.key}, bounds=${JSON.stringify(component.bounds)}, clicking to maximize`);
+                    this.sendEvent(new TouchEvent(component));
+                    maximizeBtnFound = true;
+                    break;
+                }
+            }
+
+            if (!maximizeBtnFound) {
+                logger.warn(`EnhanceMaximizeBtn not found. Searched ${components.length} components in page with bundleName=${pageBundleName}`);
+                return false;
+            }
+            
+            // Wait for the window to maximize
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            
+            // Verify the window is now fullscreen
+            const updatedPage = await this.getCurrentPage(hap);
+            const updatedRoot = updatedPage.getRoot();
+            const newWidth = updatedRoot.getWidth();
+            const newHeight = updatedRoot.getHeight();
+            
+            const newWidthMatch = Math.abs(newWidth - screenWidth) <= 2;
+            const newHeightMatch = Math.abs(newHeight - screenHeight) <= 2;
+
+            if (newWidthMatch && newHeightMatch) {
+                logger.info('Successfully maximized application to fullscreen');
+                return true;
+            } else {
+                logger.warn(`Maximize button clicked but window size still not fullscreen. New size: ${newWidth}x${newHeight}`);
+                return false;
+            }
+        } catch (error) {
+            logger.error('Error during fullscreen check/maximize operation', error);
+            return false;
+        }
+    }
+
+    /**
      * Dump UI component view tree
      * @returns
      */
@@ -207,8 +329,20 @@ export class Device implements EventSimulator {
             logger.debug(
                 `dumpViewTree attempt=${attempt} layoutType=${layout ? typeof layout : 'undefined'} pages=${pages.length}`
             );
-            // if exist keyboard then close and dump again.
-            if (this.closeKeyboard(pages)) {
+            const hasKeyboardPage = this.hasKeyboardPage(pages);
+            // 2in1: 仅在检测到输入法页面时发送回车确认，且不尝试收起键盘
+            if (this.is2in1Device) {
+                if (hasKeyboardPage) {
+                    logger.info('2in1 设备检测到输入法页面：发送回车以确认输入，跳过收起键盘逻辑');
+                    try {
+                        await this.inputKey(KeyCode.KEYCODE_ENTER);
+                    } catch (err) {
+                        logger.warn('2in1 设备发送回车键失败', err);
+                    }
+                } else {
+                    logger.debug('2in1 设备：未检测到输入法页面，跳过键盘处理');
+                }
+            } else if (this.closeKeyboard(pages)) {
                 logger.info('Keyboard detected during dumpViewTree, sending hide event and retrying.');
                 // for sleep
                 this.hdc.getDeviceUdid();
@@ -257,6 +391,15 @@ export class Device implements EventSimulator {
         return false;
     }
 
+    private hasKeyboardPage(pages: Page[]): boolean {
+        for (const page of pages) {
+            if (page.getBundleName() === 'com.huawei.hmos.inputmethod') {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Dump inspector layout and snapshot
      * @param bundleName
@@ -267,10 +410,53 @@ export class Device implements EventSimulator {
     }
 
     /**
+     * Check if a point is inside a component's bounds
+     */
+    private isPointInComponent(point: Point, component: Component): boolean {
+        if (!component.bounds || component.bounds.length < 2) {
+            return false;
+        }
+        const left = Math.min(component.bounds[0].x, component.bounds[1].x);
+        const right = Math.max(component.bounds[0].x, component.bounds[1].x);
+        const top = Math.min(component.bounds[0].y, component.bounds[1].y);
+        const bottom = Math.max(component.bounds[0].y, component.bounds[1].y);
+
+        return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
+    }
+
+    /**
+     * Check if a component is a control button that should be skipped
+     */
+    private isControlButton(component: Component): boolean {
+        const controlButtonIds = ['EnhanceMaximizeBtn', 'EnhanceMinimizeBtn', 'EnhanceCloseBtn'];
+        const id = component.id || '';
+        const key = component.key || '';
+        
+        return controlButtonIds.includes(id) || controlButtonIds.includes(key);
+    }
+
+    /**
      * Simulate a single click
      * @param point
      */
     async click(point: Point): Promise<void> {
+        const deviceType = this.getDeviceType().trim().toLowerCase();
+
+        if (deviceType === '2in1') {
+            try {
+                const page = await this.dumpViewTree();
+                const components = page.getComponents();
+                for (const comp of components) {
+                    if (this.isPointInComponent(point, comp) && this.isControlButton(comp)) {
+                        logger.info(`2in1 device: skipping click on control button ${comp.id || comp.key}`);
+                        return;
+                    }
+                }
+            } catch (err) {
+                logger.warn('Error detecting component at click point', err);
+            }
+        }
+
         await this.driverCtx?.driver?.click(point.x, point.y);
     }
 
@@ -279,6 +465,23 @@ export class Device implements EventSimulator {
      * @param point
      */
     async doubleClick(point: Point): Promise<void> {
+        const deviceType = this.getDeviceType().trim().toLowerCase();
+
+        if (deviceType === '2in1') {
+            try {
+                const page = await this.dumpViewTree();
+                const components = page.getComponents();
+                for (const comp of components) {
+                    if (this.isPointInComponent(point, comp) && this.isControlButton(comp)) {
+                        logger.info(`2in1 device: skipping double click on control button ${comp.id || comp.key}`);
+                        return;
+                    }
+                }
+            } catch (err) {
+                logger.warn('Error detecting component at double click point', err);
+            }
+        }
+
         await this.driverCtx?.driver?.doubleClick(point.x, point.y);
     }
 
@@ -287,6 +490,23 @@ export class Device implements EventSimulator {
      * @param point
      */
     async longClick(point: Point): Promise<void> {
+        const deviceType = this.getDeviceType().trim().toLowerCase();
+
+        if (deviceType === '2in1') {
+            try {
+                const page = await this.dumpViewTree();
+                const components = page.getComponents();
+                for (const comp of components) {
+                    if (this.isPointInComponent(point, comp) && this.isControlButton(comp)) {
+                        logger.info(`2in1 device: skipping long click on control button ${comp.id || comp.key}`);
+                        return;
+                    }
+                }
+            } catch (err) {
+                logger.warn('Error detecting component at long click point', err);
+            }
+        }
+
         await this.driverCtx?.driver?.longClick(point.x, point.y);
     }
 
@@ -375,11 +595,47 @@ export class Device implements EventSimulator {
      * @returns
      */
     async getCurrentPage(hap: Hap): Promise<Page> {
-        let page = await this.dumpViewTree();
+        // Get all pages from dumpLayout to find the correct one
+        let layout = await this.driverCtx!.driver.dumpLayout();
+        let pages = PageBuilder.buildPagesFromLayout(layout);
+        
+        // If we have a target bundleName, try to find matching page first
+        let page: Page | undefined;
+        if (hap.bundleName) {
+            for (const p of pages) {
+                if (p.getBundleName() === hap.bundleName && !p.isStop() && !p.isBackground()) {
+                    page = p;
+                    logger.debug(`getCurrentPage: Found matching page with bundleName=${hap.bundleName}`);
+                    break;
+                }
+            }
+        }
+        
+        // If no matching page found, use dumpViewTree logic (sort by height)
+        if (!page) {
+            pages.sort((a: Page, b: Page) => {
+                return b.getRoot().getHeight() - a.getRoot().getHeight();
+            });
+            if (pages.length > 0) {
+                page = pages[0];
+                const pageBundleName = page.getBundleName();
+                if (!hap.bundleName) {
+                    hap.bundleName = pageBundleName;
+                }
+                logger.debug(`getCurrentPage: Using largest page with bundleName=${pageBundleName}`);
+            }
+        }
+        
+        if (!page) {
+            logger.warn('getCurrentPage: No page found, returning fallback');
+            return this.createFallbackPage();
+        }
+        
         const pageBundleName = page.getBundleName();
         if (!hap.bundleName) {
             hap.bundleName = pageBundleName;
         }
+        
         if (this.options.sourceRoot) {
             let inspector = await this.dumpInspector(hap.bundleName);
             page.mergeInspector(inspector.layout);

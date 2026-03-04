@@ -24,6 +24,8 @@ export interface FuzzOptions {
     hapFile?: string;
     reportRoot?: string;
     excludes?: string[];
+    // 设备类型，例如: phone, tablet, wearable, car, tv, 2in1
+    deviceType?: string;
     // xmq: add cli option
     llm?: boolean; 
     simK: number;

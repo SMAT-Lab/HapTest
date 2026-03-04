@@ -22,6 +22,7 @@ import { FuzzOptions } from '../runner/fuzz_options';
 import { EnvChecker } from './env_checker';
 import { HapTestLogger, LOG_LEVEL } from '../utils/logger';
 import { startUIViewerServer } from '../ui/ui_viewer_server';
+import { compareDynamicLogs } from '../utils/dynamic_compare';
 
 const logger = getLogger();
 
@@ -97,6 +98,25 @@ async function runUIViewerCommand(options: any, version: string): Promise<void> 
     });
 }
 
+async function runCompareCommand(options: any): Promise<void> {
+    const outputDir = path.resolve(options.output ?? 'out');
+    const logLevel = resolveLogLevel(options);
+    HapTestLogger.configure(path.join(outputDir, 'haptest.log'), logLevel);
+
+    const reportPath = options.report
+        ? path.resolve(options.report)
+        : path.join(outputDir, `compare_${options.app}_mobile_2in1.json`);
+
+    compareDynamicLogs({
+        outputRoot: outputDir,
+        appFolder: options.app,
+        mobileDir: options.mobile,
+        twoInOneDir: options.twoInOne,
+        reportPath,
+        fullWidthTolerance: Number(options.tolerance),
+    });
+}
+
 (async function (): Promise<void> {
     const packageCfg = parsePackageConfig();
 
@@ -114,6 +134,25 @@ async function runUIViewerCommand(options: any, version: string): Promise<void> 
                 await runUIViewerCommand(cmdOptions, packageCfg.version);
             } catch (err) {
                 logger.error('Failed to start ui-viewer command.', err);
+                process.exit(1);
+            }
+        });
+
+    program
+        .command('compare')
+        .description('Compare mobile and 2in1 dynamic logs for the same app')
+        .requiredOption('-a, --app <dir>', 'app log folder name under each device directory')
+        .option('-o, --output <dir>', 'output dir', 'out')
+        .option('--mobile <dir>', 'mobile device folder name', 'mobile')
+        .option('--twoInOne <dir>', '2in1 device folder name', '2in1')
+        .option('--report <file>', 'output report file path')
+        .option('--tolerance <number>', 'full width tolerance in px', '1')
+        .option('--debug', 'debug log level', false)
+        .action(async (cmdOptions) => {
+            try {
+                await runCompareCommand(cmdOptions);
+            } catch (err) {
+                logger.error('haptest compare command failed.', err);
                 process.exit(1);
             }
         });
