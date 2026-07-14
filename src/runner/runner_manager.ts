@@ -71,7 +71,7 @@ export class RunnerManager {
             return;
         }
 
-        let page = await this.device.getCurrentPage(this.hap);
+        let page = await this.device.getCurrentPage(this.hap, !!this.options.startFromCurrentPage);
         while (this.enabled && this.policy.enabled) {     
             let event = await this.policy.generateEvent(page);
             if (event instanceof WaitEvent) {
@@ -83,7 +83,7 @@ export class RunnerManager {
     }
 
     async startWithLLM() {
-        let page = await this.device.getCurrentPage(this.hap);
+        let page = await this.device.getCurrentPage(this.hap, !!this.options.startFromCurrentPage);
         let lastPage = page;
         let event : Event;    
         let isTarpit = false;
@@ -117,7 +117,7 @@ export class RunnerManager {
     }
 
     protected async addEvent(page: Page, event: Event): Promise<Page> {
-        let eventExcute = new EventAction(this.device, this.hap, page, event);
+        let eventExcute = new EventAction(this.device, this.hap, page, event, this.options.deviceType);
         await eventExcute.start();
         // sleep interval
         await sleep(EVENT_INTERVAL);

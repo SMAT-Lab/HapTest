@@ -1,7 +1,8 @@
 {
     "GPT_CONFIG":{
-        "baseURL": "",
-        "apiKey": ""
+        "baseURL": "${YOUR_BASE_URL}",
+        "apiKey": "${YOUR_API_KEY}",
+        "siteURL": "https://github.com/SMAT-Lab/HapTest",
+        "appName": "HapTest"
     }
-    
 } 

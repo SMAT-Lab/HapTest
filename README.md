@@ -39,6 +39,7 @@ Options:
   --policy <policyName>                      policy name (default: "manu")
   -t, --target [connectkey]                  hdc connectkey
   -c, --coverage                             enable coverage (default: false)
+  --from-current-page                        start from the current foreground page of the simulator/device
   --llm                                      enable LLM-guided exploration (default: false)
   --simk <number>                            set similarity threshold K for tarpit detection (default: 3)
   --staticConfig <file>                      path to static analysis configuration file (required when policy=static_guided)
@@ -49,6 +50,7 @@ Options:
 #### Note:
 - ```--policy static_guided:``` Enable the static-analysis-guided exploration policy (requires ```--staticConfig``` to specify the static module configuration file).
 -``` --llm:``` Enable the LLM-based enhanced exploration module; can be combined with static_guided policy for a hybrid strategy.
+- ```--from-current-page:``` Start haptest from the simulator's current foreground page instead of forcing an initial stop/start flow.
 - ```--simk:``` Set the UI similarity threshold for tarpit detection.
 
 ### 2. Using DevEco simulator to run HAP  
