@@ -13,22 +13,16 @@
  * limitations under the License.
  */
 
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { Hdc } from '../../src/device/hdc';
 import * as path from 'path';
 import fs from 'fs';
 
-describe('hdc Test', async () => {
-    let initSpy: ReturnType<typeof vi.spyOn>;
+describe('hdc Test', () => {
     let hdc: Hdc;
 
     beforeEach(() => {
-        initSpy = vi.spyOn(Hdc.prototype as any, 'initDeviceEnv').mockImplementation(() => {});
         hdc = new Hdc();
-    });
-
-    afterEach(() => {
-        initSpy.mockRestore();
     });
     it('test getForegroundProcess', async () => {
         const MOCK_SHELL_OUTPUT_GetForegroundProcess = fs.readFileSync(path.join(__dirname, '../resource/aa_dump.txt'), {

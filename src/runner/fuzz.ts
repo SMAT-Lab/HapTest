@@ -50,7 +50,8 @@ export class Fuzz {
     async startOneBundle(bundleName?: string): Promise<void> {
         let hap = this.device.buildHap(this.options.sourceRoot, this.options.hapFile, bundleName);
         let manager = new RunnerManager(this.device, hap, this.options);
-        await this.device.connect(hap);
+        await this.device.prepareTest(hap);
+        await this.device.connect();
         await manager.start();
     }
 }
