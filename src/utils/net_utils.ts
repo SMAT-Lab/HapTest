@@ -58,11 +58,16 @@ export class ClientSocket {
             }
             if (content) {
                 chunks.push(content as string);
+            } else if (chunks.length === 0) {
+                throw new Error('RPC socket closed before a response was received.');
             }
             try {
                 JSON.parse(chunks.join(''));
                 readMore = false;
             } catch {
+                if (!content) {
+                    throw new Error(`RPC socket closed with an incomplete response (${chunks.join('').length} bytes received).`);
+                }
                 readMore = true;
             }
         } while(readMore);
