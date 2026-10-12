@@ -50,6 +50,9 @@ export class PerfPolicy extends Policy {
                 .hiperfRecord()
                 .then((perfdata) => {
                     this.writePerfData(perfdata);
+                })
+                .catch((err) => {
+                    this.logger.error(`Failed to collect performance data for ${this.hap.bundleName}.`, err);
                 });
             return new AbilityEvent(this.hap.bundleName, this.hap.mainAbility);
         }

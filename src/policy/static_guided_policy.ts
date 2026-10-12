@@ -112,11 +112,23 @@ export class StaticGuidedPolicy extends PTGPolicy {
             })
             .finally(() => {
                 this.logger.info("dumpLayout finally");
-                fs.unlinkSync(filePath); // 删除布局文件
-                this.logger.info(`已删除布局文件: ${filePath}`);
-                // 恢复原始工作目录
-                process.chdir(this.originalCwd);
-                this.logger.info(`恢复到原始目录: ${this.originalCwd}`);
+                try {
+                    if (fs.existsSync(filePath)) {
+                        fs.unlinkSync(filePath);
+                        this.logger.info(`已删除布局文件: ${filePath}`);
+                    }
+                } catch (err) {
+                    this.logger.warn(`清理布局临时文件失败 (${filePath}).`, err);
+                } finally {
+                    if (process.cwd() !== this.originalCwd) {
+                        try {
+                            process.chdir(this.originalCwd);
+                            this.logger.info(`恢复到原始目录: ${this.originalCwd}`);
+                        } catch (err) {
+                            this.logger.error(`恢复工作目录失败 (${this.originalCwd}).`, err);
+                        }
+                    }
+                }
             });
         }
 
