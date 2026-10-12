@@ -80,10 +80,8 @@ class DevicePool {
             this.entries.set(key, entry);
             entry.connectPromise = (async () => {
                 try {
-                    const initialHap = new Hap();
-                    initialHap.bundleName = bundleName ?? '';
-                    logger.info(`[DevicePool] connecting device key=${key} with bundle=${initialHap.bundleName || 'auto'}`);
-                    await device.connect(initialHap);
+                    logger.info(`[DevicePool] connecting device key=${key} with bundle=${bundleName || 'auto'}`);
+                    await device.connect();
                     entry.ready = true;
                     logger.info(`[DevicePool] device key=${key} connected`);
                 } catch (err) {
