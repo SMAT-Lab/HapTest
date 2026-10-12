@@ -15,24 +15,36 @@
 
 import moment from 'moment';
 import { ClientSocket } from '../../utils/net_utils';
+import { getLogger } from 'log4js';
+
+const logger = getLogger();
 
 export class HypiumRpc {
     private socket: ClientSocket;
     private timeout: number;
     private connected: boolean;
+    private endpoint: string;
 
     constructor(timeout: number = 10000) {
         this.socket = new ClientSocket();
         this.timeout = timeout;
         this.connected = false;
+        this.endpoint = 'unknown';
     }
 
     async connect(port: number, address: string = '127.0.0.1'): Promise<boolean> {
+        this.endpoint = `${address}:${port}`;
         this.socket.setTimeout(this.timeout);
-        await this.socket.connect(port, address);
-        this.socket.setTimeout(0);
-        this.connected = true;
-        return this.connected;
+        try {
+            await this.socket.connect(port, address);
+            this.connected = true;
+            return this.connected;
+        } catch (err) {
+            logger.error(`Hypium RPC connect failed (endpoint=${this.endpoint}, timeout=${this.timeout}ms).`, err);
+            throw err;
+        } finally {
+            this.socket.setTimeout(0);
+        }
     }
 
     async close() {
@@ -54,12 +66,26 @@ export class HypiumRpc {
             client: '127.0.0.1',
         };
         this.socket.setTimeout(this.timeout);
-        await this.socket.write(JSON.stringify(data) + '\n');
-        let response = await this.socket.read();
-        this.socket.setTimeout(0);
-        if (response) {
-            response = JSON.parse(response).result;
+        try {
+            await this.socket.write(JSON.stringify(data) + '\n');
+            let response = await this.socket.read();
+            if (response) {
+                response = JSON.parse(response).result;
+            }
+            return response;
+        } catch (err) {
+            const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+            const message = `Hypium RPC request failed (method=${method}, request_id=${data.request_id}, endpoint=${this.endpoint}): ${detail}`;
+            logger.error(message, err);
+            const wrapped = new Error(message);
+            (wrapped as Error & { cause?: unknown }).cause = err;
+            const code = (err as NodeJS.ErrnoException | undefined)?.code;
+            if (code) {
+                (wrapped as NodeJS.ErrnoException).code = code;
+            }
+            throw wrapped;
+        } finally {
+            this.socket.setTimeout(0);
         }
-        return response;
     }
 }

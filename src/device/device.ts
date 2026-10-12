@@ -208,7 +208,7 @@ export class Device implements EventSimulator {
                 `dumpViewTree attempt=${attempt} layoutType=${layout ? typeof layout : 'undefined'} pages=${pages.length}`
             );
             // if exist keyboard then close and dump again.
-            if (this.closeKeyboard(pages)) {
+            if (await this.closeKeyboard(pages)) {
                 logger.info('Keyboard detected during dumpViewTree, sending hide event and retrying.');
                 // for sleep
                 this.hdc.getDeviceUdid();
@@ -231,7 +231,7 @@ export class Device implements EventSimulator {
      * @param pages
      * @returns
      */
-    private closeKeyboard(pages: Page[]): boolean {
+    private async closeKeyboard(pages: Page[]): Promise<boolean> {
         for (const page of pages) {
             if (page.getBundleName() !== 'com.huawei.hmos.inputmethod') {
                 continue;
@@ -239,7 +239,7 @@ export class Device implements EventSimulator {
 
             for (const component of page.getComponents()) {
                 if (component.id === 'hideButton') {
-                    this.sendEvent(new TouchEvent(component));
+                    await this.sendEvent(new TouchEvent(component));
                     return true;
                 }
             }
@@ -249,7 +249,7 @@ export class Device implements EventSimulator {
             });
 
             if (components.length > 1) {
-                this.sendEvent(new TouchEvent(components[2]));
+                await this.sendEvent(new TouchEvent(components[2]));
                 return true;
             }
         }

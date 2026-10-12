@@ -66,7 +66,7 @@ export class Hdc {
 
     hasFile(remote: string): boolean {
         let output = this.excuteShellCommandSync(`ls ${remote}`);
-        return output.indexOf('No such file') === 0;
+        return !/No such file or directory|No such file/i.test(output);
     }
 
     mkDir(remote: string): void {

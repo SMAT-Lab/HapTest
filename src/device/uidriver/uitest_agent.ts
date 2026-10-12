@@ -17,8 +17,10 @@ import path from 'path';
 import { Device } from '../device';
 import { Hdc, NEWLINE } from '../hdc';
 import { hostUnusedPort } from '../../utils/net_utils';
+import { getLogger } from 'log4js';
 
 const RPC_PORT = 8012;
+const logger = getLogger();
 
 export class UitestAgent {
     private device: Device;
@@ -36,15 +38,19 @@ export class UitestAgent {
     }
 
     async start() {
-        if (this.isRunning()) {
-            return;
+        const daemonRunning = this.isRunning();
+        if (daemonRunning) {
+            logger.info(`Uitest agent daemon already listens on device port ${RPC_PORT}.`);
+        } else {
+            logger.info(`Uitest agent daemon is not listening on device port ${RPC_PORT}; preparing agent and starting daemon.`);
+            this.installAgentSo();
+            this.hdc.excuteShellCommandSync('/system/bin/uitest start-daemon singleness &');
         }
 
-        this.installAgentSo();
-        this.hdc.excuteShellCommandSync('/system/bin/uitest start-daemon singleness &');
         this.hostPort = await hostUnusedPort();
         this.hdc.fportRm(`tcp:${this.hostPort}`, `tcp:${RPC_PORT}`);
         this.hdc.fport(`tcp:${this.hostPort}`, `tcp:${RPC_PORT}`);
+        logger.info(`Forwarded local RPC port ${this.hostPort} to device port ${RPC_PORT}.`);
     }
 
     async stop() {
@@ -69,14 +75,16 @@ export class UitestAgent {
         if (archInfo.indexOf('x86_64') > 0) {
             hostAgentFile = path.join(__dirname, '..', '..', '..', 'res/uitest/uitest_agent_v1.0.8.x86_64_so');
         }
-        this.hdc.sendFile(hostAgentFile, deviceAgentFile);
+        const status = this.hdc.sendFile(hostAgentFile, deviceAgentFile);
+        if (status !== 0 || !this.hdc.hasFile(deviceAgentFile)) {
+            throw new Error(`Failed to install uitest agent (${hostAgentFile} -> ${deviceAgentFile}, hdc status=${status}).`);
+        }
     }
 
     private isRunning(): boolean {
         let output = this.hdc.excuteShellCommandSync(`netstat -anp | grep ${RPC_PORT}`);
         for (let line of output.split(NEWLINE)) {
-            let matches = line.match(/[\S]+/g);
-            if (matches?.length === 5) {
+            if (new RegExp(`\\b:${RPC_PORT}\\b.*\\bLISTEN\\b`).test(line)) {
                 return true;
             }
         }

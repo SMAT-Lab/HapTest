@@ -25,6 +25,12 @@ import { startUIViewerServer } from '../ui/ui_viewer_server';
 
 const logger = getLogger();
 
+// Keep Node's default crash behavior while ensuring fatal async/socket errors
+// are written to haptest.log before the process exits.
+process.on('uncaughtExceptionMonitor', (err, origin) => {
+    logger.fatal(`Uncaught process exception (origin=${origin}).`, err);
+});
+
 interface BaseOptions {
     debug?: boolean;
 }
