@@ -14,7 +14,6 @@
  */
 
 import path from 'path';
-import { Device } from '../device';
 import { Hdc, NEWLINE } from '../hdc';
 import { hostUnusedPort } from '../../utils/net_utils';
 import { getLogger } from 'log4js';
@@ -36,8 +35,8 @@ export class UitestAgent {
     private hostPort: number;
     private deviceEndpoint: string;
 
-    constructor(device: Device) {
-        this.hdc = device.getHdc();
+    constructor(hdc: Hdc) {
+        this.hdc = hdc;
         this.hostPort = -1;
         this.deviceEndpoint = `tcp:${RPC_PORT}`;
     }

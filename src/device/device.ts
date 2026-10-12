@@ -26,7 +26,6 @@ import path from 'path';
 import { EventSimulator } from './event_simulator';
 import { HapBuilder } from '../model/builder/hap_builder';
 import { Coverage } from './coverage';
-import { FuzzOptions } from '../runner/fuzz_options';
 import { execSync } from 'child_process';
 import { HapProject } from 'bjc';
 import { findFiles } from '../utils/file_utils';
@@ -41,6 +40,14 @@ import { Gesture } from '../event/gesture';
 import { PageBuilder } from '../model/builder/page_builder';
 const logger = getLogger();
 
+export interface DeviceOptions {
+    connectkey: string;
+    output: string;
+    hap?: string;
+    coverage?: boolean;
+    sourceRoot?: string;
+}
+
 export class Device implements EventSimulator {
     private hdc: Hdc;
     private coverage?: Coverage;
@@ -48,35 +55,49 @@ export class Device implements EventSimulator {
     private temp: string;
     private displaySize?: Point;
     private udid: string;
-    private options: FuzzOptions;
+    private options: DeviceOptions;
     private arkuiInspector: ArkUIInspector;
     private lastFaultlogs: Set<string>;
+    private faultLogBaselineInitialized = false;
     private driverCtx?: DriverContext;
 
-    constructor(options: FuzzOptions) {
+    constructor(options: DeviceOptions) {
         this.options = options;
         this.hdc = new Hdc(options.connectkey);
         this.output = path.join(path.resolve(options.output), moment().format('YYYY-MM-DD-HH-mm-ss'));
-        this.udid = this.hdc.getDeviceUdid();
-        if (!fs.existsSync(this.output)) {
-            fs.mkdirSync(this.output, { recursive: true });
-        }
+        this.udid = '';
         this.temp = path.join(this.output, 'temp');
-        fs.mkdirSync(this.temp, { recursive: true });
         this.arkuiInspector = new ArkUIInspector(this.hdc);
-        this.lastFaultlogs = this.collectFaultLogger();
+        this.lastFaultlogs = new Set<string>();
     }
 
-    async connect(hap: Hap) {
-        await this.teardownDriver();
-        // install hap
+    prepareTest(hap: Hap): void {
+        const sourceRoot = this.options.sourceRoot;
+        if (this.options.coverage && !sourceRoot) {
+            throw new Error('sourceRoot is required when coverage is enabled.');
+        }
+        this.udid = this.hdc.getDeviceUdid();
+        this.lastFaultlogs = this.collectFaultLogger();
+        this.faultLogBaselineInitialized = true;
         this.installHap(hap);
-        if (this.options.coverage) {
-            this.coverage = new Coverage(this, hap, this.options.sourceRoot!);
+        if (this.options.coverage && sourceRoot) {
+            this.coverage = new Coverage(this, hap, sourceRoot);
             this.coverage.startBftp();
         }
+    }
 
-        this.driverCtx = await buildDriverImpl(this);
+    async connect(): Promise<void> {
+        await this.teardownDriver();
+        this.udid = this.hdc.getDeviceUdid();
+        if (!this.faultLogBaselineInitialized) {
+            this.lastFaultlogs = this.collectFaultLogger();
+            this.faultLogBaselineInitialized = true;
+        }
+        await this.startDriver();
+    }
+
+    private async startDriver(): Promise<void> {
+        this.driverCtx = await buildDriverImpl(this.hdc);
         this.displaySize = await this.driverCtx.driver.getDisplaySize();
     }
 
@@ -113,6 +134,9 @@ export class Device implements EventSimulator {
      * @returns
      */
     getUdid(): string {
+        if (!this.udid) {
+            this.udid = this.hdc.getDeviceUdid();
+        }
         return this.udid;
     }
 
@@ -171,6 +195,7 @@ export class Device implements EventSimulator {
      * @returns
      */
     collectFaultLogger(): Set<string> {
+        this.ensureOutputDirectories();
         this.hdc.recvFile('/data/log/faultlog/', this.output);
         return new Set<string>(findFiles(path.join(this.output, 'faultlog'), []));
     }
@@ -504,7 +529,7 @@ export class Device implements EventSimulator {
         if (sourceRoot) {
             execSync(`hvigorw -p buildMode=debug -p coverage-mode=full -p debugLine=true clean assembleHap`, {
                 stdio: 'inherit',
-                cwd: this.options.sourceRoot,
+                cwd: sourceRoot,
             });
 
             let deviceType = this.getDeviceType();
@@ -593,5 +618,9 @@ export class Device implements EventSimulator {
             }
             fs.renameSync(localPath, targetPath);
         }
+    }
+
+    private ensureOutputDirectories(): void {
+        fs.mkdirSync(this.temp, { recursive: true });
     }
 }
