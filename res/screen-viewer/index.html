@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f2f4f6">
+    <title>Screen Viewer · HapTest</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <a class="brand" href="/" aria-label="HapTest home">
+                <span class="brand-mark" aria-hidden="true">H</span>
+                <span>HapTest</span>
+            </a>
+            <div class="breadcrumb" aria-label="Current location">
+                <span>Device tools</span>
+                <span class="breadcrumb-separator" aria-hidden="true">/</span>
+                <span>Screen viewer</span>
+            </div>
+            <div class="status" id="status" role="status" aria-live="polite">
+                <span class="dot" aria-hidden="true"></span>
+                <span>Connecting…</span>
+            </div>
+        </header>
+
+        <main>
+            <section class="page-heading">
+                <div>
+                    <h1>Screen Viewer</h1>
+                    <p class="description">Live screen from the connected HarmonyOS device.</p>
+                </div>
+                <div class="target-block">
+                    <span class="field-label">DEVICE</span>
+                    <span id="target">Detecting device…</span>
+                </div>
+            </section>
+
+            <div class="workspace">
+                <section class="screen-panel" aria-label="Live HarmonyOS device screen">
+                    <div class="panel-bar">
+                        <span class="panel-title">Device display</span>
+                        <span class="frame-metadata" id="resolution">Waiting for frame</span>
+                    </div>
+                    <div class="viewer">
+                        <img id="screen" src="/stream.mjpg" alt="Live HarmonyOS device screen">
+                        <div class="empty" id="empty">Waiting for the first frame…</div>
+                    </div>
+                </section>
+
+                <aside class="control-panel" aria-label="Stream controls">
+                    <div class="control-heading">
+                        <h2>Stream</h2>
+                    </div>
+                    <p class="control-copy">Reconnect the frame feed if the image stops updating.</p>
+                    <button id="reconnect" type="button">
+                        <svg viewBox="0 0 20 20" aria-hidden="true">
+                            <path d="M16.5 7.5A6.8 6.8 0 0 0 4.2 5.2L2.8 6.7M3 2.8v3.9h3.9M3.5 12.5a6.8 6.8 0 0 0 12.3 2.3l1.4-1.5m-.2 3.9v-3.9h-3.9" />
+                        </svg>
+                        <span>Reconnect stream</span>
+                    </button>
+                    <div class="control-divider"></div>
+                    <dl class="session-details">
+                        <div>
+                            <dt>Capture</dt>
+                            <dd>Native agent</dd>
+                        </div>
+                        <div>
+                            <dt>Transport</dt>
+                            <dd>HDC · RPC</dd>
+                        </div>
+                    </dl>
+                </aside>
+            </div>
+        </main>
+
+        <footer class="page-footer">
+            <span>HapTest</span>
+            <span>HarmonyOS device session</span>
+        </footer>
+    </div>
+    <script src="/static/app.js"></script>
+</body>
+</html>
