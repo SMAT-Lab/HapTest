@@ -24,7 +24,6 @@ import type { ScreenCaptureFrame } from '../device/uidriver/screen_capture_strea
 import { UitestAgent } from '../device/uidriver/uitest_agent';
 
 const logger = getLogger('haptest-screen-viewer');
-const FRAME_STALE_AFTER_MS = 3000;
 
 export interface ScreenViewerServerOptions {
     connectKey?: string;
@@ -35,7 +34,7 @@ interface ScreenViewerStatus {
     target: string;
     streaming: boolean;
     error?: string;
-    frame?: { width?: number; height?: number; receivedAt: string; ageMs: number; stale: boolean };
+    frame?: { width?: number; height?: number; receivedAt: string; ageMs: number };
 }
 
 function resolveTarget(connectKey?: string): string {
@@ -66,6 +65,7 @@ export async function startScreenViewerServer(options: ScreenViewerServerOptions
     let latestFrame: ScreenCaptureStatusFrame | undefined;
     let streamError: string | undefined;
     let startPromise: Promise<void> | undefined;
+    let reconnectPromise: Promise<void> | undefined;
     let generation = 0;
     let shuttingDown = false;
     const clients = new Set<Response>();
@@ -86,6 +86,7 @@ export async function startScreenViewerServer(options: ScreenViewerServerOptions
             try {
                 let stream: ScreenCaptureStream | undefined;
                 stream = await ScreenCaptureStream.start(agent.getRpc(), (frame) => {
+                    if (shuttingDown || generation !== currentGeneration) return;
                     latestFrame = { ...frame, receivedAt: new Date().toISOString() };
                     for (const client of clients) {
                         if (client.writable && client.writableLength < 1024 * 1024) {
@@ -119,20 +120,68 @@ export async function startScreenViewerServer(options: ScreenViewerServerOptions
         return startPromise;
     };
 
+    const reconnectCapture = async (): Promise<void> => {
+        if (shuttingDown) throw new Error('Screen viewer is shutting down.');
+        if (reconnectPromise) return reconnectPromise;
+
+        const reconnecting = (async () => {
+            if (startPromise) await startPromise;
+            if (shuttingDown) throw new Error('Screen viewer is shutting down.');
+
+            generation += 1;
+            const previousStream = captureStream;
+            captureStream = undefined;
+            if (previousStream) {
+                try {
+                    await previousStream.stop();
+                } catch (error) {
+                    captureStream = previousStream;
+                    throw error;
+                }
+            }
+
+            latestFrame = undefined;
+            streamError = undefined;
+            // A device-side uitest daemon can disappear with its RPC socket.
+            // Re-run agent startup so it can recreate the daemon and forward.
+            await agent.stop();
+            await agent.start();
+            await startCapture();
+            if (streamError) throw new Error(streamError);
+            if (!captureStream) throw new Error('Native screen capture did not start.');
+        })();
+        reconnectPromise = reconnecting;
+        try {
+            await reconnecting;
+        } finally {
+            if (reconnectPromise === reconnecting) reconnectPromise = undefined;
+        }
+    };
+
     const app = express();
+    app.post('/api/reconnect', async (_request: Request, response: Response) => {
+        try {
+            await reconnectCapture();
+            response.json({ ok: true });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            response.status(503).json({ error: message });
+        }
+    });
+
     app.get('/api/status', (_request: Request, response: Response) => {
         const frameAgeMs = latestFrame ? Math.max(0, Date.now() - Date.parse(latestFrame.receivedAt)) : undefined;
-        const frameStale = frameAgeMs !== undefined && frameAgeMs > FRAME_STALE_AFTER_MS;
         const frame = latestFrame && frameAgeMs !== undefined ? {
             width: latestFrame.width,
             height: latestFrame.height,
             receivedAt: latestFrame.receivedAt,
             ageMs: frameAgeMs,
-            stale: frameStale,
         } : undefined;
         const status: ScreenViewerStatus = {
             target,
-            streaming: Boolean(captureStream && frameAgeMs !== undefined && !frameStale),
+            // The agent pushes frames asynchronously; lack of a fresh frame
+            // does not mean the capture RPC session has disconnected.
+            streaming: Boolean(captureStream),
             error: streamError,
             frame,
         };
@@ -188,6 +237,11 @@ export async function startScreenViewerServer(options: ScreenViewerServerOptions
             const serverClosed = new Promise<void>((resolve) => server.close(() => resolve()));
             for (const client of clients) client.end();
             clients.clear();
+            try {
+                await reconnectPromise;
+            } catch (error) {
+                logger.warn(`Failed to finish screen stream reconnect during shutdown: ${error instanceof Error ? error.message : String(error)}.`);
+            }
             try {
                 await startPromise;
                 await captureStream?.stop();
