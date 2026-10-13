@@ -22,6 +22,7 @@ import { FuzzOptions } from '../runner/fuzz_options';
 import { EnvChecker } from './env_checker';
 import { HapTestLogger, LOG_LEVEL } from '../utils/logger';
 import { startUIViewerServer } from '../ui/ui_viewer_server';
+import { startScreenViewerServer } from '../ui/screen_viewer_server';
 
 const logger = getLogger();
 
@@ -103,6 +104,18 @@ async function runUIViewerCommand(options: any, version: string): Promise<void> 
     });
 }
 
+async function runScreenCommand(options: any): Promise<void> {
+    const outputDir = path.resolve(options.output ?? 'out/screen');
+    fs.mkdirSync(outputDir, { recursive: true });
+    HapTestLogger.configure(path.join(outputDir, 'haptest.log'), resolveLogLevel(options));
+
+    const port = Number(options.port);
+    if (Number.isNaN(port) || port <= 0 || port > 65535) {
+        throw new Error(`Invalid port: ${options.port}`);
+    }
+    await startScreenViewerServer({ connectKey: options.target, port });
+}
+
 (async function (): Promise<void> {
     const packageCfg = parsePackageConfig();
 
@@ -117,9 +130,25 @@ async function runUIViewerCommand(options: any, version: string): Promise<void> 
         .option('--debug', 'debug log level', false)
         .action(async (cmdOptions) => {
             try {
-                await runUIViewerCommand(cmdOptions, packageCfg.version);
+                await runUIViewerCommand({ ...program.opts(), ...cmdOptions }, packageCfg.version);
             } catch (err) {
                 logger.error('Failed to start ui-viewer command.', err);
+                process.exit(1);
+            }
+        });
+
+    program
+        .command('screen')
+        .description('Stream the device screen to a browser')
+        .option('-t, --target <connectkey>', 'HDC target serial; inferred when exactly one device is connected')
+        .option('-p, --port <port>', 'HTTP port', '7790')
+        .option('-o, --output <dir>', 'output dir', 'out/screen')
+        .option('--debug', 'debug log level', false)
+        .action(async (cmdOptions) => {
+            try {
+                await runScreenCommand({ ...program.opts(), ...cmdOptions });
+            } catch (err) {
+                logger.error('Failed to start screen command.', err);
                 process.exit(1);
             }
         });

@@ -15,13 +15,8 @@
 
 import { Point } from '../../model/point';
 import { FrontEnd, RpcApiCall } from './front_end';
-import { HypiumRpc } from './hypium_rpc';
 
 export class PointerMatrix extends FrontEnd {
-    constructor(rpc: HypiumRpc) {
-        super(rpc);
-    }
-
     /**
      *
      * @param fingers

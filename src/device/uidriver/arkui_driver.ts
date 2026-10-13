@@ -74,7 +74,7 @@ export class ArkUiDriver extends FrontEnd {
     async injectMultiPointerAction(pointerMatrix: PointerMatrix, speed: number) {}
 
     async injectGesture(gestures: Gesture[], speed: number) {
-        let pointerMatrix = await buildPointerMetrix(this.rpc, gestures, speed);
+        let pointerMatrix = await buildPointerMetrix(this.rpc, gestures, speed, this.rpcGeneration);
         await this.injectMultiPointerAction(pointerMatrix, speed);
     }
 

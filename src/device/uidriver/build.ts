@@ -16,33 +16,28 @@
 import { Hdc } from '../hdc';
 import { ArkUiDriver } from './arkui_driver';
 import { Gesture } from '../../event/gesture';
-import { HypiumRpc } from './hypium_rpc';
 import { PointerMatrix } from './pointer_matrix';
 import { UitestAgent } from './uitest_agent';
+import { HypiumRpc } from './hypium_rpc';
 
 export interface DriverContext {
     driver: ArkUiDriver;
-    rpc: HypiumRpc;
     agent: UitestAgent;
 }
 
 export async function buildDriverImpl(hdc: Hdc): Promise<DriverContext> {
-    let agent = new UitestAgent(hdc);
-    let rpc: HypiumRpc | undefined;
+    const agent = new UitestAgent(hdc);
     let driver: ArkUiDriver | undefined;
     try {
         await agent.start();
-        rpc = new HypiumRpc();
-        await rpc.connect(agent.getHostPort());
+        const rpc = agent.getRpc();
+        await rpc.connect();
         driver = new ArkUiDriver(rpc);
         await driver.create();
-        return { driver, rpc, agent };
+        return { driver, agent };
     } catch (err) {
         try {
             await driver?.free();
-        } catch {}
-        try {
-            await rpc?.close();
         } catch {}
         try {
             await agent.stop();
@@ -51,8 +46,13 @@ export async function buildDriverImpl(hdc: Hdc): Promise<DriverContext> {
     }
 }
 
-export async function buildPointerMetrix(rpc: HypiumRpc, gestures: Gesture[], speed: number = 2000): Promise<PointerMatrix> {
-    let matrix = new PointerMatrix(rpc);
+export async function buildPointerMetrix(
+    rpc: HypiumRpc,
+    gestures: Gesture[],
+    speed: number = 2000,
+    rpcGeneration = rpc.getGeneration(),
+): Promise<PointerMatrix> {
+    let matrix = new PointerMatrix(rpc, rpcGeneration);
     let maxSteps = 0;
     for (const gesture of gestures) {
         let totalSteps = calcGestureSteps(gesture, speed);
