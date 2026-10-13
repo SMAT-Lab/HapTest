@@ -476,12 +476,6 @@ export class Device implements EventSimulator {
         }
 
         try {
-            await ctx.rpc.close();
-        } catch {
-            // ignore rpc cleanup errors
-        }
-
-        try {
             await ctx.agent.stop();
         } catch {
             // ignore agent cleanup errors

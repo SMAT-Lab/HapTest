@@ -13,19 +13,29 @@
  * limitations under the License.
  */
 
-import { HypiumRpc } from './hypium_rpc';
+import type { HypiumRpc, RpcRequestOptions, RpcResponse } from './hypium_rpc';
 
 export class FrontEnd {
     protected rpc: HypiumRpc;
     protected backendObjRef: string;
+    protected readonly rpcGeneration: number;
 
-    constructor(rpc: HypiumRpc) {
+    constructor(rpc: HypiumRpc, rpcGeneration = rpc.getGeneration()) {
         this.rpc = rpc;
         this.backendObjRef = '';
+        // Backend object references belong to the connection that created them.
+        this.rpcGeneration = rpcGeneration;
     }
 
-    async doRpc(method:string, params: any): Promise<any | undefined> {
-        return await this.rpc.request(method, params);
+    protected request(method: string, params: unknown, options: RpcRequestOptions = {}): Promise<RpcResponse> {
+        return this.rpc.request(method, params, options);
+    }
+
+    async doRpc(method: string, params: any): Promise<any | undefined> {
+        const response = await this.request(method, params, {
+            expectedGeneration: this.rpcGeneration,
+        });
+        return response.result;
     }
 
     activate(backendObjRef: string) {

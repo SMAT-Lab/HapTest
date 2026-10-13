@@ -15,7 +15,6 @@
 
 import path from 'path';
 import { Hdc, NEWLINE } from '../hdc';
-import { hostUnusedPort } from '../../utils/net_utils';
 import { getLogger } from 'log4js';
 import {
     detectAgentArchitecture,
@@ -24,6 +23,7 @@ import {
     AgentProfile,
     AgentTransport,
 } from './agent_catalog';
+import { HypiumRpc } from './hypium_rpc';
 
 const RPC_PORT = 8012;
 const UNIX_SOCKET_NAME = 'uitest_socket';
@@ -32,17 +32,18 @@ const logger = getLogger();
 
 export class UitestAgent {
     private hdc: Hdc;
-    private hostPort: number;
     private deviceEndpoint: string;
+    private rpc?: HypiumRpc;
+    private stopping?: Promise<void>;
 
     constructor(hdc: Hdc) {
         this.hdc = hdc;
-        this.hostPort = -1;
         this.deviceEndpoint = `tcp:${RPC_PORT}`;
     }
 
-    getHostPort(): number {
-        return this.hostPort;
+    getRpc(): HypiumRpc {
+        if (!this.rpc) throw new Error('Uitest agent RPC connection has not started.');
+        return this.rpc;
     }
 
     async start() {
@@ -82,22 +83,25 @@ export class UitestAgent {
         );
 
         this.deviceEndpoint = selectedEndpoint;
-        this.hostPort = await hostUnusedPort();
-        this.hdc.fportRm(`tcp:${this.hostPort}`, this.deviceEndpoint);
-        this.hdc.fport(`tcp:${this.hostPort}`, this.deviceEndpoint);
-        logger.info(`Forwarded local RPC port ${this.hostPort} to device endpoint ${this.deviceEndpoint}.`);
+        this.rpc = new HypiumRpc(this.hdc, this.deviceEndpoint);
+        await this.rpc.start();
     }
 
-    async stop() {
-        if (this.hostPort === -1) {
-            return;
-        }
+    async stop(): Promise<void> {
+        if (this.stopping) return this.stopping;
+        const stopping = this.stopInternal();
+        this.stopping = stopping;
         try {
-            this.hdc.fportRm(`tcp:${this.hostPort}`, this.deviceEndpoint);
-        } catch (err) {
-            // ignore
+            await stopping;
+        } finally {
+            if (this.stopping === stopping) this.stopping = undefined;
         }
-        this.hostPort = -1;
+    }
+
+    private async stopInternal(): Promise<void> {
+        const rpc = this.rpc;
+        this.rpc = undefined;
+        await rpc?.close();
     }
 
     private getDeviceEndpoint(transport: AgentTransport): string {
