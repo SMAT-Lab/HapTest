@@ -117,34 +117,34 @@ export class UitestAgent {
     }
 
     private inspectAgent(profile: AgentProfile): { version?: string; reasons: string[] } {
-        if (!this.hdc.hasFile(DEVICE_AGENT_FILE)) {
+        const agent = this.readAgent(profile);
+        if (agent.reasons.length > 0) {
             logger.warn(
-                `Replacing device agent.so at ${DEVICE_AGENT_FILE}: current file is missing; ` +
-                `selected version=${profile.version}, architecture=${profile.architecture}.`
+                `Replacing device agent.so: current version=${agent.version ?? 'unknown'}, ` +
+                `current ELF=${agent.fileInfo || 'missing'}, ` +
+                `selected version=${profile.version}/${profile.architecture}; ` +
+                `reason=${agent.reasons.join('; ')}.`
             );
-            return { reasons: ['agent file is missing'] };
+        } else {
+            logger.info(
+                `Existing device agent.so is compatible: version=${agent.version}, ` +
+                `ELF=${agent.fileInfo}.`
+            );
         }
+        return { version: agent.version, reasons: agent.reasons };
+    }
 
+    private readAgent(profile: AgentProfile): { version?: string; reasons: string[]; fileInfo: string } {
+        if (!this.hdc.hasFile(DEVICE_AGENT_FILE)) {
+            return { reasons: ['agent file is missing'], fileInfo: '' };
+        }
         const marker = this.hdc.excuteShellCommandSync(
             `grep -a -o 'UITEST_AGENT_LIBRARY@[^[:space:]]*' ${DEVICE_AGENT_FILE}`
         );
         const installedFileInfo = this.hdc.excuteShellCommandSync(`file ${DEVICE_AGENT_FILE}`);
-        const { version: installedVersion, reasons: replacementReasons } =
+        const { version, reasons } =
             inspectAgentCompatibility(profile, marker, installedFileInfo);
-        if (replacementReasons.length > 0) {
-            logger.warn(
-                `Replacing device agent.so: current version=${installedVersion ?? 'unknown'}, ` +
-                `current ELF=${installedFileInfo.trim() || 'unknown'}, ` +
-                `selected version=${profile.version}/${profile.architecture}; ` +
-                `reason=${replacementReasons.join('; ')}.`
-            );
-        } else {
-            logger.info(
-                `Existing device agent.so is compatible: version=${installedVersion}, ` +
-                `ELF=${installedFileInfo.trim() || 'unknown'}.`
-            );
-        }
-        return { version: installedVersion, reasons: replacementReasons };
+        return { version, reasons, fileInfo: installedFileInfo.trim() };
     }
 
     private async stopDaemon(): Promise<void> {
